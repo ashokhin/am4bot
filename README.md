@@ -1,8 +1,8 @@
-![GitHub release (latest by date)](https://img.shields.io/github/v/release/ashokhin/am4b)
-![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/ashokhin/am4b)
-![GitHub issues](https://img.shields.io/github/issues/ashokhin/am4b)
+![GitHub release (latest by date)](https://img.shields.io/github/v/release/ashokhin/am4bot)
+![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/ashokhin/am4bot)
+![GitHub issues](https://img.shields.io/github/issues/ashokhin/am4bot)
 ![Docker Pulls](https://img.shields.io/docker/pulls/ashokhin/am4bot)
-![GitHub license](https://img.shields.io/github/license/ashokhin/am4b)
+![GitHub license](https://img.shields.io/github/license/ashokhin/am4bot)
 
 🐳[Docker Hub](https://hub.docker.com/r/ashokhin/am4bot)
 
@@ -90,7 +90,7 @@ You can visualize these metrics using [Grafana](https://grafana.com/grafana/).
    ```ini
    [Unit]
    Description=Airline Manager bot
-   Documentation="https://github.com/ashokhin/am4b"
+   Documentation="https://github.com/ashokhin/am4bot"
    After=docker.service
    Requires=docker.service
 
