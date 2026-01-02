@@ -360,6 +360,32 @@ func IsSubElementVisible(ctx context.Context, sel string, node *cdp.Node) bool {
 	return len(nodesList) > 0
 }
 
+// ParseDurationStringToSeconds parses a duration string in the format "HH:MM:SS" and returns the total number of seconds.
+func ParseDurationStringToSeconds(durationStr string) (int, error) {
+	var totalSeconds int
+
+	slog.Debug("parse duration string to seconds", "string", durationStr)
+	// define origin time for duration calculation as 00:00:00 UTC
+	origin := time.Date(0, 1, 1, 0, 0, 0, 0, time.UTC)
+	// define time layout for parsing duration string
+	timeLayout := "15:04:05"
+
+	parsedTime, err := time.Parse(timeLayout, durationStr)
+	if err != nil {
+		slog.Warn("error parsing duration string", "string", durationStr, "error", err)
+
+		return -1, err
+	}
+
+	// calculate duration from origin to parsed time
+	duration := parsedTime.Sub(origin)
+	totalSeconds = int(duration.Seconds())
+
+	slog.Debug("parsed duration string to seconds", "seconds", totalSeconds)
+
+	return totalSeconds, nil
+}
+
 // SetPromGaugeNonNeg sets the Prometheus Gauge metric to the specified value if it is non-negative.
 func SetPromGaugeNonNeg(promMetric prometheus.Gauge, value float64) {
 

@@ -79,6 +79,8 @@ type MarketingCompany struct {
 	CompanyOptionValue string
 	CompanyCost        string
 	CompanyButton      string
+	CompanyDuration    string
+	DurationSeconds    int
 	IsActive           bool
 }
 

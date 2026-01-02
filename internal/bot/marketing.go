@@ -16,6 +16,7 @@ var marketingCompaniesMap = map[string]model.MarketingCompany{
 		CompanyOptionValue: model.OPTION_FINANCE_MARKETING_INC_AIRLINE_REP_24H_VALUE,
 		CompanyCost:        model.TEXT_FINANCE_MARKETING_INC_AIRLINE_REP_COST,
 		CompanyButton:      model.BUTTON_FINANCE_MARKETING_INC_AIRLINE_REP_BUY,
+		CompanyDuration:    model.TEXT_FINANCE_MARKETING_INC_AIRLINE_REP_DURATION,
 	},
 	"CargoReputation": {
 		Name:               "Cargo reputation",
@@ -23,6 +24,7 @@ var marketingCompaniesMap = map[string]model.MarketingCompany{
 		CompanyOptionValue: model.OPTION_FINANCE_MARKETING_INC_CARGO_REP_24H_VALUE,
 		CompanyCost:        model.TEXT_FINANCE_MARKETING_INC_CARGO_REP_COST,
 		CompanyButton:      model.BUTTON_FINANCE_MARKETING_INC_CARGO_REP_BUY,
+		CompanyDuration:    model.TEXT_FINANCE_MARKETING_INC_CARGO_REP_DURATION,
 	},
 	"EcoFriendly": {
 		Name:               "Eco friendly",
@@ -30,6 +32,7 @@ var marketingCompaniesMap = map[string]model.MarketingCompany{
 		CompanyOptionValue: "",
 		CompanyCost:        model.TEXT_FINANCE_MARKETING_ECO_FRIENDLY_COST,
 		CompanyButton:      model.BUTTON_FINANCE_MARKETING_ECO_FRIENDLY_BUY,
+		CompanyDuration:    model.TEXT_FINANCE_MARKETING_ECO_FRIENDLY_DURATION,
 	},
 }
 
@@ -52,7 +55,6 @@ func (b *Bot) marketingCompanies(ctx context.Context) error {
 
 	// check marketing companies status
 	for markCompName, markComp := range marketingCompaniesMap {
-
 		if err := b.checkMarketingCompanyStatus(ctx, &markComp); err != nil {
 			slog.Warn("error in Bot.marketingCompanies > Bot.checkMarketingCompanyStatus", "company", markComp.Name, "error", err)
 
@@ -60,18 +62,35 @@ func (b *Bot) marketingCompanies(ctx context.Context) error {
 		}
 
 		slog.Debug("marketing company status", "company", markComp.Name, "isActive", markComp.IsActive)
+		// update map entry
 		marketingCompaniesMap[markCompName] = markComp
 	}
 
 	// activate marketing companies if not active
-	for _, markComp := range marketingCompaniesMap {
-
+	// and collect marketing companies duration if active
+	for markCompName, markComp := range marketingCompaniesMap {
 		if !markComp.IsActive {
-			if err := b.activateMarketingCompany(ctx, markComp); err != nil {
+			if err := b.activateMarketingCompany(ctx, &markComp); err != nil {
 				slog.Warn("error in Bot.marketingCompanies > Bot.activateMarketingCompany", "company", markComp.Name, "error", err)
-
-				return err
+			} else {
+				// update map entry
+				marketingCompaniesMap[markCompName] = markComp
 			}
+
+		}
+
+		// collect duration if active
+		if markComp.IsActive {
+			if err := b.collectMarketingCompanyDuration(ctx, &markComp); err != nil {
+				slog.Warn("error in Bot.marketingCompanies > Bot.collectMarketingCompanyDuration", "company", markComp.Name, "error", err)
+
+				continue
+			}
+			// update map entry
+			marketingCompaniesMap[markCompName] = markComp
+
+			// update Prometheus metrics
+			b.PrometheusMetrics.MarketingCompanyDuration.WithLabelValues(markComp.Name).Set(float64(markComp.DurationSeconds))
 		}
 	}
 
@@ -110,7 +129,7 @@ func (b *Bot) checkMarketingCompanyStatus(ctx context.Context, mc *model.Marketi
 }
 
 // activateMarketingCompany activates a specific marketing company if it is affordable and not already active.
-func (b *Bot) activateMarketingCompany(ctx context.Context, mc model.MarketingCompany) error {
+func (b *Bot) activateMarketingCompany(ctx context.Context, mc *model.MarketingCompany) error {
 	slog.Debug("activate marketing company", "company", mc.Name)
 
 	if err := chromedp.Run(ctx,
@@ -167,6 +186,44 @@ func (b *Bot) activateMarketingCompany(ctx context.Context, mc model.MarketingCo
 	// update budgets and account balance
 	b.BudgetMoney.Marketing -= marketingCompanyCost
 	b.AccountBalance -= marketingCompanyCost
+	mc.IsActive = true
+
+	slog.Info("marketing company activated", "company", mc.Name,
+		"cost", int(marketingCompanyCost),
+		"new marketing budget", int(b.BudgetMoney.Marketing),
+		"new account balance", int(b.AccountBalance),
+	)
+
+	return nil
+}
+
+// collectMarketingCompanyDuration collects the remaining duration of an active marketing company.
+func (b *Bot) collectMarketingCompanyDuration(ctx context.Context, mc *model.MarketingCompany) error {
+	slog.Debug("collect marketing company duration", "company", mc.Name)
+
+	var durationStr string
+	// get marketing company duration string
+	if err := chromedp.Run(ctx,
+		utils.ClickElement(model.BUTTON_COMMON_TAB2),
+		chromedp.Text(mc.CompanyDuration, &durationStr, chromedp.ByQuery),
+	); err != nil {
+		slog.Warn("error in Bot.collectMarketingCompanyDuration > get company duration", "company", mc.Name, "error", err)
+
+		return err
+	}
+
+	slog.Debug("company duration string", "company", mc.Name, "durationStr", durationStr)
+
+	durationSeconds, err := utils.ParseDurationStringToSeconds(durationStr)
+	if err != nil {
+		slog.Warn("error in Bot.collectMarketingCompanyDuration > parse duration string", "company", mc.Name, "error", err)
+
+		return err
+	}
+
+	slog.Debug("marketing company duration collected", "company", mc.Name, "durationSeconds", durationSeconds)
+
+	mc.DurationSeconds = durationSeconds
 
 	return nil
 }

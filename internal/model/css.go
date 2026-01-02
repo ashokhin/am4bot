@@ -173,6 +173,9 @@ const (
 	BUTTON_FINANCE_MARKETING_INC_AIRLINE_REP_BUY       string = "div#financeAction button#c4Btn"                                                    // "Buy" button for "Increase airline reputation" campaign
 	BUTTON_FINANCE_MARKETING_INC_CARGO_REP_BUY         string = "div#financeAction button#c4Btn"                                                    // "Buy" button for "Increase cargo reputation" campaign
 	BUTTON_FINANCE_MARKETING_ECO_FRIENDLY_BUY          string = TEXT_FINANCE_MARKETING_ECO_FRIENDLY_COST                                            // "Buy" button for "Eco-friendly" campaign
+	TEXT_FINANCE_MARKETING_INC_AIRLINE_REP_DURATION    string = "div#financeAction table > tbody > tr:nth-child(1) > td.hasCountdown > span"        // duration text for active "Increase airline reputation" campaign
+	TEXT_FINANCE_MARKETING_INC_CARGO_REP_DURATION      string = "div#financeAction table > tbody > tr:nth-child(2) > td.hasCountdown > span"        // duration text for active "Increase cargo reputation" campaign
+	TEXT_FINANCE_MARKETING_ECO_FRIENDLY_DURATION       string = "div#financeAction table > tbody > tr:nth-child(3) > td.hasCountdown > span"        // duration text for active "Eco-friendly" campaign
 
 	// "Bonus" pop-up
 

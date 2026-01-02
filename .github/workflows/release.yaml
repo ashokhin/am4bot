@@ -30,6 +30,8 @@ jobs:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         goos: ${{ matrix.os }}
         goarch: ${{ matrix.arch }}
+        md5sum: false
+        overwrite: true
         build_command: "make ${{ matrix.os }}"
         binary_name: "ambot"
         extra_files: LICENSE README.md

@@ -78,3 +78,29 @@ func TestFloatFromString(t *testing.T) {
 		})
 	}
 }
+
+func TestParseDurationStringToSeconds(t *testing.T) {
+	testCases := map[string]struct {
+		testString string
+		expected   int
+	}{
+		"test01": {"00:00:15", 15},
+		"test02": {"00:30:18", 1818},
+		"test03": {"01:45:22", 6322},
+		"test04": {"10:00:00", 36000},
+		"test05": {"04:20:00", 15600},
+		"test06": {"23:00:05", 82805},
+	}
+	for testName, testData := range testCases {
+		t.Run(testName, func(t *testing.T) {
+			result, err := ParseDurationStringToSeconds(testData.testString)
+			if err != nil {
+				t.Errorf(`ParseDurationStringToSeconds("%+v") returned unexpected error: %+v`, testData.testString, err)
+			}
+
+			if result != testData.expected {
+				t.Errorf(`ParseDurationStringToSeconds("%+v") returned '%+v', expected '%+v'`, testData.testString, result, testData.expected)
+			}
+		})
+	}
+}

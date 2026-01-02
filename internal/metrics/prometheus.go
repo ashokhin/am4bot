@@ -29,6 +29,7 @@ type Metrics struct {
 	CargoTransported                *prometheus.GaugeVec
 	AircraftStatus                  *prometheus.GaugeVec
 	CompanyReputation               *prometheus.GaugeVec
+	MarketingCompanyDuration        *prometheus.GaugeVec
 	CompanyMoney                    *prometheus.GaugeVec
 	HubStats                        *prometheus.GaugeVec
 	StaffSalary                     *prometheus.GaugeVec
@@ -183,6 +184,14 @@ func New() *Metrics {
 			},
 			[]string{"type"},
 		),
+		MarketingCompanyDuration: prometheus.NewGaugeVec(
+			prometheus.GaugeOpts{
+				Namespace: namespace,
+				Name:      "marketing_company_duration_seconds",
+				Help:      "Marketing company duration in seconds by company type.",
+			},
+			[]string{"type"},
+		),
 		CompanyMoney: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
 				Namespace: namespace,
@@ -296,6 +305,7 @@ func (m *Metrics) RegisterMetrics(registry *prometheus.Registry) {
 		m.CargoTransported,
 		m.AircraftStatus,
 		m.CompanyReputation,
+		m.MarketingCompanyDuration,
 		m.CompanyMoney,
 		m.HubStats,
 		m.StaffSalary,
