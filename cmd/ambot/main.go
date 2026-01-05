@@ -61,17 +61,19 @@ func main() {
 		return
 	}
 
+	conf.PromslogConfig = promslogConfig
+
 	// The CLI's "log.level" and config's "log_level" by default are both "info"
 	// if they are not -- check further
-	if promslogConfig.Level.String() != conf.LogLevel {
+	if conf.PromslogConfig.Level.String() != conf.LogLevel {
 		// If CLI's "log.level" is not default (info) then prioritize CLI's value
-		if promslogConfig.Level.String() != "info" {
-			slog.Info("set log level from CLI", "log.level", promslogConfig.Level.String())
+		if conf.PromslogConfig.Level.String() != "info" {
+			slog.Info("set log level from CLI", "log.level", conf.PromslogConfig.Level.String())
 
 		} else { // else - set "log_level" from config
 			slog.Info("set log level from config", "log_level", conf.LogLevel)
 
-			promslogConfig.Level.Set(conf.LogLevel)
+			conf.PromslogConfig.Level.Set(conf.LogLevel)
 		}
 	}
 
@@ -91,17 +93,11 @@ func main() {
 
 	// create Prometheus registry
 	prometheusRegistry := prometheus.NewRegistry()
-	prometheusRegistry.MustRegister(versionCollector.NewCollector(EXPORTER_NAMESPACE))
+	prometheusRegistry.MustRegister(versionCollector.NewCollector(APP_NAME))
 	prometheusRegistry.MustRegister(collectors.NewGoCollector())
 
 	// create Bot object with loaded configuration
 	bot := bot.New(conf, prometheusRegistry)
-
-	handler := promhttp.HandlerFor(
-		prometheusRegistry,
-		promhttp.HandlerOpts{
-			Registry: prometheusRegistry,
-		})
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -123,7 +119,7 @@ func main() {
 	restoreAttemptsCount := 0
 	// create cron job with schedule from configuration
 	c.AddFunc(bot.Conf.CronSchedule, func() {
-		slog.Warn("start job", "start_time", time.Now().UTC())
+		slog.Info("start job", "start_time", time.Now().UTC())
 
 		if err := bot.Run(ctx); err != nil {
 			// failed run increases counter
@@ -144,7 +140,7 @@ func main() {
 			restoreAttemptsCount = 0
 			bot.PrometheusMetrics.Up.Set(1)
 
-			slog.Warn("job has been done", "end_time", time.Now().UTC(), "next_run", c.Entry(1).Next.UTC())
+			slog.Info("job has been done", "end_time", time.Now().UTC(), "next_run", c.Entry(1).Next.UTC())
 		}
 
 	})
@@ -154,8 +150,29 @@ func main() {
 
 	slog.Info("job scheduled", "next_run", c.Entry(1).Next.UTC())
 
-	// register handler for the webTelemetry page
+	// create and register handler for the webTelemetry page
+	handler := promhttp.HandlerFor(
+		prometheusRegistry,
+		promhttp.HandlerOpts{
+			Registry: prometheusRegistry,
+		})
+
 	http.Handle(*webTelemetry, handler)
+
+	// create and register handler for the root page
+	// for displaying version and redirecting to the webTelemetry page
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`<html>
+			<head><title>AM4Bot Exporter</title></head>
+			<body>
+			<h1>AM4Bot Exporter</h1>
+			<p>` + version.Info() + `</p>
+			<p>` + version.BuildContext() + `</p>
+			<p>For Prometheus scraping use the metrics endpoint:</p>
+			<p><a href="` + *webTelemetry + `">` + *webTelemetry + `</a></p>
+			</body>
+			</html>`))
+	})
 
 	slog.Info(fmt.Sprintf("starting Prometheus exporter %s", EXPORTER_NAME), "address", *webAddr, "location", *webTelemetry)
 

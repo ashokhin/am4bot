@@ -1,11 +1,15 @@
 package config
 
 import (
+	"crypto/sha256"
 	"fmt"
+	"io"
 	"log/slog"
 	"os"
 
+	"github.com/ashokhin/am4bot/internal/utils"
 	"github.com/creasty/defaults"
+	"github.com/prometheus/common/promslog"
 	"gopkg.in/yaml.v3"
 )
 
@@ -32,23 +36,49 @@ type Config struct {
 	ChromeHeadless          bool       `default:"true" yaml:"chrome_headless"`
 	ChromeDebug             bool       `default:"false" yaml:"chrome_debug"`
 	PrometheusAddress       string     `default:":9150" yaml:"prometheus_address"`
+	PromslogConfig          *promslog.Config
 	// internal fields
-	passwordRunes []rune // most safe storage for password in memory
+	passwordRunes  []rune // most safe storage for password in memory
+	confFilePath   string
+	configChecksum string
 }
 
+// BudgetType holds budget percentage settings for various categories.
 type BudgetType struct {
 	Maintenance float64 `default:"50" yaml:"maintenance"`
 	Marketing   float64 `default:"70" yaml:"marketing"`
 	Fuel        float64 `default:"70" yaml:"fuel"`
 }
 
+// Price holds good price settings for fuel and CO2.
 type Price struct {
 	Fuel float64 `default:"500" yaml:"fuel"`
 	Co2  float64 `default:"120" yaml:"co2"`
 }
 
-func (c *Config) String() string {
-	return fmt.Sprintf("%+v", *c)
+// String returns a string representation of the Config struct.
+func (c Config) String() string {
+	return fmt.Sprint("{Url:", c.Url,
+		", User:", utils.MaskUsername(c.User),
+		", LogLevel:", c.LogLevel,
+		", BudgetPercent:", c.BudgetPercent,
+		", FuelPrice:", c.FuelPrice,
+		", RepairLounges:", c.RepairLounges,
+		", BuyCateringIfMissing:", c.BuyCateringIfMissing,
+		", CateringDurationHours:", c.CateringDurationHours,
+		", CateringAmountOption:", c.CateringAmountOption,
+		", HubsMaintenanceLimit:", c.HubsMaintenanceLimit,
+		", FuelCriticalPercent:", c.FuelCriticalPercent,
+		", AircraftWearPercent:", c.AircraftWearPercent,
+		", AircraftMaxHoursToCheck:", c.AircraftMaxHoursToCheck,
+		", AircraftModifyLimit:", c.AircraftModifyLimit,
+		", CronSchedule:", c.CronSchedule,
+		", Services:", c.Services,
+		", TimeoutSeconds:", c.TimeoutSeconds,
+		", ChromeHeadless:", c.ChromeHeadless,
+		", ChromeDebug:", c.ChromeDebug,
+		", PrometheusAddress:", c.PrometheusAddress,
+		"}")
 }
 
 // safeStorePassword converts password string into array of runes
@@ -63,25 +93,101 @@ func (c *Config) GetPassword() string {
 	return string(c.passwordRunes)
 }
 
-// New loads configuration from the specified YAML file path
-// and returns a Config instance.
-func New(filePath string) (*Config, error) {
+// ReloadConfigIfChanged reloads the configuration from the YAML file
+// if it has changed since the last load.
+// It returns true if the configuration was reloaded, false otherwise.
+func (c *Config) ReloadConfigIfChanged() (bool, error) {
+	slog.Debug("reloading config file", "file", c.confFilePath)
+
 	var err error
-	var c Config
 
-	slog.Info("loading config file", "file", filePath)
+	newChecksum, err := getFileChecksum(c.confFilePath)
 
-	defaults.Set(&c)
+	if err != nil {
+		slog.Debug("error calculating config file checksum", "error", err)
 
-	if err := loadYaml(filePath, &c); err != nil {
-		return &c, err
+		return false, err
 	}
 
+	if newChecksum == c.configChecksum {
+		slog.Debug("config file unchanged, no reload needed")
+
+		return false, nil
+	}
+
+	slog.Debug("config file changed, reloading", "old_checksum", c.configChecksum, "new_checksum", newChecksum)
+
+	// save previous config before reload
+	prevConfig := *c
+
+	// load configuration file
+	if err = c.loadConfig(); err != nil {
+		// restore previous config in case of error
+		*c = prevConfig
+
+		slog.Debug("error reloading config, previous config has been restored", "error", err)
+
+		return false, err
+	}
+
+	// set log level from config
+	c.PromslogConfig.Level.Set(c.LogLevel)
+	// update stored checksum
+	c.configChecksum = newChecksum
+
+	slog.Debug("config reloaded", "config", c)
+
+	return true, nil
+}
+
+// loadConfig loads the configuration from the YAML file
+// specified in confFilePath into the Config struct.
+func (c *Config) loadConfig() error {
+	slog.Info("loading config file", "file", c.confFilePath)
+	// set default values
+	defaults.Set(c)
+
+	// load YAML configuration
+	if err := loadYaml(c.confFilePath, c); err != nil {
+		slog.Debug("error loading config file", "error", err)
+
+		return err
+	}
+
+	// securely store password
 	c.safeStorePassword()
 
-	slog.Debug("yaml loaded", "yaml", c)
+	slog.Debug("configuration loaded successfully", "config", c)
 
-	return &c, err
+	return nil
+}
+
+// New creates a new Config instance and loading the configuration
+// from the specified YAML file.
+func New(filePath string) (*Config, error) {
+	slog.Debug("creating new Config instance", "file", filePath)
+
+	var err error
+
+	// create new Config instance
+	c := new(Config)
+	c.confFilePath = filePath
+	c.configChecksum, err = getFileChecksum(filePath)
+
+	if err != nil {
+		slog.Debug("error calculating config file checksum", "error", err)
+
+		return nil, err
+	}
+
+	// load configuration
+	if err := c.loadConfig(); err != nil {
+		return nil, err
+	}
+
+	slog.Debug("config loaded", "config", c)
+
+	return c, nil
 }
 
 // loadYaml reads a YAML file from the specified path
@@ -103,4 +209,30 @@ func loadYaml(filePath string, out any) error {
 	}
 
 	return err
+}
+
+// getFileChecksum computes and returns the SHA-256 checksum of the specified file.
+func getFileChecksum(filePath string) (string, error) {
+	slog.Debug("Checksum file", "file", filePath)
+
+	var err error
+
+	f, err := os.Open(filePath)
+	if err != nil {
+		return "", err
+	}
+
+	defer f.Close()
+
+	hash := sha256.New()
+
+	if _, err := io.Copy(hash, f); err != nil {
+		slog.Error("Error computing checksum", "error", err)
+
+		return "", err
+	}
+
+	slog.Debug("checksum calculated", "checksum", fmt.Sprintf("%x", hash.Sum(nil)))
+
+	return fmt.Sprintf("%x", hash.Sum(nil)), nil
 }

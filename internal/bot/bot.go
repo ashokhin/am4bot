@@ -37,15 +37,7 @@ func New(conf *config.Config, registry *prometheus.Registry) Bot {
 	metrics.StartTime.SetToCurrentTime()
 
 	// Setup Chrome options
-	opts := append(chromedp.DefaultExecAllocatorOptions[:],
-		chromedp.NoFirstRun,
-		chromedp.NoDefaultBrowserCheck,
-		chromedp.WindowSize(1920, 1080),
-		// set the 'chrome_headless: false' config for displaying Chrome window
-		chromedp.Flag("headless", conf.ChromeHeadless),
-		chromedp.Flag("start-maximized", true),
-		chromedp.Flag("disable-dev-shm-usage", true),
-	)
+	opts := setupChromeOptions(conf)
 
 	return Bot{
 		Conf:              conf,
@@ -54,8 +46,29 @@ func New(conf *config.Config, registry *prometheus.Registry) Bot {
 	}
 }
 
+func (b *Bot) ReloadBotConfig() error {
+
+	slog.Info("reloading Bot configuration")
+	// Setup Chrome options
+	b.chromeOpts = setupChromeOptions(b.Conf)
+
+	return nil
+}
+
 // Run executes the bot's main workflow, including authentication and service tasks.
 func (b *Bot) Run(ctx context.Context) error {
+	// reload config if changed
+	confChanged, err := b.Conf.ReloadConfigIfChanged()
+	if err != nil {
+		slog.Error("error reloading config", "error", err)
+	}
+
+	// if config changed, update Chrome options
+	if confChanged {
+		slog.Info("updating Bot options due to config change")
+		b.ReloadBotConfig()
+	}
+
 	timeStart := time.Now()
 	var cdpLogger chromedp.ContextOption
 
@@ -176,4 +189,19 @@ func (b *Bot) Run(ctx context.Context) error {
 	b.PrometheusMetrics.Duration.Set(duration.Seconds())
 
 	return nil
+}
+
+func setupChromeOptions(conf *config.Config) []chromedp.ExecAllocatorOption {
+	// Setup Chrome options
+	opts := append(chromedp.DefaultExecAllocatorOptions[:],
+		chromedp.NoFirstRun,
+		chromedp.NoDefaultBrowserCheck,
+		chromedp.WindowSize(1920, 1080),
+		// set the 'chrome_headless: false' config for displaying Chrome window
+		chromedp.Flag("headless", conf.ChromeHeadless),
+		chromedp.Flag("start-maximized", true),
+		chromedp.Flag("disable-dev-shm-usage", true),
+	)
+
+	return opts
 }
