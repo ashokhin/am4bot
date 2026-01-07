@@ -3,9 +3,12 @@ package bot
 import (
 	"context"
 	"log/slog"
+	"strings"
+	"time"
 
 	"github.com/ashokhin/am4bot/internal/model"
 	"github.com/ashokhin/am4bot/internal/utils"
+	"github.com/chromedp/cdproto/cdp"
 	"github.com/chromedp/chromedp"
 )
 
@@ -16,7 +19,6 @@ var marketingCompaniesMap = map[string]model.MarketingCompany{
 		CompanyOptionValue: model.OPTION_FINANCE_MARKETING_INC_AIRLINE_REP_24H_VALUE,
 		CompanyCost:        model.TEXT_FINANCE_MARKETING_INC_AIRLINE_REP_COST,
 		CompanyButton:      model.BUTTON_FINANCE_MARKETING_INC_AIRLINE_REP_BUY,
-		CompanyDuration:    model.TEXT_FINANCE_MARKETING_INC_AIRLINE_REP_DURATION,
 	},
 	"CargoReputation": {
 		Name:               "Cargo reputation",
@@ -24,7 +26,6 @@ var marketingCompaniesMap = map[string]model.MarketingCompany{
 		CompanyOptionValue: model.OPTION_FINANCE_MARKETING_INC_CARGO_REP_24H_VALUE,
 		CompanyCost:        model.TEXT_FINANCE_MARKETING_INC_CARGO_REP_COST,
 		CompanyButton:      model.BUTTON_FINANCE_MARKETING_INC_CARGO_REP_BUY,
-		CompanyDuration:    model.TEXT_FINANCE_MARKETING_INC_CARGO_REP_DURATION,
 	},
 	"EcoFriendly": {
 		Name:               "Eco friendly",
@@ -32,7 +33,6 @@ var marketingCompaniesMap = map[string]model.MarketingCompany{
 		CompanyOptionValue: "",
 		CompanyCost:        model.TEXT_FINANCE_MARKETING_ECO_FRIENDLY_COST,
 		CompanyButton:      model.BUTTON_FINANCE_MARKETING_ECO_FRIENDLY_BUY,
-		CompanyDuration:    model.TEXT_FINANCE_MARKETING_ECO_FRIENDLY_DURATION,
 	},
 }
 
@@ -197,23 +197,69 @@ func (b *Bot) activateMarketingCompany(ctx context.Context, mc *model.MarketingC
 	return nil
 }
 
-// collectMarketingCompanyDuration collects the remaining duration of an active marketing company.
+// collectMarketingCompanyDuration searches and collects the remaining duration of an active marketing company.
+// The search is performed because of the list of marketing is dynamic.
 func (b *Bot) collectMarketingCompanyDuration(ctx context.Context, mc *model.MarketingCompany) error {
 	slog.Debug("collect marketing company duration", "company", mc.Name)
 
 	var durationStr string
-	// get marketing company duration string
+
+	// find marketing companies array
+	var marketingCompaniesList []*cdp.Node
+
 	if err := chromedp.Run(ctx,
 		utils.ClickElement(model.BUTTON_COMMON_TAB2),
-		chromedp.Text(mc.CompanyDuration, &durationStr, chromedp.ByQuery),
+		chromedp.Nodes(model.LIST_FINANCE_MARKETING_COMPANIES, &marketingCompaniesList, chromedp.ByQueryAll),
 	); err != nil {
-		slog.Warn("error in Bot.collectMarketingCompanyDuration > get company duration", "company", mc.Name, "error", err)
+		slog.Warn("error in Bot.collectMarketingCompanyDuration > get marketing companies list", "error", err)
 
 		return err
 	}
+	// get marketing company duration string
+	for _, companyElem := range marketingCompaniesList {
+		var companyName string
 
-	slog.Debug("company duration string", "company", mc.Name, "durationStr", durationStr)
+		if err := chromedp.Run(ctx,
+			chromedp.Text(model.TEXT_MARKETING_COMPANY_NAME, &companyName, chromedp.ByQuery, chromedp.FromNode(companyElem)),
+		); err != nil {
+			slog.Warn("error in Bot.collectMarketingCompanyDuration > get company name from list", "error", err)
 
+			return err
+		}
+
+		companyName = strings.TrimSpace(companyName)
+
+		slog.Debug("parsed marketing company name from list", "company", companyName)
+
+		if companyName == mc.Name {
+			slog.Debug("found marketing company", "company", mc.Name)
+
+			// add several attempts to get duration string due to possible UI updates
+			for i := 0; i < 5; i++ {
+				if err := chromedp.Run(ctx,
+					chromedp.Text(model.TEXT_MARKETING_COMPANY_DURATION, &durationStr, chromedp.ByQuery, chromedp.FromNode(companyElem)),
+				); err != nil {
+					slog.Warn("error in Bot.collectMarketingCompanyDuration > get company duration string", "company", mc.Name, "error", err)
+
+					return err
+				}
+
+				if durationStr != "" {
+					break
+				}
+
+				slog.Debug("duration string not found", "company", mc.Name, "attempt", i+1)
+
+				time.Sleep(100 * time.Millisecond)
+			}
+
+			slog.Debug("found marketing company duration", "company", mc.Name, "durationStr", durationStr)
+
+			break
+		}
+	}
+
+	// parse duration string to seconds
 	durationSeconds, err := utils.ParseDurationStringToSeconds(durationStr)
 	if err != nil {
 		slog.Warn("error in Bot.collectMarketingCompanyDuration > parse duration string", "company", mc.Name, "error", err)
@@ -221,7 +267,7 @@ func (b *Bot) collectMarketingCompanyDuration(ctx context.Context, mc *model.Mar
 		return err
 	}
 
-	slog.Debug("marketing company duration collected", "company", mc.Name, "durationSeconds", durationSeconds)
+	slog.Debug("marketing company duration collected", "company", mc.Name, "durationStr", durationStr, "durationSeconds", durationSeconds)
 
 	mc.DurationSeconds = durationSeconds
 

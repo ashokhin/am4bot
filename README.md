@@ -324,6 +324,11 @@ am4_hub_stats{name="UNITED STATES, NEW YORK JFK",type="paxDeparted"} 3.825323e+0
 # TYPE am4_market_fuel_price gauge
 am4_market_fuel_price{type="co2"} 151
 am4_market_fuel_price{type="fuel"} 1713
+# HELP am4_marketing_company_duration_seconds Marketing company duration in seconds by company type.
+# TYPE am4_marketing_company_duration_seconds gauge
+am4_marketing_company_duration_seconds{type="Airline reputation"} 70886
+am4_marketing_company_duration_seconds{type="Cargo reputation"} 70528
+am4_marketing_company_duration_seconds{type="Eco friendly"} 21092
 # HELP am4_stats_cargo_transported Cargo transported by type.
 # TYPE am4_stats_cargo_transported gauge
 am4_stats_cargo_transported{type="heavy"} 6.35925e+08

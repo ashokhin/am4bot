@@ -160,7 +160,9 @@ const (
 	// "Finance" pop-up
 
 	BUTTON_FINANCE_MARKETING_NEW_COMPANY               string = "div#financeAction button#newCampaign"                                              // "+ New campaign" button
-	ELEM_FINANCE_MARKETING_LIST                        string = "div#financeAction #active-campaigns > table:nth-child(1) > tbody:nth-child(1)"     // List of marketing campaigns web elements
+	LIST_FINANCE_MARKETING_COMPANIES                   string = "div#financeAction #active-campaigns > table:nth-child(1) > tbody > tr"             // List of active marketing campaigns web elements
+	TEXT_MARKETING_COMPANY_NAME                        string = "td:nth-child(1)"                                                                   // marketing company name text
+	TEXT_MARKETING_COMPANY_DURATION                    string = "td:nth-child(2) > span"                                                            // marketing company duration text
 	ELEM_FINANCE_MARKETING_INC_AIRLINE_REP             string = "div#financeAction table.table:nth-child(2) > tbody:nth-child(1) > tr:nth-child(1)" // "Increase airline reputation" campaign element
 	ELEM_FINANCE_MARKETING_INC_CARGO_REP               string = "div#financeAction table.table:nth-child(2) > tbody:nth-child(1) > tr:nth-child(2)" // "Increase cargo reputation" campaign element
 	ELEM_FINANCE_MARKETING_ECO_FRIENDLY                string = "div#financeAction table.table:nth-child(2) > tbody:nth-child(1) > tr:nth-child(3)" // "Eco-friendly" campaign element
@@ -173,9 +175,6 @@ const (
 	BUTTON_FINANCE_MARKETING_INC_AIRLINE_REP_BUY       string = "div#financeAction button#c4Btn"                                                    // "Buy" button for "Increase airline reputation" campaign
 	BUTTON_FINANCE_MARKETING_INC_CARGO_REP_BUY         string = "div#financeAction button#c4Btn"                                                    // "Buy" button for "Increase cargo reputation" campaign
 	BUTTON_FINANCE_MARKETING_ECO_FRIENDLY_BUY          string = TEXT_FINANCE_MARKETING_ECO_FRIENDLY_COST                                            // "Buy" button for "Eco-friendly" campaign
-	TEXT_FINANCE_MARKETING_INC_AIRLINE_REP_DURATION    string = "div#financeAction table > tbody > tr:nth-child(1) > td.hasCountdown > span"        // duration text for active "Increase airline reputation" campaign
-	TEXT_FINANCE_MARKETING_INC_CARGO_REP_DURATION      string = "div#financeAction table > tbody > tr:nth-child(2) > td.hasCountdown > span"        // duration text for active "Increase cargo reputation" campaign
-	TEXT_FINANCE_MARKETING_ECO_FRIENDLY_DURATION       string = "div#financeAction table > tbody > tr:nth-child(3) > td.hasCountdown > span"        // duration text for active "Eco-friendly" campaign
 
 	// "Bonus" pop-up
 
