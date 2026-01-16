@@ -13,19 +13,19 @@ import (
 // FUEL_MINIMUM_AMOUNT defines the minimum amount of fuel that system allows to be purchased
 const FUEL_MINIMUM_AMOUNT float64 = 1000.00
 
-var fuelList = []model.Fuel{
-	{
-		FuelType: "fuel",
-	},
-	{
-		FuelType: "co2",
-	},
-}
-
 // fuel is checking fuel levels and buying them if price is good
 // or levels are critical
 func (b *Bot) fuel(ctx context.Context) error {
 	slog.Info("check fuel")
+
+	fuelList := []model.Fuel{
+		{
+			FuelType: "fuel",
+		},
+		{
+			FuelType: "co2",
+		},
+	}
 
 	// open fuel window
 	utils.DoClickElement(ctx, model.BUTTON_MAIN_FUEL)
