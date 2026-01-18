@@ -128,11 +128,11 @@ const (
 
 	// "Fuel" pop-up
 
-	TEXT_FUEL_FUEL_PRICE    string = "div#fuelMain span#sumCost"                  // fuel price text
-	TEXT_FUEL_FUEL_HOLDING  string = "div#fuelMain #holding"                      // fuel holding text
-	TEXT_FUEL_FUEL_CAPACITY string = "div#fuelMain span.s-text:nth-child(4)"      // fuel capacity text
-	TEXT_FIELD_FUEL_AMOUNT  string = "input#amountInput"                          // fuel amount input field
-	BUTTON_FUEL_BUY         string = "div#fuelMain button.btn-block:nth-child(2)" // "Buy fuel" button
+	TEXT_FUEL_FUEL_PRICE    string = "div#fuelMain span.text-danger:nth-child(3) > b:nth-child(1)" // fuel price text
+	TEXT_FUEL_FUEL_HOLDING  string = "div#fuelMain #holding"                                       // fuel holding text
+	TEXT_FUEL_FUEL_CAPACITY string = "div#fuelMain span.s-text:nth-child(4)"                       // fuel capacity text
+	TEXT_FIELD_FUEL_AMOUNT  string = "input#amountInput"                                           // fuel amount input field
+	BUTTON_FUEL_BUY         string = "div#fuelMain button.btn-block:nth-child(2)"                  // "Buy fuel" button
 
 	// "Maintenance" pop-up
 
