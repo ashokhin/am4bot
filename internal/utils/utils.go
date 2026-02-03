@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"math"
 	"os"
 	"regexp"
 	"runtime"
@@ -125,6 +126,25 @@ func Screenshot() chromedp.Tasks {
 			return nil
 		}),
 	}
+}
+
+// DoGetTextFromElement retrieves the visible text of the first element matching the selector.
+func DoGetTextFromElement(ctx context.Context, sel any) string {
+	slog.Debug("get text from element", "element", sel)
+
+	var resultStr string
+
+	if err := chromedp.Run(ctx,
+		chromedp.Text(sel, &resultStr, chromedp.BySearch),
+	); err != nil {
+		slog.Warn("error in utils.DoGetTextFromElement", "selector", sel, "error", err)
+
+		return ""
+	}
+
+	slog.Debug("got text from element", "value", resultStr)
+
+	return resultStr
 }
 
 // GetIntFromElement is an element query action that retrieves the visible text of the first element
@@ -396,4 +416,15 @@ func SetPromGaugeNonNeg(promMetric prometheus.Gauge, value float64) {
 	}
 
 	promMetric.Set(value)
+}
+
+func AtoiSafe(str string) int {
+	floatValue, err := strconv.ParseFloat(str, 64)
+	if err != nil {
+		slog.Warn("error in utils.AtoiSafe", "string", str, "error", err)
+
+		return -1
+	}
+
+	return int(math.Round(floatValue))
 }

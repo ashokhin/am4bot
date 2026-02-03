@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/ashokhin/am4bot/internal/config"
+	"github.com/ashokhin/am4bot/internal/io"
 	"github.com/ashokhin/am4bot/internal/metrics"
 	"github.com/prometheus/client_golang/prometheus"
 
@@ -21,6 +22,7 @@ type Bot struct {
 	AccountBalance    float64
 	BudgetMoney       BudgetType
 	PrometheusMetrics metrics.Metrics
+	Writer            *io.Writer
 }
 
 // Budget defines the budget allocations for different categories.
@@ -34,7 +36,7 @@ type BudgetType struct {
 func New(conf *config.Config, registry *prometheus.Registry) Bot {
 	metrics := metrics.New()
 	metrics.RegisterMetrics(registry)
-	metrics.StartTime.SetToCurrentTime()
+	metrics.StartTimeSeconds.SetToCurrentTime()
 
 	// Setup Chrome options
 	opts := setupChromeOptions(conf)
@@ -46,6 +48,7 @@ func New(conf *config.Config, registry *prometheus.Registry) Bot {
 	}
 }
 
+// ReloadBotConfig reloads the bot's configuration and updates relevant settings.
 func (b *Bot) ReloadBotConfig() error {
 
 	slog.Info("reloading Bot configuration")
@@ -186,11 +189,12 @@ func (b *Bot) Run(ctx context.Context) error {
 
 	slog.Info("run complete", "elapsed_time", fmt.Sprint(duration))
 
-	b.PrometheusMetrics.Duration.Set(duration.Seconds())
+	b.PrometheusMetrics.DurationSeconds.Set(duration.Seconds())
 
 	return nil
 }
 
+// setupChromeOptions configures Chrome options based on the provided configuration.
 func setupChromeOptions(conf *config.Config) []chromedp.ExecAllocatorOption {
 	// Setup Chrome options
 	opts := append(chromedp.DefaultExecAllocatorOptions[:],

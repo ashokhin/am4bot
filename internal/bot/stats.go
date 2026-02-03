@@ -71,16 +71,16 @@ func (b *Bot) companyStats(ctx context.Context) error {
 	utils.SetPromGaugeNonNeg(b.PrometheusMetrics.AircraftStatus.WithLabelValues("pending_delivery"), acPendingDelivery)
 	utils.SetPromGaugeNonNeg(b.PrometheusMetrics.AircraftStatus.WithLabelValues("pending_maintenance"), acPendingMaintenance)
 	utils.SetPromGaugeNonNeg(b.PrometheusMetrics.AircraftStatus.WithLabelValues("wo_route"), acWithoutRoute)
-	utils.SetPromGaugeNonNeg(b.PrometheusMetrics.RoutesNumber, routes)
+	utils.SetPromGaugeNonNeg(b.PrometheusMetrics.AircraftRoutesNumber, routes)
 	utils.SetPromGaugeNonNeg(b.PrometheusMetrics.HubsNumber, hubs)
 	utils.SetPromGaugeNonNeg(b.PrometheusMetrics.HangarCapacity, hangarCapacity)
 	utils.SetPromGaugeNonNeg(b.PrometheusMetrics.SharePrice, sharePrice)
-	utils.SetPromGaugeNonNeg(b.PrometheusMetrics.FlightsOperated, flightsOperated)
-	utils.SetPromGaugeNonNeg(b.PrometheusMetrics.PassengersTransported.WithLabelValues("economy"), passengersEconomyTransported)
-	utils.SetPromGaugeNonNeg(b.PrometheusMetrics.PassengersTransported.WithLabelValues("business"), passengersBusinessTransported)
-	utils.SetPromGaugeNonNeg(b.PrometheusMetrics.PassengersTransported.WithLabelValues("first"), passengersFirstTransported)
-	utils.SetPromGaugeNonNeg(b.PrometheusMetrics.CargoTransported.WithLabelValues("large"), cargoTransportedLarge)
-	utils.SetPromGaugeNonNeg(b.PrometheusMetrics.CargoTransported.WithLabelValues("heavy"), cargoTransportedHeavy)
+	utils.SetPromGaugeNonNeg(b.PrometheusMetrics.FlightsOperatedTotal, flightsOperated)
+	utils.SetPromGaugeNonNeg(b.PrometheusMetrics.PassengersTransportedTotal.WithLabelValues("economy"), passengersEconomyTransported)
+	utils.SetPromGaugeNonNeg(b.PrometheusMetrics.PassengersTransportedTotal.WithLabelValues("business"), passengersBusinessTransported)
+	utils.SetPromGaugeNonNeg(b.PrometheusMetrics.PassengersTransportedTotal.WithLabelValues("first"), passengersFirstTransported)
+	utils.SetPromGaugeNonNeg(b.PrometheusMetrics.CargoTransportedTotal.WithLabelValues("large"), cargoTransportedLarge)
+	utils.SetPromGaugeNonNeg(b.PrometheusMetrics.CargoTransportedTotal.WithLabelValues("heavy"), cargoTransportedHeavy)
 
 	return nil
 }
@@ -131,7 +131,7 @@ func (b *Bot) allianceStats(ctx context.Context) error {
 
 	utils.SetPromGaugeNonNeg(b.PrometheusMetrics.AllianceContributedTotal, contributedTotal)
 	utils.SetPromGaugeNonNeg(b.PrometheusMetrics.AllianceContributedPerDay, contributedPerDay)
-	utils.SetPromGaugeNonNeg(b.PrometheusMetrics.AllianceFlights, allianceFlights)
+	utils.SetPromGaugeNonNeg(b.PrometheusMetrics.AllianceFlightsTotal, allianceFlights)
 	utils.SetPromGaugeNonNeg(b.PrometheusMetrics.AllianceSeasonMoney, seasonMoney)
 
 	return nil

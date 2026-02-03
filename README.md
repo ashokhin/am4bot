@@ -16,7 +16,7 @@ scheduling departures, purchasing fuel and CO2, improving staff morale,
 managing hubs, collecting company statistics, performing repairs, A-Checks,
 and modifications.
 
-The bot is designed to run periodically based on a cron schedule, allowing for
+The bot is designed to run periodically based on a [cron](https://en.wikipedia.org/wiki/Cron)-like schedule, allowing for
 continuous management of your airline without manual intervention.
 
 It uses a headless browser to interact with the Airline Manager web interface,
@@ -136,7 +136,7 @@ You can visualize these metrics using [Grafana](https://grafana.com/grafana/).
 | `aircraft_max_hours_to_check` | int | `24` | Max hours to next A-Check to trigger it. |
 | `aircraft_modify_limit` | int | `3` | Max aircraft for modifications checks. |
 | `fuel_critical_percent` | float | `20` | Fuel level percentage to trigger refuel. Even the price isn't good. |
-| `cron_schedule` | string | `"*/5 * * * *"` | Cron schedule for services. Default: Every 5 minutes. |
+| `cron_schedule` | string | `"*/5 * * * *"` | [Cron](https://en.wikipedia.org/wiki/Cron)-like schedule for services. Default: Every 5 minutes. |
 | `services` | list of strings | `["company_stats",` `"staff_morale",` `"alliance_stats",` `"hubs",` `"claim_rewards",` `"buy_fuel",` `"depart",` `"marketing",` `"ac_maintenance"]` | List of services to run. Possible values: `company_stats`, `alliance_stats`, `staff_morale`, `hubs`, `claim_rewards`, `buy_fuel`, `depart`, `marketing`, `ac_maintenance`. |
 | `timeout_seconds` | int | `180` | Timeout for full round in seconds. |
 | `chrome_headless` | bool | `true` | Run browser in headless mode. |
@@ -234,9 +234,9 @@ am4_alliance_contributed_per_day 30708
 # HELP am4_alliance_contributed_total Alliance contributed total value.
 # TYPE am4_alliance_contributed_total gauge
 am4_alliance_contributed_total 1.979472e+06
-# HELP am4_alliance_flights Alliance flights value.
-# TYPE am4_alliance_flights gauge
-am4_alliance_flights 11470
+# HELP am4_alliance_flights_total Alliance flights value.
+# TYPE am4_alliance_flights_total gauge
+am4_alliance_flights_total 11470
 # HELP am4_alliance_member_contributed_per_day Alliance member contributed total value.
 # TYPE am4_alliance_member_contributed_per_day gauge
 am4_alliance_member_contributed_per_day{name="Airline1",uid="123456789"} 42085
@@ -249,12 +249,12 @@ am4_alliance_member_contributed_total{name="Airline1",uid="123456789"} 172087
 am4_alliance_member_contributed_total{name="Airline2_wo_IPO",uid="987654321"} 1.2627622e+07
 am4_alliance_member_contributed_total{name="Airline3",uid="1324576879"} 1.7309648e+07
 am4_alliance_member_contributed_total{name="Airline4",uid="2413685780"} 1.436029e+06
-# HELP am4_alliance_member_flights Alliance member flights value.
-# TYPE am4_alliance_member_flights gauge
-am4_alliance_member_flights{name="Airline1",uid="123456789"} 4472
-am4_alliance_member_flights{name="Airline2_wo_IPO",uid="987654321"} 116571
-am4_alliance_member_flights{name="Airline3",uid="1324576879"} 397505
-am4_alliance_member_flights{name="Airline4",uid="2413685780"} 38655
+# HELP am4_alliance_member_flights_total Alliance member flights value.
+# TYPE am4_alliance_member_flights_total gauge
+am4_alliance_member_flights_total{name="Airline1",uid="123456789"} 4472
+am4_alliance_member_flights_total{name="Airline2_wo_IPO",uid="987654321"} 116571
+am4_alliance_member_flights_total{name="Airline3",uid="1324576879"} 397505
+am4_alliance_member_flights_total{name="Airline4",uid="2413685780"} 38655
 # HELP am4_alliance_member_season_money Alliance member season money value.
 # TYPE am4_alliance_member_season_money gauge
 am4_alliance_member_season_money{name="Airline1",uid="123456789"} 1689
@@ -272,7 +272,7 @@ am4_alliance_member_share_price{name="Airline4",uid="2413685780"} 1912.08
 am4_alliance_season_money 260
 # HELP am4_build_info A metric with a constant '1' value labeled by version, revision, branch, goversion from which am4 was built, and the goos and goarch for the build.
 # TYPE am4_build_info gauge
-am4_build_info{branch="tags/1.50",goarch="amd64",goos="linux",goversion="go1.25.5",revision="3245bbef572f023ca22ff5da1f7115deac6a895a",tags="unknown",version="1.50"} 1
+ambot_build_info{branch="tags/1.55",goarch="amd64",goos="linux",goversion="go1.25.5",revision="0dce3652fb3424b51bb481c084b1d0f5e394d74e",tags="unknown",version="1.55"} 1
 # HELP am4_company_fuel_holding Fuel amount holding by fuel type.
 # TYPE am4_company_fuel_holding gauge
 am4_company_fuel_holding{type="co2"} 2.5868711e+07
@@ -310,16 +310,16 @@ am4_company_training_points 0
 # HELP am4_duration_seconds Duration of execution in seconds.
 # TYPE am4_duration_seconds gauge
 am4_duration_seconds 76.877199534
-# HELP am4_hub_stats Company hub info by hub name and stat type.
-# TYPE am4_hub_stats gauge
-am4_hub_stats{name="BRAZIL, BRASÍLIA",type="arrivals"} 4513
-am4_hub_stats{name="BRAZIL, BRASÍLIA",type="departures"} 5951
-am4_hub_stats{name="BRAZIL, BRASÍLIA",type="paxArrived"} 1.397119e+06
-am4_hub_stats{name="BRAZIL, BRASÍLIA",type="paxDeparted"} 1.920807e+06
-am4_hub_stats{name="UNITED STATES, NEW YORK JFK",type="arrivals"} 16269
-am4_hub_stats{name="UNITED STATES, NEW YORK JFK",type="departures"} 16389
-am4_hub_stats{name="UNITED STATES, NEW YORK JFK",type="paxArrived"} 3.759363e+06
-am4_hub_stats{name="UNITED STATES, NEW YORK JFK",type="paxDeparted"} 3.825323e+06
+# HELP am4_hub_stats_total Company hub info by hub name and stat type.
+# TYPE am4_hub_stats_total gauge
+am4_hub_stats_total{name="BRAZIL, BRASÍLIA",type="arrivals"} 4513
+am4_hub_stats_total{name="BRAZIL, BRASÍLIA",type="departures"} 5951
+am4_hub_stats_total{name="BRAZIL, BRASÍLIA",type="paxArrived"} 1.397119e+06
+am4_hub_stats_total{name="BRAZIL, BRASÍLIA",type="paxDeparted"} 1.920807e+06
+am4_hub_stats_total{name="UNITED STATES, NEW YORK JFK",type="arrivals"} 16269
+am4_hub_stats_total{name="UNITED STATES, NEW YORK JFK",type="departures"} 16389
+am4_hub_stats_total{name="UNITED STATES, NEW YORK JFK",type="paxArrived"} 3.759363e+06
+am4_hub_stats_total{name="UNITED STATES, NEW YORK JFK",type="paxDeparted"} 3.825323e+06
 # HELP am4_market_fuel_price Fuel amount price by fuel type.
 # TYPE am4_market_fuel_price gauge
 am4_market_fuel_price{type="co2"} 151
@@ -329,18 +329,18 @@ am4_market_fuel_price{type="fuel"} 1713
 am4_marketing_company_duration_seconds{type="Airline reputation"} 70886
 am4_marketing_company_duration_seconds{type="Cargo reputation"} 70528
 am4_marketing_company_duration_seconds{type="Eco friendly"} 21092
-# HELP am4_stats_cargo_transported Cargo transported by type.
-# TYPE am4_stats_cargo_transported gauge
-am4_stats_cargo_transported{type="heavy"} 6.35925e+08
-am4_stats_cargo_transported{type="large"} 6.36211e+08
-# HELP am4_stats_flights_operated Company flights operated value.
-# TYPE am4_stats_flights_operated gauge
-am4_stats_flights_operated 82737
-# HELP am4_stats_passengers_transported Passengers transported by type.
-# TYPE am4_stats_passengers_transported gauge
-am4_stats_passengers_transported{type="business"} 4.010239e+06
-am4_stats_passengers_transported{type="economy"} 1.528383e+07
-am4_stats_passengers_transported{type="first"} 2.27574e+06
+# HELP am4_stats_cargo_transported_total Cargo transported by type.
+# TYPE am4_stats_cargo_transported_total gauge
+am4_stats_cargo_transported_total{type="heavy"} 6.35925e+08
+am4_stats_cargo_transported_total{type="large"} 6.36211e+08
+# HELP am4_stats_flights_operated_total Company flights operated value.
+# TYPE am4_stats_flights_operated_total gauge
+am4_stats_flights_operated_total 82737
+# HELP am4_stats_passengers_transported_total Passengers transported by type.
+# TYPE am4_stats_passengers_transported_total gauge
+am4_stats_passengers_transported_total{type="business"} 4.010239e+06
+am4_stats_passengers_transported_total{type="economy"} 1.528383e+07
+am4_stats_passengers_transported_total{type="first"} 2.27574e+06
 ```
 
 </details>

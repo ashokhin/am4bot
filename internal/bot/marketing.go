@@ -90,7 +90,7 @@ func (b *Bot) marketingCompanies(ctx context.Context) error {
 			marketingCompaniesMap[markCompName] = markComp
 
 			// update Prometheus metrics
-			b.PrometheusMetrics.MarketingCompanyDuration.WithLabelValues(markComp.Name).Set(float64(markComp.DurationSeconds))
+			b.PrometheusMetrics.MarketingCompanyDurationSeconds.WithLabelValues(markComp.Name).Set(float64(markComp.DurationSeconds))
 		}
 	}
 

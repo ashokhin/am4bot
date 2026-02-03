@@ -15,10 +15,12 @@ import (
 
 // Config holds the configuration settings for the bot.
 type Config struct {
-	Url                     string     `default:"https://www.airlinemanager.com/" yaml:"url"`
-	User                    string     `yaml:"username"`
-	Password                string     `yaml:"password"`
-	LogLevel                string     `default:"info" yaml:"log_level"`
+	// user-configurable fields
+	Url      string `default:"https://www.airlinemanager.com/" yaml:"url"`
+	User     string `yaml:"username"`
+	Password string `yaml:"password"`
+	LogLevel string `default:"info" yaml:"log_level"`
+	// Parameters for Bot configuration
 	BudgetPercent           BudgetType `yaml:"budget_percent"`
 	FuelPrice               Price      `yaml:"good_price"`
 	RepairLounges           bool       `default:"true" yaml:"repair_lounges"`
@@ -31,12 +33,20 @@ type Config struct {
 	AircraftMaxHoursToCheck int        `default:"24" yaml:"aircraft_max_hours_to_check"`
 	AircraftModifyLimit     int        `default:"3" yaml:"aircraft_modify_limit"`
 	CronSchedule            string     `default:"*/5 * * * *" yaml:"cron_schedule"`
-	Services                []string   `default:"[\"company_stats\",\"alliance_stats\",\"staff_morale\",\"hubs\",\"claim_rewards\",\"buy_fuel\",\"marketing\",\"ac_maintenance\",\"depart\"]" yaml:"services"`
 	TimeoutSeconds          int        `default:"180" yaml:"timeout_seconds"`
-	ChromeHeadless          bool       `default:"true" yaml:"chrome_headless"`
-	ChromeDebug             bool       `default:"false" yaml:"chrome_debug"`
+	Services                []string   `default:"[\"company_stats\",\"alliance_stats\",\"staff_morale\",\"hubs\",\"claim_rewards\",\"buy_fuel\",\"marketing\",\"ac_maintenance\",\"depart\"]" yaml:"services"`
 	PrometheusAddress       string     `default:":9150" yaml:"prometheus_address"`
 	PromslogConfig          *promslog.Config
+	// Parameters for Scanner configuration
+	HubsList           []string `yaml:"hubs_list"`
+	MaxRouteDistanceKm int      `default:"14500" yaml:"max_route_range_km"`
+	MinRouteDistanceKm int      `default:"6500" yaml:"min_route_range_km"`
+	MinRunwayLength    int      `default:"9680" yaml:"min_runway_length"`
+	ScanStepKm         int      `default:"100" yaml:"scan_step_km"`
+	// Parameters for both Bot and Scanner configuration
+	ChromeHeadless bool `default:"true" yaml:"chrome_headless"`
+	ChromeDebug    bool `default:"false" yaml:"chrome_debug"`
+
 	// internal fields
 	passwordRunes  []rune // most safe storage for password in memory
 	confFilePath   string

@@ -1,24 +1,54 @@
+### Common options for both Bot and Scanner
+# Airline Manager URL
 url: "https://www.airlinemanager.com/"
+# Username for login
 username: "your_email@example.com"
+# Password for login
 password: "YourPasswordHere"
+# Logging level (debug, info, warn, error)
 log_level: "warn"
+# Run browser in headless mode
+# ! Not recommended to change this option
+# ! on systems without GUI support
+chrome_headless: true
+# Enable detailed Chrome/Chromium debugging logs
+chrome_debug: true
+### Bot-specific configuration
+# Percentage of budget to use for each category
 budget_percent:
+  # Percentage of budget for Fuel
   fuel: 75
+  # Percentage of budget for Maintenance
   maintenance: 25
+  # Percentage of budget for Marketing
   marketing: 75
+# Good price thresholds for resources
 good_price:
+  # Good price for Fuel (per 1,000 Lbs)
   fuel: 550
+  # Good price for CO2 (per 1,000 Quotas)
   co2: 140
+# Maximum number of hubs for maintenance ("repair lounge", "buy catering") per run
 hubs_maintenance_limit: 3
+# Whether to repair lounges in hubs
 repair_lounges: true
+# Whether to buy catering if missing in hubs
 buy_catering_if_missing: true
+# Catering duration in hours to set when buying catering
 catering_duration_hours: "24"
+# Catering amount option to select when buying catering
 catering_amount_option: "5000"
+# Aircraft wear percentage to trigger maintenance
 aircraft_wear_percent: 75
+# Max hours to next A-Check to trigger it
 aircraft_max_hours_to_check: 48
+# Max aircraft for modifications check
 aircraft_modify_limit: 5
+# Fuel level percentage to trigger refuel. Even the price isn't good
 fuel_critical_percent: 15
+# Cron-like schedule for services
 cron_schedule: "*/10 * * * *"
+# List of services to run
 services:
   - "company_stats"
   - "alliance_stats"
@@ -29,9 +59,25 @@ services:
   - "marketing"
   - "ac_maintenance"
   - "depart"
+# Timeout for full round in seconds
 timeout_seconds: 180
-# Not recommended to change this option
-# on systems without GUI support
-chrome_headless: true
-chrome_debug: true
+# Address to expose Prometheus metrics
 prometheus_address: ":9150"
+### Scanner-specific configuration
+# List of hubs to scan routes
+hubs_list:
+  - "New York JFK, United States"
+  - "Beijing Capital, China"
+  - "Istanbul Atatürk, Turkey"
+  - "New Delhi, India"
+  - "Brasília, Brazil"
+  - "Atlanta Int, United States"
+  - "Reykjavík - Keflavik, Iceland"
+# Maximum distance for route
+max_route_range_km: 14500
+# Minimum distance for route
+min_route_range_km: 6500
+# Minimal runway length for route
+min_runway_length: 9680
+# Scan step between "max_route_range_km" and "min_route_range_km"
+scan_step_km: 100

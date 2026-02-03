@@ -126,6 +126,17 @@ const (
 	BUTTON_COMPANY_STAFF_TECHNICIAN_SALARY_UP   string = "#tech_main > table:nth-child(1) > tbody:nth-child(1) > tr:nth-child(3) > td:nth-child(1) > button:nth-child(1)"     // Technician salary increase button
 	BUTTON_COMPANY_STAFF_TECHNICIAN_SALARY_DOWN string = "#tech_main > table:nth-child(1) > tbody:nth-child(1) > tr:nth-child(3) > td:nth-child(2) > button:nth-child(1)"     // Technician salary decrease button
 
+	// "Fleet" pop-up
+
+	SELECT_FLEET_RESEARCH_DEPARTING_FROM  string = "div#routeAction > div#routeSearch div#hubDeparture > select#hubSelect"                    // "Departing from" hub select element
+	LIST_FLEET_RESEARCH_DEPARTING_FROM    string = "div#routeAction > div#routeSearch div#hubDeparture > select#hubSelect > option"           // List of "Departing from" hub options
+	TEXTFIELD_FLEET_RESEARCH_MAX_DISTANCE string = "div#routeAction > div#routeSearch input#maxDist"                                          // "Max. distance" input field
+	TEXTFIELD_FLEET_RESEARCH_MIN_RUNWAY   string = "div#routeAction > div#routeSearch input#rwyLength"                                        // "Min. runway" input field
+	BUTTON_FLEET_RESEARCH_SEARCH          string = "div#routeAction > div#routeSearch button#resSearch"                                       // "Search routes" button
+	LIST_FLEET_RESEARCH_SEARCH_RESULTS    string = "div#routeAction > div#routeSearch > div#resResult > div#list > div.row.border.opa.sorter" // List of search results
+	TEXT_FLEET_RESEARCH_ROUTE_FROM        string = "div.row.border.opa.sorter > div.col-6.m-text > div.exo > b:nth-child(1)"                  // route "From" text
+	TEXT_FLEET_RESEARCH_ROUTE_TO          string = "div.row.border.opa.sorter > div.col-6.m-text > div.exo > b:nth-child(2)"                  // route "To" text
+
 	// "Fuel" pop-up
 
 	TEXT_FUEL_FUEL_PRICE    string = "div#fuelMain span.text-danger:nth-child(3) > b:nth-child(1)" // fuel price text

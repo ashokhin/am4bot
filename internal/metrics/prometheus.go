@@ -11,27 +11,27 @@ const (
 // Metrics holds all Prometheus metrics used in the application.
 type Metrics struct {
 	Up                              prometheus.Gauge
-	StartTime                       prometheus.Gauge
-	Duration                        prometheus.Gauge
+	StartTimeSeconds                prometheus.Gauge
+	DurationSeconds                 prometheus.Gauge
 	CompanyRank                     prometheus.Gauge
 	CompanyTrainingPoints           prometheus.Gauge
 	CompanyFleetSize                prometheus.Gauge
-	RoutesNumber                    prometheus.Gauge
+	AircraftRoutesNumber            prometheus.Gauge
 	HubsNumber                      prometheus.Gauge
 	HangarCapacity                  prometheus.Gauge
 	SharePrice                      prometheus.Gauge
-	FlightsOperated                 prometheus.Gauge
+	FlightsOperatedTotal            prometheus.Gauge
 	AllianceContributedTotal        prometheus.Gauge
 	AllianceContributedPerDay       prometheus.Gauge
-	AllianceFlights                 prometheus.Gauge
+	AllianceFlightsTotal            prometheus.Gauge
 	AllianceSeasonMoney             prometheus.Gauge
-	PassengersTransported           *prometheus.GaugeVec
-	CargoTransported                *prometheus.GaugeVec
+	PassengersTransportedTotal      *prometheus.GaugeVec
+	CargoTransportedTotal           *prometheus.GaugeVec
 	AircraftStatus                  *prometheus.GaugeVec
 	CompanyReputation               *prometheus.GaugeVec
-	MarketingCompanyDuration        *prometheus.GaugeVec
+	MarketingCompanyDurationSeconds *prometheus.GaugeVec
 	CompanyMoney                    *prometheus.GaugeVec
-	HubStats                        *prometheus.GaugeVec
+	HubStatsTotal                   *prometheus.GaugeVec
 	StaffSalary                     *prometheus.GaugeVec
 	FuelHolding                     *prometheus.GaugeVec
 	FuelLimit                       *prometheus.GaugeVec
@@ -53,14 +53,14 @@ func New() *Metrics {
 				Help: "Was the last execution successful.",
 			},
 		),
-		StartTime: prometheus.NewGauge(
+		StartTimeSeconds: prometheus.NewGauge(
 			prometheus.GaugeOpts{
 				// Namespace: namespace,
 				Name: "process_start_time_seconds",
 				Help: "Start time of the process since unix epoch in seconds.",
 			},
 		),
-		Duration: prometheus.NewGauge(
+		DurationSeconds: prometheus.NewGauge(
 			prometheus.GaugeOpts{
 				Namespace: namespace,
 				Name:      "duration_seconds",
@@ -89,7 +89,7 @@ func New() *Metrics {
 				Help:      "Company fleet size value.",
 			},
 		),
-		RoutesNumber: prometheus.NewGauge(
+		AircraftRoutesNumber: prometheus.NewGauge(
 			prometheus.GaugeOpts{
 				Namespace: namespace,
 				Name:      "ac_routes",
@@ -117,10 +117,10 @@ func New() *Metrics {
 				Help:      "Company share price value.",
 			},
 		),
-		FlightsOperated: prometheus.NewGauge(
+		FlightsOperatedTotal: prometheus.NewGauge(
 			prometheus.GaugeOpts{
 				Namespace: namespace,
-				Name:      "stats_flights_operated",
+				Name:      "stats_flights_operated_total",
 				Help:      "Company flights operated value.",
 			},
 		),
@@ -138,10 +138,10 @@ func New() *Metrics {
 				Help:      "Alliance contributed per day value.",
 			},
 		),
-		AllianceFlights: prometheus.NewGauge(
+		AllianceFlightsTotal: prometheus.NewGauge(
 			prometheus.GaugeOpts{
 				Namespace: namespace,
-				Name:      "alliance_flights",
+				Name:      "alliance_flights_total",
 				Help:      "Alliance flights value.",
 			},
 		),
@@ -152,18 +152,18 @@ func New() *Metrics {
 				Help:      "Alliance season money value.",
 			},
 		),
-		PassengersTransported: prometheus.NewGaugeVec(
+		PassengersTransportedTotal: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
 				Namespace: namespace,
-				Name:      "stats_passengers_transported",
+				Name:      "stats_passengers_transported_total",
 				Help:      "Passengers transported by type.",
 			},
 			[]string{"type"},
 		),
-		CargoTransported: prometheus.NewGaugeVec(
+		CargoTransportedTotal: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
 				Namespace: namespace,
-				Name:      "stats_cargo_transported",
+				Name:      "stats_cargo_transported_total",
 				Help:      "Cargo transported by type.",
 			},
 			[]string{"type"},
@@ -184,7 +184,7 @@ func New() *Metrics {
 			},
 			[]string{"type"},
 		),
-		MarketingCompanyDuration: prometheus.NewGaugeVec(
+		MarketingCompanyDurationSeconds: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
 				Namespace: namespace,
 				Name:      "marketing_company_duration_seconds",
@@ -200,10 +200,10 @@ func New() *Metrics {
 			},
 			[]string{"type"},
 		),
-		HubStats: prometheus.NewGaugeVec(
+		HubStatsTotal: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
 				Namespace: namespace,
-				Name:      "hub_stats",
+				Name:      "hub_stats_total",
 				Help:      "Company hub info by hub name and stat type.",
 			},
 			[]string{"name", "type"},
@@ -275,7 +275,7 @@ func New() *Metrics {
 		AllianceMemberFlightsTotal: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
 				Namespace: namespace,
-				Name:      "alliance_member_flights",
+				Name:      "alliance_member_flights_total",
 				Help:      "Alliance member flights value.",
 			},
 			[]string{"uid", "name"},
@@ -287,27 +287,27 @@ func New() *Metrics {
 func (m *Metrics) RegisterMetrics(registry *prometheus.Registry) {
 	registry.MustRegister(
 		m.Up,
-		m.StartTime,
-		m.Duration,
+		m.StartTimeSeconds,
+		m.DurationSeconds,
 		m.CompanyRank,
 		m.CompanyTrainingPoints,
 		m.CompanyFleetSize,
-		m.RoutesNumber,
+		m.AircraftRoutesNumber,
 		m.HubsNumber,
 		m.HangarCapacity,
 		m.SharePrice,
-		m.FlightsOperated,
+		m.FlightsOperatedTotal,
 		m.AllianceContributedTotal,
 		m.AllianceContributedPerDay,
-		m.AllianceFlights,
+		m.AllianceFlightsTotal,
 		m.AllianceSeasonMoney,
-		m.PassengersTransported,
-		m.CargoTransported,
+		m.PassengersTransportedTotal,
+		m.CargoTransportedTotal,
 		m.AircraftStatus,
 		m.CompanyReputation,
-		m.MarketingCompanyDuration,
+		m.MarketingCompanyDurationSeconds,
 		m.CompanyMoney,
-		m.HubStats,
+		m.HubStatsTotal,
 		m.StaffSalary,
 		m.FuelHolding,
 		m.FuelLimit,

@@ -111,3 +111,15 @@ type AllianceMember struct {
 	ContributedSeason float64
 	FlightsTotal      int
 }
+
+// Route represents a flight route with various attributes.
+type Route struct {
+	Name        string
+	Distance    int
+	Runway      int
+	DemandY     int
+	DemandJ     int
+	DemandF     int
+	DemandLarge int
+	DemandHeavy int
+}

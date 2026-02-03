@@ -113,10 +113,8 @@ func (b *Bot) buyFuelType(ctx context.Context, fuelStruct *model.Fuel) error {
 	// select fuel tab depending on fuel type and set expected price
 	switch fuelStruct.FuelType {
 	case "fuel":
-		utils.DoClickElement(ctx, model.BUTTON_COMMON_TAB1)
 		fuelExpectedPrice = b.Conf.FuelPrice.Fuel
 	case "co2":
-		utils.DoClickElement(ctx, model.BUTTON_COMMON_TAB2)
 		fuelExpectedPrice = b.Conf.FuelPrice.Co2
 	}
 

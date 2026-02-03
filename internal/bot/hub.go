@@ -113,10 +113,10 @@ func (b *Bot) hubsCollectMetrics(ctx context.Context, hubsElemList []*cdp.Node) 
 		// check if catering is present
 		hub.HasCatering = utils.IsSubElementVisible(ctx, model.ICON_HUBS_CATERING, hub.HubCdpNode)
 
-		b.PrometheusMetrics.HubStats.WithLabelValues(hubName, "departures").Set(hub.Departures)
-		b.PrometheusMetrics.HubStats.WithLabelValues(hubName, "arrivals").Set(hub.Arrivals)
-		b.PrometheusMetrics.HubStats.WithLabelValues(hubName, "paxDeparted").Set(hub.PaxDeparted)
-		b.PrometheusMetrics.HubStats.WithLabelValues(hubName, "paxArrived").Set(hub.PaxArrived)
+		b.PrometheusMetrics.HubStatsTotal.WithLabelValues(hubName, "departures").Set(hub.Departures)
+		b.PrometheusMetrics.HubStatsTotal.WithLabelValues(hubName, "arrivals").Set(hub.Arrivals)
+		b.PrometheusMetrics.HubStatsTotal.WithLabelValues(hubName, "paxDeparted").Set(hub.PaxDeparted)
+		b.PrometheusMetrics.HubStatsTotal.WithLabelValues(hubName, "paxArrived").Set(hub.PaxArrived)
 
 		hubsMap[hubName] = hub
 	}
