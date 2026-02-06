@@ -25,7 +25,7 @@ jobs:
       uses: actions/checkout@v5
     
     - name: Build application
-      uses: wangyoucao577/go-release-action@v1
+      uses: wangyoucao577/go-release-action@v1.55
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         goos: ${{ matrix.os }}
@@ -33,5 +33,6 @@ jobs:
         md5sum: false
         overwrite: true
         build_command: "make ${{ matrix.os }}"
-        binary_name: "ambot"
-        extra_files: route_scanner LICENSE README.md
+        multi_binaries: true
+        project_path: ./cmd/ambot ./cmd/scanner
+        extra_files: LICENSE README.md
