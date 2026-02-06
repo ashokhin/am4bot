@@ -32,7 +32,6 @@ jobs:
         goarch: ${{ matrix.arch }}
         md5sum: false
         overwrite: true
-        build_command: "make ${{ matrix.os }}"
         multi_binaries: true
         project_path: ./cmd/ambot ./cmd/scanner
         extra_files: LICENSE README.md
