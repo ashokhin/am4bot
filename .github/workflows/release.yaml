@@ -34,4 +34,4 @@ jobs:
         overwrite: true
         build_command: "make ${{ matrix.os }}"
         binary_name: "ambot"
-        extra_files: LICENSE README.md
+        extra_files: route_scanner LICENSE README.md
