@@ -1,6 +1,6 @@
 module github.com/ashokhin/am4bot
 
-go 1.25.5
+go 1.25.7
 
 require (
 	github.com/alecthomas/kingpin/v2 v2.4.0
@@ -29,6 +29,6 @@ require (
 	github.com/prometheus/client_model v0.6.2 // indirect
 	github.com/prometheus/procfs v0.19.2 // indirect
 	github.com/xhit/go-str2duration/v2 v2.1.0 // indirect
-	golang.org/x/sys v0.39.0 // indirect
+	golang.org/x/sys v0.40.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 )

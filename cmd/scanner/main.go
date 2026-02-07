@@ -11,6 +11,11 @@ import (
 	"github.com/ashokhin/am4bot/internal/config"
 
 	"github.com/alecthomas/kingpin/v2"
+	"github.com/prometheus/common/version"
+)
+
+const (
+	APP_NAME string = "scanner"
 )
 
 var (
@@ -36,6 +41,7 @@ func main() {
 	var err error
 	var conf *config.Config
 
+	kingpin.Version(version.Print(APP_NAME))
 	kingpin.HelpFlag.Short('h')
 	kingpin.Parse()
 
