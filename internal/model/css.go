@@ -30,10 +30,10 @@ const (
 
 	// Buttons for switching tabs in pop-ups
 
-	BUTTON_COMMON_TAB1        string = "#popBtn1"                    // switch to tab 1
-	BUTTON_COMMON_TAB2        string = "#popBtn2"                    // switch to tab 2
-	BUTTON_COMMON_TAB3        string = "#popBtn3"                    // switch to tab 3
-	BUTTON_COMMON_CLOSE_POPUP string = `span[onclick="closePop();"]` // close pop-up window
+	BUTTON_COMMON_TAB1        string = "#popBtn1"                                                                                // switch to tab 1
+	BUTTON_COMMON_TAB2        string = "#popBtn2"                                                                                // switch to tab 2
+	BUTTON_COMMON_TAB3        string = "#popBtn3"                                                                                // switch to tab 3
+	BUTTON_COMMON_CLOSE_POPUP string = `span[onclick="closePop();document.getElementById('rewardPopup').style.display='none';"]` // close pop-up window
 
 	// "Flight info" elements (left side of main screen)
 
