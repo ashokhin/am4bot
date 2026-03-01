@@ -5,7 +5,6 @@ import (
 	"log/slog"
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/ashokhin/am4bot/internal/model"
 	"github.com/ashokhin/am4bot/internal/utils"
@@ -188,8 +187,6 @@ func (b *Bot) repairAllAircraft(ctx context.Context) error {
 	}
 
 	slog.Info("plan repair maintenance for selected aircraft", "totalCost", int(totalRepairCost))
-
-	time.Sleep(10 * time.Minute)
 
 	if err := chromedp.Run(ctx,
 		utils.ClickElement(model.BUTTON_MAINTENANCE_BULK_REPAIR_PLAN),
