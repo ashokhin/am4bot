@@ -39,7 +39,7 @@ catering_duration_hours: "24"
 # Catering amount option to select when buying catering
 catering_amount_option: "5000"
 # Aircraft wear percentage to trigger maintenance
-aircraft_wear_percent: 75
+aircraft_wear_percent: "70"
 # Max hours to next A-Check to trigger it
 aircraft_max_hours_to_check: 48
 # Max aircraft for modifications check

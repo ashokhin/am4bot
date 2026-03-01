@@ -161,7 +161,7 @@ repair_lounges: false
 buy_catering_if_missing: false
 catering_duration_hours: "24"
 catering_amount_option: "5000"
-aircraft_wear_percent: 75
+aircraft_wear_percent: "70"
 aircraft_max_hours_to_check: 48
 aircraft_modify_limit: 5
 fuel_critical_percent: 15
