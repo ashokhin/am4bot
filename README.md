@@ -132,8 +132,8 @@ You can visualize these metrics using [Grafana](https://grafana.com/grafana/).
 | `buy_catering_if_missing` | bool | `true` | Whether to buy catering if missing in hubs. |
 | `catering_duration_hours` | string | `"168"` | Catering duration in hours to set when buying catering. Possible values: `6`, `12`, `18`, `24`, `48`, `72`, `96`, `120`, `144`, `168` |
 | `catering_amount_option` | string | `"20000"` | Catering amount option to select when buying catering. Possible values: `200`, `500`, `1000`, `2000`, `3000`, `4000`, `5000`, `10000`, `15000`, `20000`, `50000`, `100000`, `200000` |
-| `aircraft_wear_percent` | float | `80` | Aircraft wear percentage to trigger maintenance. |
-| `aircraft_max_hours_to_check` | int | `24` | Max hours to next A-Check to trigger it. |
+| `aircraft_wear_percent` | string | `"80"` | Aircraft wear percentage to trigger bulk repair. Possible values: `10`, `20`, `30`, `40`, `50`, `60`, `70`, `80`, `90` |
+| `aircraft_max_hours_to_check` | int | `24` | Max hours to next A-Check to trigger bulk A-Check. |
 | `aircraft_modify_limit` | int | `3` | Max aircraft for modifications checks. |
 | `fuel_critical_percent` | float | `20` | Fuel level percentage to trigger refuel. Even the price isn't good. |
 | `cron_schedule` | string | `"*/5 * * * *"` | [Cron](https://en.wikipedia.org/wiki/Cron)-like schedule for services. Default: Every 5 minutes. |

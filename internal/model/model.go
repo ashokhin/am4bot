@@ -66,10 +66,8 @@ type Fuel struct {
 
 // Aircraft represents an aircraft in the fleet.
 type Aircraft struct {
-	RegNumber   string
-	AcType      string
-	WearPercent float64
-	HoursACheck int
+	RegNumber string
+	AcType    string
 }
 
 // MarketingCompany represents a marketing company with associated UI elements for activation and cost.

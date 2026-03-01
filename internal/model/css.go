@@ -147,26 +147,27 @@ const (
 
 	// "Maintenance" pop-up
 
-	BUTTON_MAINTENANCE_BASE_ONLY        string = "div#maintAction button#baseOnly"                                                                                                           // "Base only" maintenance filter button
-	BUTTON_MAINTENANCE_SORT_BY_CHECK    string = `div#maintAction button[onclick="sortMaint('check');"]`                                                                                     // "Sort by A-Check hours" button
-	BUTTON_MAINTENANCE_SORT_BY_WEAR     string = `div#maintAction button[onclick="sortMaint();"]`                                                                                            // "Sort by wear %" button
-	LIST_MAINTENANCE_AC_LIST            string = "div#maintAction div#acListView > div.at-base"                                                                                              // List of aircraft web elements
-	TEXT_MAINTENANCE_AC_A_CHECK_HOURS   string = "data-hours"                                                                                                                                // aircraft A-Check hours text
-	TEXT_MAINTENANCE_AC_WEAR_PERCENT    string = "data-wear"                                                                                                                                 // aircraft wear percentage text
-	TEXT_MAINTENANCE_AC_REG_NUMBER      string = "data-reg"                                                                                                                                  // aircraft registration number text
-	TEXT_MAINTENANCE_AC_TYPE            string = "data-type"                                                                                                                                 // aircraft type text
-	BUTTON_MAINTENANCE_A_CHECK          string = `div[role="group"] button:nth-child(1)`                                                                                                     // "A-Check" button
-	BUTTON_MAINTENANCE_REPAIR           string = `div[role="group"] button:nth-child(2)`                                                                                                     // "Repair" button
-	BUTTON_MAINTENANCE_MODIFY           string = `div[role="group"] button:nth-child(3)`                                                                                                     // "Modify" button
-	CHECKBOX_MAINTENANCE_MODIFY_MOD1    string = "div#typeModify table.table.table-sm.exo > tbody:nth-child(1) > tr:nth-child(1) > td:nth-child(1) > label:nth-child(1) > span:nth-child(2)" // modification 1 checkbox
-	CHECKBOX_MAINTENANCE_MODIFY_MOD2    string = "div#typeModify table.table.table-sm.exo > tbody:nth-child(1) > tr:nth-child(2) > td:nth-child(1) > label:nth-child(1) > span:nth-child(2)" // modification 2 checkbox
-	CHECKBOX_MAINTENANCE_MODIFY_MOD3    string = "div#typeModify table.table.table-sm.exo > tbody:nth-child(1) > tr:nth-child(3) > td:nth-child(1) > label:nth-child(1) > span:nth-child(2)" // modification 3 checkbox
-	TEXT_MAINTENANCE_A_CHECK_TOTAL_COST string = "div#typeCheck div.col-6:nth-child(6) > div:nth-child(3)"                                                                                   // A-Check total cost text
-	TEXT_MAINTENANCE_REPAIR_TOTAL_COST  string = "div#typeRepair div:nth-child(4) > div:nth-child(3)"                                                                                        // Repair total cost text
-	TEXT_MAINTENANCE_MODIFY_TOTAL_COST  string = "div#typeModify div.row > div.col-6.text-center > span.text-danger.font-weight-bold"                                                        // Modify total cost text
-	BUTTON_MAINTENANCE_PLAN_CHECK       string = "div#typeCheck button.btn.btn-xs-real.btn-danger"                                                                                           // "A-Check" plan button
-	BUTTON_MAINTENANCE_PLAN_REPAIR      string = "div#typeRepair button.btn.btn-xs-real.btn-danger"                                                                                          // "Repair" plan button
-	BUTTON_MAINTENANCE_PLAN_MODIFY      string = "div#typeModify button.btn-danger:nth-child(1)"                                                                                             // "Modify" plan button
+	BUTTON_MAINTENANCE_BULK_REPAIR     string = "div#maintAction > div#maintView button.mt-1:nth-child(1)"                                                                                  // "Bulk repair" button
+	BUTTON_MAINTENANCE_BULK_ACHECK     string = `div#maintAction > div#maintView button.mt-1:nth-child(2)`                                                                                  // "Bulk A-Check" button
+	BUTTON_MAINTENANCE_BASE_ONLY       string = "div#maintAction button#baseOnly"                                                                                                           // "Base only" maintenance filter button
+	LIST_MAINTENANCE_AC_LIST           string = "div#maintAction div#acListView > div.at-base"                                                                                              // List of aircraft web elements
+	TEXT_MAINTENANCE_AC_REG_NUMBER     string = "data-reg"                                                                                                                                  // aircraft registration number text
+	TEXT_MAINTENANCE_AC_TYPE           string = "data-type"                                                                                                                                 // aircraft type text
+	BUTTON_MAINTENANCE_MODIFY          string = `div[role="group"] button:nth-child(3)`                                                                                                     // "Modify" button
+	CHECKBOX_MAINTENANCE_MODIFY_MOD1   string = "div#typeModify table.table.table-sm.exo > tbody:nth-child(1) > tr:nth-child(1) > td:nth-child(1) > label:nth-child(1) > span:nth-child(2)" // modification 1 checkbox
+	CHECKBOX_MAINTENANCE_MODIFY_MOD2   string = "div#typeModify table.table.table-sm.exo > tbody:nth-child(1) > tr:nth-child(2) > td:nth-child(1) > label:nth-child(1) > span:nth-child(2)" // modification 2 checkbox
+	CHECKBOX_MAINTENANCE_MODIFY_MOD3   string = "div#typeModify table.table.table-sm.exo > tbody:nth-child(1) > tr:nth-child(3) > td:nth-child(1) > label:nth-child(1) > span:nth-child(2)" // modification 3 checkbox
+	TEXT_MAINTENANCE_MODIFY_TOTAL_COST string = "div#typeModify div.row > div.col-6.text-center > span.text-danger.font-weight-bold"                                                        // Modify total cost text
+	BUTTON_MAINTENANCE_PLAN_MODIFY     string = "div#typeModify button.btn-danger:nth-child(1)"                                                                                             // "Modify" plan button
+	// " Bulk repair" menu elements
+	SELECT_MAINTENANCE_BULK_REPAIR_PERCENT string = "div#maintAction > div#maintPlanAction #repairPct"                                          // "Repair %" dropdown for bulk repair
+	TEXT_MAINTENANCE_BULK_REPAIR_COST      string = "div#maintAction > div#maintPlanAction div#repairRes td.text-danger.font-weight-bold"       // Total cost text for bulk repair
+	BUTTON_MAINTENANCE_BULK_REPAIR_PLAN    string = "div#maintAction > div#maintPlanAction #repairRes > div:nth-child(2) > button:nth-child(2)" // "Plan bulk repair" button for bulk repair
+	// "Bulk A-Check" menu elements
+	LIST_MAINTENANCE_BULK_ACHECK_AC_LIST string = "div#maintAction > div#maintPlanAction > div.row > div.opa-check" // List of aircraft web elements for bulk A-Check
+	TEXT_MAINTENANCE_BULK_ACHECK_HOURS   string = "b:nth-child(8)"                                                  // A-Check hours for aircraft
+	TEXT_MAINTENANCE_BULK_ACHECK_COST    string = "div#maintAction > div#maintPlanAction #dataCost"                 // Total cost text for bulk A-Check
+	BUTTON_MAINTENANCE_BULK_ACHECK_PLAN  string = "div#maintAction > div#maintPlanAction button#bulk-check-btn"     // "Plan bulk check" button for bulk A-Check
 
 	// "Finance" pop-up
 

@@ -29,7 +29,7 @@ type Config struct {
 	CateringAmountOption    string     `default:"20000" yaml:"catering_amount_option"`
 	HubsMaintenanceLimit    int        `default:"5" yaml:"hubs_maintenance_limit"`
 	FuelCriticalPercent     float64    `default:"20" yaml:"fuel_critical_percent"`
-	AircraftWearPercent     float64    `default:"80" yaml:"aircraft_wear_percent"`
+	AircraftWearPercent     string     `default:"80" yaml:"aircraft_wear_percent"`
 	AircraftMaxHoursToCheck int        `default:"24" yaml:"aircraft_max_hours_to_check"`
 	AircraftModifyLimit     int        `default:"3" yaml:"aircraft_modify_limit"`
 	CronSchedule            string     `default:"*/5 * * * *" yaml:"cron_schedule"`
