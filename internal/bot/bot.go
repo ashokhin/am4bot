@@ -23,6 +23,7 @@ type Bot struct {
 	BudgetMoney       BudgetType
 	PrometheusMetrics metrics.Metrics
 	Writer            *io.Writer
+	ProgressChan      chan struct{}
 }
 
 // Budget defines the budget allocations for different categories.

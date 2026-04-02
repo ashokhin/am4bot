@@ -18,13 +18,14 @@ import (
 )
 
 // NewScanner creates a new Bot instance specifically for scanning purposes.
-func NewScanner(conf *config.Config) Bot {
+func NewScanner(conf *config.Config, progressCh chan struct{}) Bot {
 	// Setup Chrome options
 	opts := setupChromeOptions(conf)
 
 	return Bot{
-		Conf:       conf,
-		chromeOpts: opts,
+		Conf:         conf,
+		ProgressChan: progressCh,
+		chromeOpts:   opts,
 	}
 }
 
@@ -142,6 +143,10 @@ func (b *Bot) searchRoutesForHub(ctx context.Context, hubName string) error {
 		}
 
 		currentDistance -= b.Conf.ScanStepKm
+		select {
+		case b.ProgressChan <- struct{}{}:
+		default:
+		}
 	}
 	return nil
 }

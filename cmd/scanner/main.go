@@ -12,6 +12,7 @@ import (
 
 	"github.com/alecthomas/kingpin/v2"
 	"github.com/prometheus/common/version"
+	"github.com/schollz/progressbar/v3"
 )
 
 const (
@@ -19,8 +20,13 @@ const (
 )
 
 var (
-	configFile = kingpin.Flag("app.config", "YAML file with configuration.").Short('c').Default("config.yaml").String()
-	logLevel   = kingpin.Flag("log.level", "Only log messages with the given severity or above. One of: [debug, info, warn, error]").Default("info").Enum("debug", "info", "warn", "error")
+	configFile = kingpin.Flag("app.config", "YAML file with configuration.").
+			Short('c').
+			Default("config.yaml").
+			String()
+	logLevel = kingpin.Flag("log.level", "Only log messages with the given severity or above. One of: [debug, info, warn, error]").
+			Default("info").
+			Enum("debug", "info", "warn", "error")
 )
 
 func SetLogLevel() slog.Level {
@@ -35,6 +41,14 @@ func SetLogLevel() slog.Level {
 	default:
 		return slog.LevelInfo
 	}
+}
+
+func calcValuesForProgress(config *config.Config) int {
+	var totalValues int
+	scansPerHub := ((config.MaxRouteDistanceKm - config.MinRouteDistanceKm) / config.ScanStepKm)
+	totalValues = scansPerHub * len(config.HubsList)
+
+	return totalValues
 }
 
 func main() {
@@ -73,10 +87,33 @@ func main() {
 		return
 	}
 
+	// calc values for progress bar
+	totalValues := calcValuesForProgress(conf)
+	slog.Debug("calc progress values", "totalPrCount", totalValues)
+	bar := progressbar.NewOptions(totalValues,
+		progressbar.OptionSetWidth(40),
+		progressbar.OptionShowCount(),
+		progressbar.OptionShowIts(),
+		progressbar.OptionShowElapsedTimeOnFinish(),
+	)
+	progressCh := make(chan struct{}, 100)
+
+	go func() {
+		curPrCount := 0
+		for range progressCh {
+			bar.Add(1)
+			curPrCount++
+			slog.Debug("curPrCount increased", "current_value", curPrCount)
+		}
+		bar.Finish()
+	}()
+
+	defer close(progressCh)
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	bot := bot.NewScanner(conf)
+	bot := bot.NewScanner(conf, progressCh)
 
 	if err := bot.RunScanner(ctx); err != nil {
 		slog.Error("bot run error", "error", err)
