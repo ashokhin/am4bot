@@ -18,9 +18,10 @@ import (
 )
 
 // NewScanner creates a new Bot instance specifically for scanning purposes.
-func NewScanner(conf *config.Config, progressCh chan struct{}) Bot {
+func NewScanner(conf *config.Config) Bot {
 	// Setup Chrome options
 	opts := setupChromeOptions(conf)
+	progressCh := make(chan struct{}, 100)
 
 	return Bot{
 		Conf:         conf,
@@ -29,17 +30,13 @@ func NewScanner(conf *config.Config, progressCh chan struct{}) Bot {
 	}
 }
 
-// RunScanner runs the scanning process using the bot.
-// It handles authentication and route scanning.
-func (b *Bot) RunScanner(ctx context.Context) error {
+// startScanner initializes the Chrome context and performs authentication for scanning operations.
+func (b *Bot) startScanner(ctx context.Context) (context.Context, context.CancelFunc, error) {
 	var cdpLogger chromedp.ContextOption
-
-	timeStart := time.Now()
 
 	slog.Debug("create execution context")
 
 	allocatorCtx, cancel := chromedp.NewExecAllocator(ctx, b.chromeOpts...)
-	defer cancel()
 
 	if b.Conf.ChromeDebug {
 		cdpLogger = chromedp.WithDebugf(log.Printf)
@@ -51,31 +48,19 @@ func (b *Bot) RunScanner(ctx context.Context) error {
 		allocatorCtx,
 		cdpLogger,
 	)
-	defer cancel()
 
-	slog.Debug("run bot", "start_time", timeStart.UTC())
+	slog.Debug("run bot", "start_time", time.Now().UTC())
 	slog.Info("authentication")
 
 	// perform authentication
 	if err := b.auth(taskCtx); err != nil {
 		slog.Warn("error in Bot.Run > Bot.auth", "error", err)
 
-		return err
+		return nil, nil, err
 	}
+	slog.Info("authentication successful")
 
-	// perform route scanning
-	if err := b.ScanRoutes(taskCtx); err != nil {
-		slog.Warn("error in Bot.Run > Bot.ScanRoutes", "error", err)
-
-		return err
-	}
-
-	// calculate total duration for Prometheus metric and logging
-	duration := time.Since(timeStart)
-
-	slog.Info("run complete", "elapsed_time", fmt.Sprint(duration))
-
-	return nil
+	return taskCtx, cancel, nil
 }
 
 // ScanRoutes scans routes based on the configured hubs and criteria.
@@ -83,11 +68,19 @@ func (b *Bot) ScanRoutes(ctx context.Context) error {
 	var HubElemList []*cdp.Node
 	slog.Info("scanning routes")
 
-	// open fleet window
-	utils.DoClickElement(ctx, model.BUTTON_MAIN_FLEET)
-	defer utils.DoClickElement(ctx, model.BUTTON_COMMON_CLOSE_POPUP)
+	taskCtx, cancel, err := b.startScanner(ctx)
+	if err != nil {
+		slog.Warn("error in Bot.ScanRoutes > starting scanner", "error", err)
 
-	if err := chromedp.Run(ctx,
+		return err
+	}
+	defer cancel()
+
+	// open fleet window
+	utils.DoClickElement(taskCtx, model.BUTTON_MAIN_FLEET)
+	defer utils.DoClickElement(taskCtx, model.BUTTON_COMMON_CLOSE_POPUP)
+
+	if err := chromedp.Run(taskCtx,
 		utils.ClickElement(model.BUTTON_COMMON_TAB3),
 		chromedp.WaitReady(model.TEXTFIELD_FLEET_RESEARCH_MIN_RUNWAY, chromedp.ByQuery),
 		chromedp.Nodes(model.LIST_FLEET_RESEARCH_DEPARTING_FROM, &HubElemList, chromedp.ByQueryAll),
@@ -106,7 +99,7 @@ func (b *Bot) ScanRoutes(ctx context.Context) error {
 			slog.Debug("found hub from config", "hubName", hubName)
 			b.Writer, _ = io.NewWriter(fmt.Sprintf("routes_%s.csv", nodeValue))
 
-			if err := chromedp.Run(ctx,
+			if err := chromedp.Run(taskCtx,
 				chromedp.SetValue(model.SELECT_FLEET_RESEARCH_DEPARTING_FROM, nodeValue, chromedp.ByQuery),
 			); err != nil {
 				slog.Warn("error in Bot.ScanRoutes > set departing from value", "hub", hubName, "error", err)
@@ -114,7 +107,7 @@ func (b *Bot) ScanRoutes(ctx context.Context) error {
 				return err
 			}
 
-			if err := b.searchRoutesForHub(ctx, hubName); err != nil {
+			if err := b.searchRoutesForHub(taskCtx, hubName); err != nil {
 				slog.Warn("error in Bot.ScanRoutes > searchRoutesForHub", "hub", hubName, "error", err)
 				return err
 			}
@@ -226,6 +219,59 @@ func (b *Bot) scanDistanceRoutes(ctx context.Context, hubName string, routesElem
 			slog.Warn("error in searchRoutesForHub > writing route to CSV", "hub", hubName, "route_key", routeKey, "error", err)
 			return err
 		}
+	}
+
+	return nil
+}
+
+// ScanAirports scans airports based on the configured criteria.
+func (b *Bot) ScanAirports(ctx context.Context) error {
+	var CountryElemList []*cdp.Node
+
+	slog.Info("scanning airports")
+
+	taskCtx, cancel, err := b.startScanner(ctx)
+	if err != nil {
+		slog.Warn("error in Bot.ScanAirports > starting scanner", "error", err)
+
+		return err
+	}
+	defer cancel()
+
+	// open fleet window
+	utils.DoClickElement(taskCtx, model.BUTTON_MAIN_FLEET)
+	defer utils.DoClickElement(taskCtx, model.BUTTON_COMMON_CLOSE_POPUP)
+
+	if err := chromedp.Run(taskCtx,
+		utils.ClickElement(model.BUTTON_COMMON_TAB3),
+		chromedp.WaitReady(model.TEXTFIELD_FLEET_RESEARCH_MIN_RUNWAY, chromedp.ByQuery),
+		utils.ClickElement(model.LINK_FLEET_RESEARCH_CUSTOM_DEPARTURE),
+		chromedp.Nodes(model.LIST_FLEET_RESEARCH_COUNTRY_OPTIONS, &CountryElemList, chromedp.ByQueryAll),
+	); err != nil {
+		slog.Warn("error in Bot.ScanRoutes", "error", err)
+
+		return err
+	}
+
+	for _, countryElem := range CountryElemList {
+		countryName := countryElem.Children[0].NodeValue
+		nodeValue := countryElem.AttributeValue("value")
+		if nodeValue == "" {
+			slog.Warn("node value is empty", "country", countryName, "node_value", nodeValue, "node", countryElem)
+
+			continue
+		}
+
+		slog.Debug("researching airports", "country", countryName)
+
+		if err := chromedp.Run(taskCtx,
+			chromedp.SetValue(model.SELECT_FLEET_RESEARCH_COUNTRY_SELECTOR, nodeValue, chromedp.ByQuery),
+		); err != nil {
+			slog.Warn("error in Bot.ScanAirports > set country selector value", "country", countryName, "error", err)
+
+			return err
+		}
+
 	}
 
 	return nil

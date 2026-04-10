@@ -1,4 +1,5 @@
 ### Common options for both Bot and Scanner
+#
 # Airline Manager URL
 url: "https://www.airlinemanager.com/"
 # Username for login
@@ -13,7 +14,9 @@ log_level: "warn"
 chrome_headless: true
 # Enable detailed Chrome/Chromium debugging logs
 chrome_debug: true
+
 ### Bot-specific configuration
+#
 # Percentage of budget to use for each category
 budget_percent:
   # Percentage of budget for Fuel
@@ -50,29 +53,35 @@ fuel_critical_percent: 15
 cron_schedule: "*/10 * * * *"
 # List of services to run
 services:
-  - "company_stats"
-  - "alliance_stats"
-  - "claim_rewards"
-  - "staff_morale"
-  - "hubs"
-  - "buy_fuel"
-  - "marketing"
-  - "ac_maintenance"
-  - "depart"
+    - "company_stats"
+    - "alliance_stats"
+    - "claim_rewards"
+    - "staff_morale"
+    - "hubs"
+    - "buy_fuel"
+    - "marketing"
+    - "ac_maintenance"
+    - "depart"
+alliance_ids:
+    - "1" # Grizzly Group
+    - "21" # CODESHARE
+    - "44" # Alpha Vikings
 # Timeout for full round in seconds
 timeout_seconds: 180
 # Address to expose Prometheus metrics
 prometheus_address: ":9150"
+
 ### Scanner-specific configuration
+#
 # List of hubs to scan routes
 hubs_list:
-  - "New York JFK, United States"
-  - "Beijing Capital, China"
-  - "Istanbul Atatürk, Turkey"
-  - "New Delhi, India"
-  - "Brasília, Brazil"
-  - "Atlanta Int, United States"
-  - "Reykjavík - Keflavik, Iceland"
+    - "New York JFK, United States"
+    - "Beijing Capital, China"
+    - "Istanbul Atatürk, Turkey"
+    - "New Delhi, India"
+    - "Brasília, Brazil"
+    - "Atlanta Int, United States"
+    - "Reykjavík - Keflavik, Iceland"
 # Maximum distance for route
 max_route_range_km: 14500
 # Minimum distance for route

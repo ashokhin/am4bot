@@ -103,6 +103,8 @@ func (h Hub) String() string {
 // AllianceMember represents a member of an alliance with various statistics.
 type AllianceMember struct {
 	Name              string
+	AllianceName      string
+	AllianceID        string
 	SharePrice        float64
 	ContributedTotal  float64
 	ContributedPerDay float64

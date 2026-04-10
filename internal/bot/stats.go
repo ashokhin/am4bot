@@ -2,12 +2,15 @@ package bot
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
+	"maps"
 	"strings"
 
 	"github.com/ashokhin/am4bot/internal/model"
 	"github.com/ashokhin/am4bot/internal/utils"
 	"github.com/chromedp/cdproto/cdp"
+	"github.com/chromedp/cdproto/target"
 	"github.com/chromedp/chromedp"
 )
 
@@ -95,6 +98,24 @@ func (b *Bot) allianceStats(ctx context.Context) error {
 	)
 
 	slog.Info("check alliance stats")
+	alliancesMembersMap := make(map[string]model.AllianceMember)
+
+	// if specific alliance IDs are provided in the configuration - collect stats for each alliance and its members and set them to Prometheus metrics
+	if len(b.Conf.AllianceIDs) > 0 {
+		for _, allianceID := range b.Conf.AllianceIDs {
+			allianceMembersMapByID, err := b.allianceStatsByID(ctx, allianceID)
+			if err != nil {
+				slog.Warn("error in Bot.allianceStats > Bot.allianceStatsByID", "allianceID", allianceID, "error", err)
+			}
+
+			maps.Copy(alliancesMembersMap, allianceMembersMapByID)
+		}
+
+		// set Prometheus metrics for alliance members if specific alliance IDs are provided in the configuration
+		b.setAllianceStats(alliancesMembersMap)
+	}
+
+	// collect and set Prometheus metrics for personal alliance overview stats (total contributed, contributed per day, flights, season money)
 	slog.Debug("open pop-up window", "window", "alliance_overview")
 
 	if err := chromedp.Run(ctx,
@@ -111,11 +132,6 @@ func (b *Bot) allianceStats(ctx context.Context) error {
 		slog.Warn("no alliance stats available")
 
 		return nil
-	}
-
-	// collect stats for all alliance members
-	if err := b.wholeAllianceStats(ctx); err != nil {
-		slog.Debug("error in Bot.allianceStats > Bot.wholeAllianceStats", "error", err)
 	}
 
 	if err := chromedp.Run(ctx,
@@ -137,15 +153,68 @@ func (b *Bot) allianceStats(ctx context.Context) error {
 	return nil
 }
 
-// wholeAllianceStats collects statistics about all alliance members
-func (b *Bot) wholeAllianceStats(ctx context.Context) error {
+func (b *Bot) allianceStatsByID(ctx context.Context, allianceID string) (map[string]model.AllianceMember, error) {
 	var err error
 
-	slog.Debug("check whole alliance stats")
+	alStatsCtx, cancel := chromedp.NewContext(ctx)
+	defer cancel()
+
+	slog.Debug("check alliance stats by id", "allianceID", allianceID)
+
+	pageURL := fmt.Sprintf("%salliance_detail.php?id=%s", b.Conf.Url, allianceID)
+
+	slog.Debug("navigate to alliance page", "url", pageURL)
+
+	if err = chromedp.Run(alStatsCtx,
+		chromedp.Navigate(pageURL),
+	); err != nil {
+		slog.Warn("error in Bot.allianceStatsByID > navigate to alliance page", "allianceID", allianceID, "error", err)
+
+		return nil, err
+	}
+
+	// activate alliance page target because it opens in a new tab
+	c := chromedp.FromContext(alStatsCtx)
+
+	slog.Debug("activate alliance page target", "allianceID", allianceID)
+
+	if err = chromedp.Run(alStatsCtx,
+		target.ActivateTarget(c.Target.TargetID),
+	); err != nil {
+		slog.Warn("error in Bot.allianceStatsByID > activate target", "allianceID", allianceID, "error", err)
+
+		return nil, err
+	}
+
+	// collect stats for all alliance members
+	allianceMembersMap, err := b.wholeAllianceStats(alStatsCtx, allianceID)
+	if err != nil {
+		slog.Debug("error in Bot.allianceStatsByID > Bot.wholeAllianceStats", "allianceID", allianceID, "error", err)
+
+		return nil, err
+	}
+
+	return allianceMembersMap, nil
+}
+
+// wholeAllianceStats collects statistics about all alliance members
+func (b *Bot) wholeAllianceStats(ctx context.Context, allianceID string) (map[string]model.AllianceMember, error) {
+	var err error
+	var allianceName string
+
+	if err = chromedp.Run(ctx,
+		chromedp.Text(model.TEXT_ALLIANCE_PG_DETAIL_NAME, &allianceName, chromedp.ByQuery),
+	); err != nil {
+		slog.Warn("error in Bot.allianceStatsByID > get alliance name", "allianceID", allianceID, "error", err)
+
+		return nil, err
+	}
+
+	slog.Debug("check whole alliance stats", "allianceID", allianceID, "allianceName", allianceName)
 
 	allianceMembersElemList := make([]*cdp.Node, 0)
 
-	slog.Debug("get list of all alliance members")
+	slog.Debug("get list of all alliance members", "allianceID", allianceID, "allianceName", allianceName)
 
 	// get list of all alliance members
 	if err = chromedp.Run(ctx,
@@ -153,7 +222,7 @@ func (b *Bot) wholeAllianceStats(ctx context.Context) error {
 	); err != nil {
 		slog.Warn("error in Bot.wholeAllianceStats > get hubs list", "error", err)
 
-		return err
+		return nil, err
 	}
 
 	allianceMembersMap := make(map[string]model.AllianceMember)
@@ -164,6 +233,8 @@ func (b *Bot) wholeAllianceStats(ctx context.Context) error {
 			uid            string
 		)
 
+		allianceMember.AllianceID = allianceID
+		allianceMember.AllianceName = allianceName
 		uid = memberElem.AttributeValue(model.TEXT_ALLIANCE_MEMBER_ID)
 		uid = strings.ReplaceAll(uid, "al-list-", "")
 
@@ -184,16 +255,18 @@ func (b *Bot) wholeAllianceStats(ctx context.Context) error {
 		if err = chromedp.Run(ctx,
 			utils.GetFloatFromChildElement(model.TEXT_ALLIANCE_MEMBER_SHARE_PRICE, &allianceMember.SharePrice, memberElem),
 		); err != nil {
-			slog.Warn("error in Bot.wholeAllianceStats > get member share price", "allianceMember.Name", allianceMember.Name, "error", err)
+			slog.Debug("error in Bot.wholeAllianceStats > get member share price", "allianceMember.Name", allianceMember.Name, "error", err)
 
 			allianceMember.SharePrice = -1.0
-
 		}
 
 		allianceMembersMap[uid] = allianceMember
-
 	}
 
+	return allianceMembersMap, nil
+}
+
+func (b *Bot) setAllianceStats(amp map[string]model.AllianceMember) {
 	// reset labels in vectors bc. list of alliance members are dynamic
 	b.PrometheusMetrics.AllianceMemberSharePrice.Reset()
 	b.PrometheusMetrics.AllianceMemberContributedTotal.Reset()
@@ -201,15 +274,13 @@ func (b *Bot) wholeAllianceStats(ctx context.Context) error {
 	b.PrometheusMetrics.AllianceMemberContributedSeason.Reset()
 	b.PrometheusMetrics.AllianceMemberFlightsTotal.Reset()
 
-	for uid, member := range allianceMembersMap {
+	for uid, member := range amp {
 		slog.Debug("set alliance member metrics", "uid", uid, "member", member)
 
-		b.PrometheusMetrics.AllianceMemberSharePrice.WithLabelValues(uid, member.Name).Set(member.SharePrice)
-		b.PrometheusMetrics.AllianceMemberContributedTotal.WithLabelValues(uid, member.Name).Set(member.ContributedTotal)
-		b.PrometheusMetrics.AllianceMemberContributedPerDay.WithLabelValues(uid, member.Name).Set(member.ContributedPerDay)
-		b.PrometheusMetrics.AllianceMemberContributedSeason.WithLabelValues(uid, member.Name).Set(member.ContributedSeason)
-		b.PrometheusMetrics.AllianceMemberFlightsTotal.WithLabelValues(uid, member.Name).Set(float64(member.FlightsTotal))
+		b.PrometheusMetrics.AllianceMemberSharePrice.WithLabelValues(uid, member.Name, member.AllianceID, member.AllianceName).Set(member.SharePrice)
+		b.PrometheusMetrics.AllianceMemberContributedTotal.WithLabelValues(uid, member.Name, member.AllianceID, member.AllianceName).Set(member.ContributedTotal)
+		b.PrometheusMetrics.AllianceMemberContributedPerDay.WithLabelValues(uid, member.Name, member.AllianceID, member.AllianceName).Set(member.ContributedPerDay)
+		b.PrometheusMetrics.AllianceMemberContributedSeason.WithLabelValues(uid, member.Name, member.AllianceID, member.AllianceName).Set(member.ContributedSeason)
+		b.PrometheusMetrics.AllianceMemberFlightsTotal.WithLabelValues(uid, member.Name, member.AllianceID, member.AllianceName).Set(float64(member.FlightsTotal))
 	}
-
-	return nil
 }

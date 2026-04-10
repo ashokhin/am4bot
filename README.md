@@ -136,6 +136,7 @@ You can visualize these metrics using [Grafana](https://grafana.com/grafana/).
 | `aircraft_max_hours_to_check` | int | `24` | Max hours to next A-Check to trigger bulk A-Check. |
 | `aircraft_modify_limit` | int | `3` | Max aircraft for modifications checks. |
 | `fuel_critical_percent` | float | `20` | Fuel level percentage to trigger refuel. Even the price isn't good. |
+| `alliance_ids` | list of strings | `[]` | List of alliance IDs to scan. |
 | `cron_schedule` | string | `"*/5 * * * *"` | [Cron](https://en.wikipedia.org/wiki/Cron)-like schedule for services. Default: Every 5 minutes. |
 | `services` | list of strings | `["company_stats",` `"staff_morale",` `"alliance_stats",` `"hubs",` `"claim_rewards",` `"buy_fuel",` `"depart",` `"marketing",` `"ac_maintenance"]` | List of services to run. Possible values: `company_stats`, `alliance_stats`, `staff_morale`, `hubs`, `claim_rewards`, `buy_fuel`, `depart`, `marketing`, `ac_maintenance`. |
 | `timeout_seconds` | int | `180` | Timeout for full round in seconds. |
@@ -239,34 +240,34 @@ am4_alliance_contributed_total 1.979472e+06
 am4_alliance_flights_total 11470
 # HELP am4_alliance_member_contributed_per_day Alliance member contributed total value.
 # TYPE am4_alliance_member_contributed_per_day gauge
-am4_alliance_member_contributed_per_day{name="Airline1",uid="123456789"} 42085
-am4_alliance_member_contributed_per_day{name="Airline2_wo_IPO",uid="987654321"} 23064
-am4_alliance_member_contributed_per_day{name="Airline3",uid="1324576879"} 43212
-am4_alliance_member_contributed_per_day{name="Airline4",uid="2413685780"} 31275
+am4_alliance_member_contributed_per_day{alliance_id="1",alliance_name="Grizzly Group",name="Airline1",uid="123456789"} 42085
+am4_alliance_member_contributed_per_day{alliance_id="21",alliance_name="CODESHARE",name="Airline2_wo_IPO",uid="987654321"} 23064
+am4_alliance_member_contributed_per_day{alliance_id="44",alliance_name="Alpha Vikings",name="Airline3",uid="1324576879"} 43212
+am4_alliance_member_contributed_per_day{alliance_id="1",alliance_name="Grizzly Group",name="Airline4",uid="2413685780"} 31275
 # HELP am4_alliance_member_contributed_total Alliance member contributed total value.
 # TYPE am4_alliance_member_contributed_total gauge
-am4_alliance_member_contributed_total{name="Airline1",uid="123456789"} 172087
-am4_alliance_member_contributed_total{name="Airline2_wo_IPO",uid="987654321"} 1.2627622e+07
-am4_alliance_member_contributed_total{name="Airline3",uid="1324576879"} 1.7309648e+07
-am4_alliance_member_contributed_total{name="Airline4",uid="2413685780"} 1.436029e+06
+am4_alliance_member_contributed_total{alliance_id="1",alliance_name="Grizzly Group",name="Airline1",uid="123456789"} 172087
+am4_alliance_member_contributed_total{alliance_id="21",alliance_name="CODESHARE",name="Airline2_wo_IPO",uid="987654321"} 1.2627622e+07
+am4_alliance_member_contributed_total{alliance_id="44",alliance_name="Alpha Vikings",name="Airline3",uid="1324576879"} 1.7309648e+07
+am4_alliance_member_contributed_total{alliance_id="1",alliance_name="Grizzly Group",name="Airline4",uid="2413685780"} 1.436029e+06
 # HELP am4_alliance_member_flights_total Alliance member flights value.
 # TYPE am4_alliance_member_flights_total gauge
-am4_alliance_member_flights_total{name="Airline1",uid="123456789"} 4472
-am4_alliance_member_flights_total{name="Airline2_wo_IPO",uid="987654321"} 116571
-am4_alliance_member_flights_total{name="Airline3",uid="1324576879"} 397505
-am4_alliance_member_flights_total{name="Airline4",uid="2413685780"} 38655
+am4_alliance_member_flights_total{alliance_id="1",alliance_name="Grizzly Group",name="Airline1",uid="123456789"} 4472
+am4_alliance_member_flights_total{alliance_id="21",alliance_name="CODESHARE",name="Airline2_wo_IPO",uid="987654321"} 116571
+am4_alliance_member_flights_total{alliance_id="44",alliance_name="Alpha Vikings",name="Airline3",uid="1324576879"} 397505
+am4_alliance_member_flights_total{alliance_id="1",alliance_name="Grizzly Group",name="Airline4",uid="2413685780"} 38655
 # HELP am4_alliance_member_season_money Alliance member season money value.
 # TYPE am4_alliance_member_season_money gauge
-am4_alliance_member_season_money{name="Airline1",uid="123456789"} 1689
-am4_alliance_member_season_money{name="Airline2_wo_IPO",uid="987654321"} 552
-am4_alliance_member_season_money{name="Airline3",uid="1324576879"} 2531
-am4_alliance_member_season_money{name="Airline4",uid="2413685780"} 1191
+am4_alliance_member_season_money{alliance_id="1",alliance_name="Grizzly Group",name="Airline1",uid="123456789"} 1689
+am4_alliance_member_season_money{alliance_id="21",alliance_name="CODESHARE",name="Airline2_wo_IPO",uid="987654321"} 552
+am4_alliance_member_season_money{alliance_id="44",alliance_name="Alpha Vikings",name="Airline3",uid="1324576879"} 2531
+am4_alliance_member_season_money{alliance_id="1",alliance_name="Grizzly Group",name="Airline4",uid="2413685780"} 1191
 # HELP am4_alliance_member_share_price Share price for alliance member.
 # TYPE am4_alliance_member_share_price gauge
-am4_alliance_member_share_price{name="Airline1",uid="123456789"} 3503.13
-am4_alliance_member_share_price{name="Airline2_wo_IPO",uid="987654321"} -1
-am4_alliance_member_share_price{name="Airline3",uid="1324576879"} 19867.2
-am4_alliance_member_share_price{name="Airline4",uid="2413685780"} 1912.08
+am4_alliance_member_share_price{alliance_id="1",alliance_name="Grizzly Group",name="Airline1",uid="123456789"} 3503.13
+am4_alliance_member_share_price{alliance_id="21",alliance_name="CODESHARE",name="Airline2_wo_IPO",uid="987654321"} -1
+am4_alliance_member_share_price{alliance_id="44",alliance_name="Alpha Vikings",name="Airline3",uid="1324576879"} 19867.2
+am4_alliance_member_share_price{alliance_id="1",alliance_name="Grizzly Group",name="Airline4",uid="2413685780"} 1912.08
 # HELP am4_alliance_season_money Alliance season money value.
 # TYPE am4_alliance_season_money gauge
 am4_alliance_season_money 260

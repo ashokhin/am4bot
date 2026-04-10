@@ -64,18 +64,21 @@ const (
 
 	// "Alliance" pop-up
 
-	LIST_ALLIANCE_MEMBERS                    string = "div#popup div#popContent div#member-container div#member-container-box > table > tbody > tr" // List of alliance members web elements
-	TEXT_ALLIANCE_MEMBER_ID                  string = "id"                                                                                          // member ID attribute
-	TEXT_ALLIANCE_MEMBER_NAME                string = "tr > td:nth-child(1) > a"                                                                    // member name text
-	TEXT_ALLIANCE_MEMBER_SHARE_PRICE         string = "tr > td:nth-child(2)"                                                                        // member share price text
-	TEXT_ALLIANCE_MEMBER_CONTRIBUTED_TOTAL   string = "tr > td:nth-child(3)"                                                                        // member contributed total text
-	TEXT_ALLIANCE_MEMBER_CONTRIBUTED_PER_DAY string = "tr > td:nth-child(4)"                                                                        // member contributed per day text
-	TEXT_ALLIANCE_MEMBER_FLIGHTS             string = "tr > td:nth-child(6)"                                                                        // member flights text
-	TEXT_ALLIANCE_MEMBER_SEASON_MONEY        string = "tr > td:nth-child(8)"                                                                        // member season contributed money text
-	TEXT_ALLIANCE_CONTRIBUTED_TOTAL          string = "div#popup div#popContent div#member-container tr.td-sort.bg-light > td:nth-child(3)"         // Total contributed money text
-	TEXT_ALLIANCE_CONTRIBUTED_PER_DAY        string = "div#popup div#popContent div#member-container tr.td-sort.bg-light > td:nth-child(4)"         // Money contributed per day text
-	TEXT_ALLIANCE_FLIGHTS                    string = "div#popup div#popContent div#member-container tr.td-sort.bg-light > td:nth-child(6)"         // Flights text
-	TEXT_ALLIANCE_SEASON_MONEY               string = "div#popup div#popContent div#member-container tr.td-sort.bg-light > td:nth-child(8)"         // Season contributed money text
+	LIST_ALLIANCE_MEMBERS                    string = "div#member-container div#member-container-box > table > tbody > tr" // List of alliance members web elements
+	TEXT_ALLIANCE_MEMBER_ID                  string = "id"                                                                 // member ID attribute
+	TEXT_ALLIANCE_MEMBER_NAME                string = "tr > td:nth-child(1) > a"                                           // member name text
+	TEXT_ALLIANCE_MEMBER_SHARE_PRICE         string = "tr > td:nth-child(2)"                                               // member share price text
+	TEXT_ALLIANCE_MEMBER_CONTRIBUTED_TOTAL   string = "tr > td:nth-child(3)"                                               // member contributed total text
+	TEXT_ALLIANCE_MEMBER_CONTRIBUTED_PER_DAY string = "tr > td:nth-child(4)"                                               // member contributed per day text
+	TEXT_ALLIANCE_MEMBER_FLIGHTS             string = "tr > td:nth-child(6)"                                               // member flights text
+	TEXT_ALLIANCE_MEMBER_SEASON_MONEY        string = "tr > td:nth-child(8)"                                               // member season contributed money text
+	TEXT_ALLIANCE_CONTRIBUTED_TOTAL          string = "div#member-container tr.td-sort.bg-light > td:nth-child(3)"         // Total contributed money text
+	TEXT_ALLIANCE_CONTRIBUTED_PER_DAY        string = "div#member-container tr.td-sort.bg-light > td:nth-child(4)"         // Money contributed per day text
+	TEXT_ALLIANCE_FLIGHTS                    string = "div#member-container tr.td-sort.bg-light > td:nth-child(6)"         // Flights text
+	TEXT_ALLIANCE_SEASON_MONEY               string = "div#member-container tr.td-sort.bg-light > td:nth-child(8)"         // Season contributed money text
+
+	// "Alliance" page
+	TEXT_ALLIANCE_PG_DETAIL_NAME string = "b.exo" // Alliance name text on alliance detail page
 
 	// "Hubs" pop-up
 
@@ -128,14 +131,17 @@ const (
 
 	// "Fleet" pop-up
 
-	SELECT_FLEET_RESEARCH_DEPARTING_FROM  string = "div#routeAction > div#routeSearch div#hubDeparture > select#hubSelect"                    // "Departing from" hub select element
-	LIST_FLEET_RESEARCH_DEPARTING_FROM    string = "div#routeAction > div#routeSearch div#hubDeparture > select#hubSelect > option"           // List of "Departing from" hub options
-	TEXTFIELD_FLEET_RESEARCH_MAX_DISTANCE string = "div#routeAction > div#routeSearch input#maxDist"                                          // "Max. distance" input field
-	TEXTFIELD_FLEET_RESEARCH_MIN_RUNWAY   string = "div#routeAction > div#routeSearch input#rwyLength"                                        // "Min. runway" input field
-	BUTTON_FLEET_RESEARCH_SEARCH          string = "div#routeAction > div#routeSearch button#resSearch"                                       // "Search routes" button
-	LIST_FLEET_RESEARCH_SEARCH_RESULTS    string = "div#routeAction > div#routeSearch > div#resResult > div#list > div.row.border.opa.sorter" // List of search results
-	TEXT_FLEET_RESEARCH_ROUTE_FROM        string = "div.row.border.opa.sorter > div.col-6.m-text > div.exo > b:nth-child(1)"                  // route "From" text
-	TEXT_FLEET_RESEARCH_ROUTE_TO          string = "div.row.border.opa.sorter > div.col-6.m-text > div.exo > b:nth-child(2)"                  // route "To" text
+	LINK_FLEET_RESEARCH_CUSTOM_DEPARTURE   string = "div#routeAction > div#routeSearch #hubDeparture > div:nth-child(1) > div:nth-child(2) > a:nth-child(1)" // "Custom departure" link
+	SELECT_FLEET_RESEARCH_COUNTRY_SELECTOR string = "div#routeAction > div#routeSearch div#customDeparture #countrySelector"                                 // Country selector in "Custom departure" form
+	LIST_FLEET_RESEARCH_COUNTRY_OPTIONS    string = "div#routeAction > div#routeSearch div#customDeparture #countrySelector > option"                        // List of country options in "Custom departure" form
+	SELECT_FLEET_RESEARCH_DEPARTING_FROM   string = "div#routeAction > div#routeSearch div#hubDeparture > select#hubSelect"                                  // "Departing from" hub select element
+	LIST_FLEET_RESEARCH_DEPARTING_FROM     string = "div#routeAction > div#routeSearch div#hubDeparture > select#hubSelect > option"                         // List of "Departing from" hub options
+	TEXTFIELD_FLEET_RESEARCH_MAX_DISTANCE  string = "div#routeAction > div#routeSearch input#maxDist"                                                        // "Max. distance" input field
+	TEXTFIELD_FLEET_RESEARCH_MIN_RUNWAY    string = "div#routeAction > div#routeSearch input#rwyLength"                                                      // "Min. runway" input field
+	BUTTON_FLEET_RESEARCH_SEARCH           string = "div#routeAction > div#routeSearch button#resSearch"                                                     // "Search routes" button
+	LIST_FLEET_RESEARCH_SEARCH_RESULTS     string = "div#routeAction > div#routeSearch > div#resResult > div#list > div.row.border.opa.sorter"               // List of search results
+	TEXT_FLEET_RESEARCH_ROUTE_FROM         string = "div.row.border.opa.sorter > div.col-6.m-text > div.exo > b:nth-child(1)"                                // route "From" text
+	TEXT_FLEET_RESEARCH_ROUTE_TO           string = "div.row.border.opa.sorter > div.col-6.m-text > div.exo > b:nth-child(2)"                                // route "To" text
 
 	// "Fuel" pop-up
 

@@ -72,7 +72,7 @@ func floatFromString(str string) (float64, error) {
 	floatString = strings.Join(allNumRegex.FindAllString(floatString, -1), "")
 	floatValue, err = strconv.ParseFloat(floatString, 64)
 	if err != nil {
-		slog.Warn("error in utils.floatFromString", "string", str, "error", err)
+		slog.Debug("error in utils.floatFromString", "string", str, "error", err)
 
 		return floatValue, err
 	}
@@ -209,7 +209,7 @@ func GetIntFromChildElementAttribute(sel string, resultInt *int, node *cdp.Node)
 	*resultInt, err = intFromString(resultStr)
 
 	if err != nil {
-		slog.Warn("error in utils.GetIntFromElement > utils.intFromString",
+		slog.Debug("error in utils.GetIntFromElement > utils.intFromString",
 			"string", resultStr, "error", err)
 
 		return err
@@ -258,7 +258,7 @@ func GetFloatFromChildElement(sel string, resultFloat *float64, node *cdp.Node) 
 		chromedp.ActionFunc(func(ctx context.Context) error {
 			*resultFloat, err = floatFromString(resultStr)
 			if err != nil {
-				slog.Warn("error in utils.GetFloatFromChildElement > utils.floatFromString",
+				slog.Debug("error in utils.GetFloatFromChildElement > utils.floatFromString",
 					"string", resultStr, "error", err)
 
 				return err
@@ -282,7 +282,7 @@ func GetFloatFromChildElementAttribute(sel string, resultFloat *float64, node *c
 	*resultFloat, err = floatFromString(resultStr)
 
 	if err != nil {
-		slog.Warn("error in utils.GetIntFromElement > utils.floatFromString",
+		slog.Debug("error in utils.GetFloatFromChildElementAttribute > utils.floatFromString",
 			"string", resultStr, "error", err)
 
 		return err

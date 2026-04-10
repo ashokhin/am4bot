@@ -35,9 +35,11 @@ type Config struct {
 	CronSchedule            string     `default:"*/5 * * * *" yaml:"cron_schedule"`
 	TimeoutSeconds          int        `default:"180" yaml:"timeout_seconds"`
 	Services                []string   `default:"[\"company_stats\",\"alliance_stats\",\"staff_morale\",\"hubs\",\"claim_rewards\",\"buy_fuel\",\"marketing\",\"ac_maintenance\",\"depart\"]" yaml:"services"`
+	AllianceIDs             []string   `yaml:"alliance_ids"`
 	PrometheusAddress       string     `default:":9150" yaml:"prometheus_address"`
 	PromslogConfig          *promslog.Config
 	// Parameters for Scanner configuration
+	ScanType           string   `default:"route_scanner" yaml:"scan_type"`
 	HubsList           []string `yaml:"hubs_list"`
 	MaxRouteDistanceKm int      `default:"14500" yaml:"max_route_range_km"`
 	MinRouteDistanceKm int      `default:"6500" yaml:"min_route_range_km"`

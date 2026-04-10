@@ -246,7 +246,7 @@ func New() *Metrics {
 				Name:      "alliance_member_share_price",
 				Help:      "Share price for alliance member.",
 			},
-			[]string{"uid", "name"},
+			[]string{"uid", "name", "alliance_id", "alliance_name"},
 		),
 		AllianceMemberContributedTotal: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
@@ -254,7 +254,7 @@ func New() *Metrics {
 				Name:      "alliance_member_contributed_total",
 				Help:      "Alliance member contributed total value.",
 			},
-			[]string{"uid", "name"},
+			[]string{"uid", "name", "alliance_id", "alliance_name"},
 		),
 		AllianceMemberContributedPerDay: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
@@ -262,7 +262,7 @@ func New() *Metrics {
 				Name:      "alliance_member_contributed_per_day",
 				Help:      "Alliance member contributed total value.",
 			},
-			[]string{"uid", "name"},
+			[]string{"uid", "name", "alliance_id", "alliance_name"},
 		),
 		AllianceMemberContributedSeason: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
@@ -270,7 +270,7 @@ func New() *Metrics {
 				Name:      "alliance_member_season_money",
 				Help:      "Alliance member season money value.",
 			},
-			[]string{"uid", "name"},
+			[]string{"uid", "name", "alliance_id", "alliance_name"},
 		),
 		AllianceMemberFlightsTotal: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
@@ -278,7 +278,7 @@ func New() *Metrics {
 				Name:      "alliance_member_flights_total",
 				Help:      "Alliance member flights value.",
 			},
-			[]string{"uid", "name"},
+			[]string{"uid", "name", "alliance_id", "alliance_name"},
 		),
 	}
 }

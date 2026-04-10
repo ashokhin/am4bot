@@ -2,10 +2,12 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/ashokhin/am4bot/internal/bot"
 	"github.com/ashokhin/am4bot/internal/config"
@@ -87,8 +89,47 @@ func main() {
 		return
 	}
 
+	bot := bot.NewScanner(conf)
+	ctx, cancel := context.WithCancel(context.Background())
+	timeStart := time.Now()
+
+	switch conf.ScanType {
+	case "route_scanner":
+		if err := scanRoutes(ctx, bot); err != nil {
+			slog.Error("error in main > scanRoutes", "error", err)
+
+			return
+		}
+	case "airport_scanner":
+		if err := scanAirports(ctx, bot); err != nil {
+			slog.Error("error in main > scanAirports", "error", err)
+
+			return
+		}
+	default:
+		slog.Warn("invalid scan type specified in config", "scan_type", conf.ScanType)
+	}
+
+	cancel()
+	duration := time.Since(timeStart)
+
+	slog.Info("run complete", "elapsed_time", fmt.Sprint(duration))
+	slog.Info("application finished")
+}
+
+func scanAirports(ctx context.Context, bot bot.Bot) error {
+	if err := bot.ScanAirports(ctx); err != nil {
+		slog.Warn("error in main > bot.ScanAirports", "error", err)
+
+		return err
+	}
+
+	return nil
+}
+
+func scanRoutes(ctx context.Context, bot bot.Bot) error {
 	// calc values for progress bar
-	totalValues := calcValuesForProgress(conf)
+	totalValues := calcValuesForProgress(bot.Conf)
 	slog.Debug("calc progress values", "totalPrCount", totalValues)
 	bar := progressbar.NewOptions(totalValues,
 		progressbar.OptionSetWidth(40),
@@ -96,11 +137,10 @@ func main() {
 		progressbar.OptionShowIts(),
 		progressbar.OptionShowElapsedTimeOnFinish(),
 	)
-	progressCh := make(chan struct{}, 100)
 
 	go func() {
 		curPrCount := 0
-		for range progressCh {
+		for range bot.ProgressChan {
 			bar.Add(1)
 			curPrCount++
 			slog.Debug("curPrCount increased", "current_value", curPrCount)
@@ -108,16 +148,16 @@ func main() {
 		bar.Finish()
 	}()
 
-	defer close(progressCh)
+	defer close(bot.ProgressChan)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	bot := bot.NewScanner(conf, progressCh)
-
-	if err := bot.RunScanner(ctx); err != nil {
+	if err := bot.ScanRoutes(ctx); err != nil {
 		slog.Error("bot run error", "error", err)
 
-		os.Exit(1)
+		return err
 	}
+
+	return nil
 }
