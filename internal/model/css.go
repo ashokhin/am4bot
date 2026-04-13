@@ -7,6 +7,7 @@ const (
 	BUTTON_LOGIN        string = `button[onclick="login('show');"]` // open "log in" form
 	TEXT_FIELD_LOGIN    string = "input#lEmail"                     // login input field
 	TEXT_FIELD_PASSWORD string = "input#lPass"                      // password input field
+	CHECKBOX_REMEMBER   string = "input#remember"                   // "Remember me" checkbox
 	BUTTON_AUTH         string = "button#btnLogin"                  // "Log in" button
 	OVERLAY_LOADING     string = "div.preloader.exo.xl-text"        // loading overlay
 

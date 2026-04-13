@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"log/slog"
+	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/ashokhin/am4bot/internal/config"
@@ -97,7 +99,17 @@ func (b *Bot) Run(ctx context.Context) error {
 	defer cancel()
 
 	slog.Debug("run bot", "start_time", timeStart.UTC())
-	slog.Info("authentication")
+	slog.Info("start session")
+	slog.Debug("navigate", "url", b.Conf.Url)
+
+	if err := chromedp.Run(taskCtx,
+		// open URL to initialize session and cookies before authentication
+		chromedp.Navigate(b.Conf.Url),
+	); err != nil {
+		slog.Warn("error in Bot.Run navigate", "error", err)
+
+		return err
+	}
 
 	// perform authentication
 	if err := b.auth(taskCtx); err != nil {
@@ -195,6 +207,25 @@ func (b *Bot) Run(ctx context.Context) error {
 	return nil
 }
 
+func getChromedpUserDataDir(appName string) string {
+	cacheDir, err := os.UserCacheDir()
+	if err != nil {
+		// fallback: next to binary or in temp dir if current directory is not writable
+		cacheDir = os.TempDir()
+	}
+
+	dir := filepath.Join(cacheDir, appName, "chromedp-user-data")
+
+	if err := os.MkdirAll(dir, 0700); err != nil {
+		slog.Warn("failed to create user data dir", "error", err)
+		return ""
+	}
+
+	slog.Debug("set cacheDir for chrome data", "dir", dir)
+
+	return dir
+}
+
 // setupChromeOptions configures Chrome options based on the provided configuration.
 func setupChromeOptions(conf *config.Config) []chromedp.ExecAllocatorOption {
 	// Setup Chrome options
@@ -206,6 +237,7 @@ func setupChromeOptions(conf *config.Config) []chromedp.ExecAllocatorOption {
 		chromedp.Flag("headless", conf.ChromeHeadless),
 		chromedp.Flag("start-maximized", true),
 		chromedp.Flag("disable-dev-shm-usage", true),
+		chromedp.UserDataDir(getChromedpUserDataDir("am4bot")),
 	)
 
 	return opts

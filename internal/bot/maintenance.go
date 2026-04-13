@@ -14,7 +14,7 @@ import (
 
 // maintenance performs maintenance operations on aircraft, including A-Checks, repairs, and modifications.
 func (b *Bot) maintenance(ctx context.Context) error {
-	slog.Info("start aircraft maintenance")
+	slog.Info("aircraft maintenance")
 
 	slog.Debug("open pop-up window", "window", "maintenance")
 	// open the "Maintenance" pop-up
