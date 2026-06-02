@@ -7,7 +7,7 @@ require (
 	github.com/chromedp/cdproto v0.0.0-20260405000525-47a8ff65b46a
 	github.com/chromedp/chromedp v0.15.1
 	github.com/prometheus/client_golang v1.23.2
-	github.com/prometheus/common v0.67.5
+	github.com/prometheus/common v0.68.0
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/schollz/progressbar/v3 v3.19.0
 	gopkg.in/yaml.v3 v3.0.1
@@ -16,7 +16,6 @@ require (
 require (
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
-	go.yaml.in/yaml/v2 v2.4.4 // indirect
 	golang.org/x/term v0.42.0 // indirect
 )
 
