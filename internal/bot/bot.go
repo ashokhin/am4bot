@@ -248,8 +248,12 @@ func setupChromeOptions(conf *config.Config) []chromedp.ExecAllocatorOption {
 		chromedp.Flag("headless", conf.ChromeHeadless),
 		chromedp.Flag("start-maximized", true),
 		chromedp.Flag("disable-dev-shm-usage", true),
-		// required when running as non-root inside Docker (no user namespace support)
+		// Both flags are required when running as non-root inside Docker:
+		// --no-sandbox disables the renderer sandbox;
+		// --disable-setuid-sandbox stops the zygote from trying to create
+		// Linux namespaces, which the kernel denies to unprivileged processes.
 		chromedp.Flag("no-sandbox", true),
+		chromedp.Flag("disable-setuid-sandbox", true),
 		chromedp.UserDataDir(getChromedpUserDataDir("am4bot")),
 	)
 
