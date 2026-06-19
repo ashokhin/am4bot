@@ -186,7 +186,7 @@ func (b *Bot) Run(ctx context.Context) error {
 		default:
 			slog.Warn("unknown service", "service", serviceName,
 				"available_services",
-				[]string{"company_stats", "staff_morale", "alliance_stats", "hubs", "buy_fuel", "depart", "marketing", "ac_maintenance"})
+				[]string{"company_stats", "alliance_stats", "claim_rewards", "staff_morale", "hubs", "buy_fuel", "marketing", "ac_maintenance", "depart"})
 		}
 	}
 
@@ -241,13 +241,13 @@ func getChromedpUserDataDir(appName string) string {
 func setupChromeOptions(conf *config.Config) []chromedp.ExecAllocatorOption {
 	// Setup Chrome options
 	opts := append(chromedp.DefaultExecAllocatorOptions[:],
-		chromedp.NoFirstRun,
-		chromedp.NoDefaultBrowserCheck,
-		chromedp.WindowSize(1920, 1080),
 		// set the 'chrome_headless: false' config for displaying Chrome window
 		chromedp.Flag("headless", conf.ChromeHeadless),
 		chromedp.Flag("start-maximized", true),
-		chromedp.Flag("disable-dev-shm-usage", true),
+		chromedp.WindowSize(1920, 1080),
+		// disable GPU: Alpine Docker containers have no GPU drivers; without this
+		// Chrome logs GPU init errors and may fall back to software rasterizer unreliably
+		chromedp.Flag("disable-gpu", true),
 		// Both flags are required when running as non-root inside Docker:
 		// --no-sandbox disables the renderer sandbox;
 		// --disable-setuid-sandbox stops the zygote from trying to create

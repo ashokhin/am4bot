@@ -42,7 +42,11 @@ func (b *Bot) staffMorale(ctx context.Context) error {
 	for _, staffEntry := range model.StaffEntires {
 		slog.Debug("check staff morale", "entry", staffEntry.Name)
 
-		b.checkStaffEntry(ctx, staffEntry)
+		if err := b.checkStaffEntry(ctx, staffEntry); err != nil {
+			slog.Warn("error in Bot.staffMorale > Bot.checkStaffEntry", "entry", staffEntry.Name, "error", err)
+
+			return err
+		}
 	}
 
 	slog.Debug("close pop-up window", "window", "company")
