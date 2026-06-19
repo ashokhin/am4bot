@@ -223,6 +223,15 @@ func getChromedpUserDataDir(appName string) string {
 		return ""
 	}
 
+	// Remove stale Chrome singleton lock files left behind after a crash or hard kill.
+	// If these files exist on startup, Chrome refuses to start with "File exists" error.
+	for _, lockFile := range []string{"SingletonLock", "SingletonCookie", "SingletonSocket"} {
+		path := filepath.Join(dir, lockFile)
+		if err := os.Remove(path); err == nil {
+			slog.Warn("removed stale Chrome lock file", "file", path)
+		}
+	}
+
 	slog.Debug("set cacheDir for chrome data", "dir", dir)
 
 	return dir
