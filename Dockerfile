@@ -33,11 +33,21 @@ FROM alpine:3.21
 
 RUN apk add --no-cache tini chromium ca-certificates \
     && addgroup -S ambot \
-    && adduser -S -G ambot ambot
+    && adduser -S -G ambot -h /home/ambot ambot \
+    && mkdir -p /home/ambot/.cache \
+    && chown -R ambot:ambot /home/ambot
 
 COPY --from=build /out/ambot /usr/local/bin/ambot
 
+# Set HOME explicitly so os.UserCacheDir() resolves to /home/ambot/.cache
+# (Docker does not always set HOME for system users created with adduser -S)
+ENV HOME=/home/ambot
+
 USER ambot
+
+# Mount a volume here to persist the Chrome profile (cookies/session) across
+# container restarts. Without it, authentication is lost on every restart.
+VOLUME ["/home/ambot/.cache"]
 
 EXPOSE 9150
 

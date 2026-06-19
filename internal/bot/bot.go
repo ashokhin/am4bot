@@ -232,7 +232,7 @@ func getChromedpUserDataDir(appName string) string {
 		}
 	}
 
-	slog.Debug("set cacheDir for chrome data", "dir", dir)
+	slog.Info("chrome user data dir", "dir", dir)
 
 	return dir
 }
