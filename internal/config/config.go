@@ -86,10 +86,17 @@ func (c Config) String() string {
 		", AircraftModifyLimit:", c.AircraftModifyLimit,
 		", CronSchedule:", c.CronSchedule,
 		", Services:", c.Services,
+		", AllianceIDs:", c.AllianceIDs,
 		", TimeoutSeconds:", c.TimeoutSeconds,
 		", ChromeHeadless:", c.ChromeHeadless,
 		", ChromeDebug:", c.ChromeDebug,
 		", PrometheusAddress:", c.PrometheusAddress,
+		", ScanType:", c.ScanType,
+		", HubsList:", c.HubsList,
+		", MaxRouteDistanceKm:", c.MaxRouteDistanceKm,
+		", MinRouteDistanceKm:", c.MinRouteDistanceKm,
+		", MinRunwayLength:", c.MinRunwayLength,
+		", ScanStepKm:", c.ScanStepKm,
 		"}")
 }
 
@@ -152,19 +159,29 @@ func (c *Config) ReloadConfigIfChanged() (bool, error) {
 	return true, nil
 }
 
-// loadConfig loads the configuration from the YAML file
-// specified in confFilePath into the Config struct.
+// loadConfig loads the configuration from the YAML file specified in confFilePath.
+// It unmarshals into a fresh Config so that keys removed from the file revert to
+// their defaults instead of keeping stale values from a previous load.
 func (c *Config) loadConfig() error {
 	slog.Info("loading config file", "file", c.confFilePath)
-	// set default values
-	defaults.Set(c)
+
+	fresh := new(Config)
+	// set default values on the fresh struct
+	defaults.Set(fresh)
 
 	// load YAML configuration
-	if err := loadYaml(c.confFilePath, c); err != nil {
+	if err := loadYaml(c.confFilePath, fresh); err != nil {
 		slog.Debug("error loading config file", "error", err)
 
 		return err
 	}
+
+	// preserve internal/runtime fields that are not part of the YAML file
+	fresh.confFilePath = c.confFilePath
+	fresh.configChecksum = c.configChecksum
+	fresh.PromslogConfig = c.PromslogConfig
+
+	*c = *fresh
 
 	// securely store password
 	c.safeStorePassword()

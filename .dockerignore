@@ -1,0 +1,10 @@
+.git
+.github
+bin/
+*.csv
+config.yaml
+.vscode/
+.venv/
+*.png
+README.md
+DOCUMENTATION.md

@@ -3,7 +3,6 @@ package bot
 import (
 	"context"
 	"fmt"
-	"log"
 	"log/slog"
 	"slices"
 	"strconv"
@@ -32,22 +31,20 @@ func NewScanner(conf *config.Config) Bot {
 
 // startScanner initializes the Chrome context and performs authentication for scanning operations.
 func (b *Bot) startScanner(ctx context.Context) (context.Context, context.CancelFunc, error) {
-	var cdpLogger chromedp.ContextOption
-
 	slog.Debug("create execution context")
 
-	allocatorCtx, cancel := chromedp.NewExecAllocator(ctx, b.chromeOpts...)
+	allocatorCtx, allocCancel := chromedp.NewExecAllocator(ctx, b.chromeOpts...)
 
-	if b.Conf.ChromeDebug {
-		cdpLogger = chromedp.WithDebugf(log.Printf)
-	} else {
-		cdpLogger = chromedp.WithLogf(log.Printf)
-	}
-
-	taskCtx, cancel := chromedp.NewContext(
+	taskCtx, ctxCancel := chromedp.NewContext(
 		allocatorCtx,
-		cdpLogger,
+		cdpLoggerOption(b.Conf.ChromeDebug),
 	)
+
+	// cancel both the browser context and the allocator to avoid leaking resources
+	cancel := func() {
+		ctxCancel()
+		allocCancel()
+	}
 
 	slog.Debug("run bot", "start_time", time.Now().UTC())
 	slog.Info("authentication")
@@ -55,6 +52,8 @@ func (b *Bot) startScanner(ctx context.Context) (context.Context, context.Cancel
 	// perform authentication
 	if err := b.auth(taskCtx); err != nil {
 		slog.Warn("error in Bot.Run > Bot.auth", "error", err)
+
+		cancel()
 
 		return nil, nil, err
 	}
@@ -97,21 +96,35 @@ func (b *Bot) ScanRoutes(ctx context.Context) error {
 
 		if slices.Contains(b.Conf.HubsList, hubName) {
 			slog.Debug("found hub from config", "hubName", hubName)
-			b.Writer, _ = io.NewWriter(fmt.Sprintf("routes_%s.csv", nodeValue))
+
+			b.Writer, err = io.NewWriter(fmt.Sprintf("routes_%s.csv", nodeValue))
+			if err != nil {
+				slog.Warn("error in Bot.ScanRoutes > create CSV writer", "hub", hubName, "error", err)
+
+				return err
+			}
 
 			if err := chromedp.Run(taskCtx,
 				chromedp.SetValue(model.SELECT_FLEET_RESEARCH_DEPARTING_FROM, nodeValue, chromedp.ByQuery),
 			); err != nil {
 				slog.Warn("error in Bot.ScanRoutes > set departing from value", "hub", hubName, "error", err)
+				b.Writer.Close()
 
 				return err
 			}
 
 			if err := b.searchRoutesForHub(taskCtx, hubName); err != nil {
 				slog.Warn("error in Bot.ScanRoutes > searchRoutesForHub", "hub", hubName, "error", err)
+				b.Writer.Close()
+
 				return err
 			}
-			b.Writer.Close()
+
+			if err := b.Writer.Close(); err != nil {
+				slog.Warn("error in Bot.ScanRoutes > close CSV writer", "hub", hubName, "error", err)
+
+				return err
+			}
 		}
 	}
 
@@ -229,6 +242,10 @@ func (b *Bot) ScanAirports(ctx context.Context) error {
 	var CountryElemList []*cdp.Node
 
 	slog.Info("scanning airports")
+	// TODO: airport scanner is not fully implemented yet. It iterates over countries and
+	// sets the country selector, but does not extract or persist any airport data.
+	// See ScanRoutes/scanDistanceRoutes for a reference implementation with CSV output.
+	slog.Warn("airport scanner is not fully implemented yet: results are not saved")
 
 	taskCtx, cancel, err := b.startScanner(ctx)
 	if err != nil {

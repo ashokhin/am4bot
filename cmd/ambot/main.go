@@ -2,11 +2,14 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
+	"os/signal"
 	"path/filepath"
+	"syscall"
 	"time"
 
 	"github.com/ashokhin/am4bot/internal/bot"
@@ -99,8 +102,9 @@ func main() {
 	// create Bot object with loaded configuration
 	bot := bot.New(conf, prometheusRegistry)
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	// cancel the context on SIGINT/SIGTERM for graceful shutdown
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
 
 	// start it once in the blocking mode (not inside a goroutine)
 	// for collecting initial Prometheus metrics
@@ -117,8 +121,10 @@ func main() {
 	c := cron.New()
 	// add counter for restore attempts after error
 	restoreAttemptsCount := 0
+	// entryID is captured by the job closure to look up its own next run time
+	var entryID cron.EntryID
 	// create cron job with schedule from configuration
-	c.AddFunc(bot.Conf.CronSchedule, func() {
+	entryID, err = c.AddFunc(bot.Conf.CronSchedule, func() {
 		slog.Info("start job", "start_time", time.Now().UTC())
 
 		if err := bot.Run(ctx); err != nil {
@@ -134,21 +140,26 @@ func main() {
 				os.Exit(1)
 			}
 
-			slog.Error("job has been failed", "end_time", time.Now().UTC(), "next_run", c.Entry(1).Next.UTC())
+			slog.Error("job has been failed", "end_time", time.Now().UTC(), "next_run", c.Entry(entryID).Next.UTC())
 		} else {
 			// successful run resets counter
 			restoreAttemptsCount = 0
 			bot.PrometheusMetrics.Up.Set(1)
 
-			slog.Info("job has been done", "end_time", time.Now().UTC(), "next_run", c.Entry(1).Next.UTC())
+			slog.Info("job has been done", "end_time", time.Now().UTC(), "next_run", c.Entry(entryID).Next.UTC())
 		}
 
 	})
+	if err != nil {
+		slog.Error("error scheduling cron job", "schedule", bot.Conf.CronSchedule, "error", err)
+
+		os.Exit(1)
+	}
 
 	// start cron object, schedule jobs
 	c.Start()
 
-	slog.Info("job scheduled", "next_run", c.Entry(1).Next.UTC())
+	slog.Info("job scheduled", "next_run", c.Entry(entryID).Next.UTC())
 
 	// create and register handler for the webTelemetry page
 	handler := promhttp.HandlerFor(
@@ -176,10 +187,36 @@ func main() {
 
 	slog.Info(fmt.Sprintf("starting Prometheus exporter %s", EXPORTER_NAME), "address", *webAddr, "location", *webTelemetry)
 
-	// start HTTP server for Prometheus scraping
-	if err := http.ListenAndServe(*webAddr, nil); err != nil {
-		slog.Error("error in http server", "error", err)
-
-		os.Exit(1)
+	// configure HTTP server with sane timeouts for Prometheus scraping
+	srv := &http.Server{
+		Addr:              *webAddr,
+		ReadHeaderTimeout: 10 * time.Second,
 	}
+
+	// start HTTP server in a goroutine so we can wait for shutdown signals
+	go func() {
+		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			slog.Error("error in http server", "error", err)
+
+			os.Exit(1)
+		}
+	}()
+
+	// block until a shutdown signal cancels the context
+	<-ctx.Done()
+	slog.Info("shutdown signal received, stopping")
+
+	// stop the cron scheduler from starting new jobs
+	cronCtx := c.Stop()
+	<-cronCtx.Done()
+
+	// gracefully shut down the HTTP server
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	if err := srv.Shutdown(shutdownCtx); err != nil {
+		slog.Error("error during HTTP server shutdown", "error", err)
+	}
+
+	slog.Info("shutdown complete")
 }

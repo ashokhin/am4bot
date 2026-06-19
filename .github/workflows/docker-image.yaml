@@ -42,5 +42,11 @@ jobs:
         context: .
         file: ./Dockerfile
         push: true
+        build-args: |
+          VERSION=${{ github.ref_name }}
+          BRANCH=${{ github.ref_name }}
+          REVISION=${{ github.sha }}
+          BUILD_USER=github-actions
+          BUILD_DATE=${{ github.event.head_commit.timestamp }}
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}

@@ -3,6 +3,7 @@ package bot
 import (
 	"context"
 	"log/slog"
+	"sort"
 	"strings"
 
 	"github.com/ashokhin/am4bot/internal/model"
@@ -85,6 +86,19 @@ func (b *Bot) hubs(ctx context.Context) error {
 	return nil
 }
 
+// sortedHubNames returns the hub names from the map sorted alphabetically,
+// so that limited operations (repair, catering) pick the same hubs on every run.
+func sortedHubNames(hubsMap map[string]model.Hub) []string {
+	names := make([]string, 0, len(hubsMap))
+	for name := range hubsMap {
+		names = append(names, name)
+	}
+
+	sort.Strings(names)
+
+	return names
+}
+
 // hubsCollectMetrics collects Prometheus metrics for all available hubs
 func (b *Bot) hubsCollectMetrics(ctx context.Context, hubsElemList []*cdp.Node) (map[string]model.Hub, error) {
 	hubsMap := make(map[string]model.Hub)
@@ -142,8 +156,11 @@ func (b *Bot) hubsLoungesRepair(ctx context.Context, hubsMap map[string]model.Hu
 	defer utils.DoClickElement(ctx, model.BUTTON_HUBS_LOUNGES_BACK_TO_HUBS)
 
 	// perform repair for the first N ( defined by the config option "bot.Conf.hubs_maintenance_limit")
-	// hubs number in hubsMap
-	for hubName, hub := range hubsMap {
+	// hubs number in hubsMap. Iterate over sorted hub names for deterministic selection,
+	// because Go map iteration order is randomized.
+	for _, hubName := range sortedHubNames(hubsMap) {
+		hub := hubsMap[hubName]
+
 		if loungesRepairCount >= b.Conf.HubsMaintenanceLimit {
 			slog.Info("Maximum lounges limit for repair has been reached for this run", "hubs_maintenance_limit", b.Conf.HubsMaintenanceLimit)
 
@@ -246,8 +263,10 @@ func (b *Bot) collectLoungeInfo(ctx context.Context, hubName string, hub *model.
 func (b *Bot) hubsBuyCatering(ctx context.Context, hubsMap map[string]model.Hub) error {
 	hubsBuyCateringCount := 0
 	// perform catering buy for the first N ( defined by the config option "bot.Conf.hubs_maintenance_limit")
-	// hubs number in hubsMap
-	for hubName, hub := range hubsMap {
+	// hubs number in hubsMap. Iterate over sorted hub names for deterministic selection.
+	for _, hubName := range sortedHubNames(hubsMap) {
+		hub := hubsMap[hubName]
+
 		if hubsBuyCateringCount >= b.Conf.HubsMaintenanceLimit {
 			slog.Info("Maximum hubs limit for catering has been reached for this run", "hubs_maintenance_limit", b.Conf.HubsMaintenanceLimit)
 

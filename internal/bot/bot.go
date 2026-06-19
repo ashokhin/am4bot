@@ -76,7 +76,6 @@ func (b *Bot) Run(ctx context.Context) error {
 	}
 
 	timeStart := time.Now()
-	var cdpLogger chromedp.ContextOption
 
 	slog.Debug("create context with timeout", "timeout_seconds", b.Conf.TimeoutSeconds)
 
@@ -86,15 +85,9 @@ func (b *Bot) Run(ctx context.Context) error {
 	allocatorCtx, cancel := chromedp.NewExecAllocator(timeoutCtx, b.chromeOpts...)
 	defer cancel()
 
-	if b.Conf.ChromeDebug {
-		cdpLogger = chromedp.WithDebugf(log.Printf)
-	} else {
-		cdpLogger = chromedp.WithLogf(log.Printf)
-	}
-
 	taskCtx, cancel := chromedp.NewContext(
 		allocatorCtx,
-		cdpLogger,
+		cdpLoggerOption(b.Conf.ChromeDebug),
 	)
 	defer cancel()
 
@@ -207,6 +200,15 @@ func (b *Bot) Run(ctx context.Context) error {
 	return nil
 }
 
+// cdpLoggerOption returns the chromedp logging option based on the debug flag.
+func cdpLoggerOption(debug bool) chromedp.ContextOption {
+	if debug {
+		return chromedp.WithDebugf(log.Printf)
+	}
+
+	return chromedp.WithLogf(log.Printf)
+}
+
 func getChromedpUserDataDir(appName string) string {
 	cacheDir, err := os.UserCacheDir()
 	if err != nil {
@@ -237,6 +239,8 @@ func setupChromeOptions(conf *config.Config) []chromedp.ExecAllocatorOption {
 		chromedp.Flag("headless", conf.ChromeHeadless),
 		chromedp.Flag("start-maximized", true),
 		chromedp.Flag("disable-dev-shm-usage", true),
+		// required when running as non-root inside Docker (no user namespace support)
+		chromedp.Flag("no-sandbox", true),
 		chromedp.UserDataDir(getChromedpUserDataDir("am4bot")),
 	)
 
