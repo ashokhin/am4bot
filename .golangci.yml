@@ -1,0 +1,17 @@
+# golangci-lint configuration (v2 format).
+# A curated, high-signal linter set. The naming-convention and errcheck linters
+# are intentionally left out to avoid flooding the codebase (ALL_CAPS constants,
+# many intentionally-ignored chromedp action errors); enable them incrementally.
+version: "2"
+
+run:
+  timeout: 5m
+
+linters:
+  default: none
+  enable:
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - misspell

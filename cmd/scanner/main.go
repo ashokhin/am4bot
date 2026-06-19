@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/ashokhin/am4bot/internal/bot"
@@ -46,11 +47,11 @@ func SetLogLevel() slog.Level {
 }
 
 func calcValuesForProgress(config *config.Config) int {
-	var totalValues int
-	scansPerHub := ((config.MaxRouteDistanceKm - config.MinRouteDistanceKm) / config.ScanStepKm)
-	totalValues = scansPerHub * len(config.HubsList)
+	// the scan loop runs inclusively from max down to min in steps of ScanStepKm,
+	// which yields floor((max-min)/step)+1 iterations per hub
+	scansPerHub := ((config.MaxRouteDistanceKm - config.MinRouteDistanceKm) / config.ScanStepKm) + 1
 
-	return totalValues
+	return scansPerHub * len(config.HubsList)
 }
 
 func main() {
@@ -91,6 +92,7 @@ func main() {
 
 	bot := bot.NewScanner(conf)
 	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	timeStart := time.Now()
 
 	switch conf.ScanType {
@@ -110,7 +112,6 @@ func main() {
 		slog.Warn("invalid scan type specified in config", "scan_type", conf.ScanType)
 	}
 
-	cancel()
 	duration := time.Since(timeStart)
 
 	slog.Info("run complete", "elapsed_time", fmt.Sprint(duration))
@@ -138,7 +139,13 @@ func scanRoutes(ctx context.Context, bot bot.Bot) error {
 		progressbar.OptionShowElapsedTimeOnFinish(),
 	)
 
+	var wg sync.WaitGroup
+
+	wg.Add(1)
+
 	go func() {
+		defer wg.Done()
+
 		curPrCount := 0
 		for range bot.ProgressChan {
 			bar.Add(1)
@@ -148,12 +155,13 @@ func scanRoutes(ctx context.Context, bot bot.Bot) error {
 		bar.Finish()
 	}()
 
-	defer close(bot.ProgressChan)
+	err := bot.ScanRoutes(ctx)
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	// stop the consumer goroutine and wait for the progress bar to finish rendering
+	close(bot.ProgressChan)
+	wg.Wait()
 
-	if err := bot.ScanRoutes(ctx); err != nil {
+	if err != nil {
 		slog.Error("bot run error", "error", err)
 
 		return err

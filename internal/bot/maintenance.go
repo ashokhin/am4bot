@@ -203,7 +203,8 @@ func (b *Bot) repairAllAircraft(ctx context.Context) error {
 	return nil
 }
 
-// repairAllAircraft performs repair maintenance on all eligible aircraft.
+// modifyAllAircraft performs modification on the most recently registered eligible aircraft,
+// limited by the configured AircraftModifyLimit.
 func (b *Bot) modifyAllAircraft(ctx context.Context) error {
 	var aircraftPlaned int
 	var aircraftNeedModify []model.Aircraft

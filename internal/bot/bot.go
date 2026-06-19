@@ -76,7 +76,6 @@ func (b *Bot) Run(ctx context.Context) error {
 	}
 
 	timeStart := time.Now()
-	var cdpLogger chromedp.ContextOption
 
 	slog.Debug("create context with timeout", "timeout_seconds", b.Conf.TimeoutSeconds)
 
@@ -86,15 +85,9 @@ func (b *Bot) Run(ctx context.Context) error {
 	allocatorCtx, cancel := chromedp.NewExecAllocator(timeoutCtx, b.chromeOpts...)
 	defer cancel()
 
-	if b.Conf.ChromeDebug {
-		cdpLogger = chromedp.WithDebugf(log.Printf)
-	} else {
-		cdpLogger = chromedp.WithLogf(log.Printf)
-	}
-
 	taskCtx, cancel := chromedp.NewContext(
 		allocatorCtx,
-		cdpLogger,
+		cdpLoggerOption(b.Conf.ChromeDebug),
 	)
 	defer cancel()
 
@@ -205,6 +198,15 @@ func (b *Bot) Run(ctx context.Context) error {
 	b.PrometheusMetrics.DurationSeconds.Set(duration.Seconds())
 
 	return nil
+}
+
+// cdpLoggerOption returns the chromedp logging option based on the debug flag.
+func cdpLoggerOption(debug bool) chromedp.ContextOption {
+	if debug {
+		return chromedp.WithDebugf(log.Printf)
+	}
+
+	return chromedp.WithLogf(log.Printf)
 }
 
 func getChromedpUserDataDir(appName string) string {
