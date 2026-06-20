@@ -14,6 +14,7 @@ import (
 	"github.com/ashokhin/am4bot/internal/metrics"
 	"github.com/prometheus/client_golang/prometheus"
 
+	"github.com/chromedp/cdproto/browser"
 	"github.com/chromedp/chromedp"
 )
 
@@ -26,6 +27,7 @@ type Bot struct {
 	PrometheusMetrics metrics.Metrics
 	Writer            *io.Writer
 	ProgressChan      chan struct{}
+	HasValidCookies   bool
 }
 
 // Budget defines the budget allocations for different categories.
@@ -79,17 +81,17 @@ func (b *Bot) Run(ctx context.Context) error {
 
 	slog.Debug("create context with timeout", "timeout_seconds", b.Conf.TimeoutSeconds)
 
-	timeoutCtx, cancel := context.WithTimeout(ctx, time.Duration(b.Conf.TimeoutSeconds)*time.Second)
-	defer cancel()
+	timeoutCtx, cancelTimeout := context.WithTimeout(ctx, time.Duration(b.Conf.TimeoutSeconds)*time.Second)
+	defer cancelTimeout()
 
-	allocatorCtx, cancel := chromedp.NewExecAllocator(timeoutCtx, b.chromeOpts...)
-	defer cancel()
+	allocatorCtx, cancelAllocator := chromedp.NewExecAllocator(timeoutCtx, b.chromeOpts...)
+	defer cancelAllocator()
 
-	taskCtx, cancel := chromedp.NewContext(
+	taskCtx, cancelTask := chromedp.NewContext(
 		allocatorCtx,
 		cdpLoggerOption(b.Conf.ChromeDebug),
 	)
-	defer cancel()
+	defer cancelTask()
 
 	slog.Debug("run bot", "start_time", timeStart.UTC())
 	slog.Info("start session")
@@ -188,6 +190,26 @@ func (b *Bot) Run(ctx context.Context) error {
 				"available_services",
 				[]string{"company_stats", "alliance_stats", "claim_rewards", "staff_morale", "hubs", "buy_fuel", "marketing", "ac_maintenance", "depart"})
 		}
+	}
+
+	// Chrome's SQLite cookie store flushes via a background timer (~30s after startup).
+	// --no-sandbox (required in Docker) changes Chrome's shutdown path so the cookie store
+	// is not flushed on exit. We only need to wait when authentication was just performed
+	// (new cookies written); if the session was already valid, cookies are unchanged.
+	if !b.HasValidCookies {
+		if elapsed := time.Since(timeStart); elapsed < 35*time.Second {
+			wait := 35*time.Second - elapsed
+			slog.Debug("waiting for Chrome cookie flush timer", "elapsed", elapsed, "wait", wait)
+			time.Sleep(wait)
+		}
+	}
+
+	// Explicitly close Chrome via CDP while the connection is still live.
+	// defer cancelAllocator() signals Chrome asynchronously and may not complete
+	// a graceful shutdown before the process is killed. Browser.close is best-effort:
+	// the connection drops immediately on receipt so an error is expected.
+	if err := chromedp.Run(taskCtx, browser.Close()); err != nil {
+		slog.Debug("browser.Close", "error", err)
 	}
 
 	// calculate total duration for Prometheus metric and logging
