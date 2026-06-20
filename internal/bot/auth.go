@@ -10,9 +10,15 @@ import (
 )
 
 // auth performs authentication on the target website using credentials from the bot configuration.
+// Sets b.HasValidCookies to true if the existing session was valid (cookies already
+// persisted from a previous run). After a fresh login the field stays false — new cookies
+// have been written to Chrome's in-memory store but not yet flushed to disk.
 func (b *Bot) auth(ctx context.Context) error {
+	b.HasValidCookies = false
+
 	if !utils.IsElementVisible(ctx, model.BUTTON_PLAY_NOW) {
 		slog.Debug("already authenticated, skipping auth step")
+		b.HasValidCookies = true
 
 		return nil
 	}
