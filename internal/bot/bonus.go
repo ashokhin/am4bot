@@ -2,6 +2,7 @@ package bot
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 
 	"github.com/ashokhin/am4bot/internal/model"
@@ -33,9 +34,7 @@ func (b *Bot) claimRewards(ctx context.Context) error {
 	if err := chromedp.Run(ctx,
 		utils.ClickElement(model.BUTTON_MAIN_BONUS),
 	); err != nil {
-		slog.Warn("error in Bot.claimRewards > open bonus window", "error", err)
-
-		return err
+		return fmt.Errorf("claimRewards: open bonus window: %w", err)
 	}
 
 	defer utils.DoClickElement(ctx, model.BUTTON_COMMON_CLOSE_POPUP)
@@ -48,9 +47,7 @@ func (b *Bot) claimRewards(ctx context.Context) error {
 		utils.ClickElement(model.BUTTON_BONUS_CLAIM_GIFT),
 		utils.ClickElement(model.BUTTON_COMMON_CLOSE_POPUP),
 	); err != nil {
-		slog.Warn("error in Bot.claimRewards > claim gifts", "error", err)
-
-		return err
+		return fmt.Errorf("claimRewards: claim gifts: %w", err)
 	}
 
 	slog.Info("rewards successfully claimed")

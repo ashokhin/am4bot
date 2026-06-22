@@ -5,9 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"math"
-	"os"
 	"regexp"
-	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -80,21 +78,6 @@ func floatFromString(str string) (float64, error) {
 	return floatValue, nil
 }
 
-// getCallerFunctionName returns the name of the calling function.
-func getCallerFunctionName() string {
-	pc, _, _, _ := runtime.Caller(2)
-	f := runtime.FuncForPC(pc)
-
-	if f == nil {
-		return ""
-	}
-
-	sliceOfFuncPath := strings.Split(f.Name(), ".")
-	funcName := sliceOfFuncPath[len(sliceOfFuncPath)-1]
-
-	return funcName
-}
-
 // RefreshPage reloads the current page and waits until the loading overlay is not visible.
 func RefreshPage() chromedp.Tasks {
 	slog.Debug("refresh page")
@@ -102,29 +85,6 @@ func RefreshPage() chromedp.Tasks {
 	return chromedp.Tasks{
 		chromedp.Reload(),
 		chromedp.WaitNotVisible(model.OVERLAY_LOADING, chromedp.ByQuery),
-	}
-}
-
-// Screenshot takes a full-page screenshot and saves it to a file named with the caller function and timestamp.
-func Screenshot() chromedp.Tasks {
-	var buf []byte
-
-	slog.Debug("take a screenshot")
-
-	callerFunc := getCallerFunctionName()
-	scrName := fmt.Sprintf("screenshot_%s_%s.png", callerFunc, time.Now().Format("2006-01-02T15-04-05"))
-
-	slog.Debug("save screenshot", "file", scrName)
-
-	return chromedp.Tasks{
-		chromedp.FullScreenshot(&buf, 100),
-		chromedp.ActionFunc(func(ctx context.Context) error {
-			if err := os.WriteFile(scrName, buf, 0644); err != nil {
-				return err
-			}
-
-			return nil
-		}),
 	}
 }
 

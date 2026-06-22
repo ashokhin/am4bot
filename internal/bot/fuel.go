@@ -36,10 +36,7 @@ func (b *Bot) fuel(ctx context.Context) error {
 		slog.Debug("processing fuel type", "type", fuelEntry.FuelType)
 
 		if err := b.checkFuelType(ctx, &fuelEntry); err != nil {
-			slog.Warn("error from Bot.fuel > checkFuelType", "type",
-				fuelEntry.FuelType, "error", err)
-
-			return err
+			return fmt.Errorf("fuel: checkFuelType %s: %w", fuelEntry.FuelType, err)
 		}
 
 		slog.Debug("fuel collected", "type", fuelEntry.FuelType, "fuel", fuelEntry)
@@ -53,27 +50,28 @@ func (b *Bot) fuel(ctx context.Context) error {
 
 		// try to buy fuel
 		if err := b.buyFuelType(ctx, &fuelEntry); err != nil {
-			slog.Warn("error from Bot.fuel > buyFuelType", "type",
-				fuelEntry.FuelType, "error", err)
-
-			return err
+			return fmt.Errorf("fuel: buyFuelType %s: %w", fuelEntry.FuelType, err)
 		}
 	}
 
 	return nil
 }
 
-// checkFuelType retrieves fuel information for a specific fuel type
-func (b *Bot) checkFuelType(ctx context.Context, fuelStruct *model.Fuel) error {
-	slog.Debug("check fuel type", "type", fuelStruct.FuelType)
-
-	// select fuel tab depending on fuel type
-	switch fuelStruct.FuelType {
+// selectFuelTab clicks the appropriate fuel type tab.
+func (b *Bot) selectFuelTab(ctx context.Context, fuelType string) {
+	switch fuelType {
 	case "fuel":
 		utils.DoClickElement(ctx, model.BUTTON_COMMON_TAB1)
 	case "co2":
 		utils.DoClickElement(ctx, model.BUTTON_COMMON_TAB2)
 	}
+}
+
+// checkFuelType retrieves fuel information for a specific fuel type
+func (b *Bot) checkFuelType(ctx context.Context, fuelStruct *model.Fuel) error {
+	slog.Debug("check fuel type", "type", fuelStruct.FuelType)
+
+	b.selectFuelTab(ctx, fuelStruct.FuelType)
 
 	// retrieve fuel information
 	if err := chromedp.Run(ctx,
@@ -81,9 +79,7 @@ func (b *Bot) checkFuelType(ctx context.Context, fuelStruct *model.Fuel) error {
 		utils.GetFloatFromElement(model.TEXT_FUEL_FUEL_HOLDING, &fuelStruct.Holding),
 		utils.GetFloatFromElement(model.TEXT_FUEL_FUEL_CAPACITY, &fuelStruct.Capacity),
 	); err != nil {
-		slog.Warn("error in Bot.checkFuelType", "type", fuelStruct.FuelType, "error", err)
-
-		return err
+		return fmt.Errorf("checkFuelType %s: %w", fuelStruct.FuelType, err)
 	}
 
 	slog.Debug("set prometheus metrics", "type", fuelStruct.FuelType, "fuel", *fuelStruct)
@@ -150,15 +146,12 @@ func (b *Bot) buyFuelType(ctx context.Context, fuelStruct *model.Fuel) error {
 		chromedp.SendKeys(model.TEXT_FIELD_FUEL_AMOUNT, fuelNeedAmountString, chromedp.ByQuery),
 		utils.ClickElement(model.BUTTON_FUEL_BUY),
 	); err != nil {
-		slog.Warn("error in Bot.buyFuelType", "type", fuelStruct.FuelType, "error", err)
-
-		return err
+		return fmt.Errorf("buyFuelType %s: %w", fuelStruct.FuelType, err)
 	}
 
 	slog.Debug("money before", "AccountBalance", int(b.AccountBalance), "fuelBudget", int(b.BudgetMoney.Fuel))
 	// update bot money values after purchase
-	b.AccountBalance -= amountPrice
-	b.BudgetMoney.Fuel -= amountPrice
+	b.deductBudget(amountPrice, &b.BudgetMoney.Fuel)
 	slog.Debug("money after", "AccountBalance", int(b.AccountBalance), "fuelBudget", int(b.BudgetMoney.Fuel))
 
 	return nil

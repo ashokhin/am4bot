@@ -1,11 +1,10 @@
 package config
 
 import (
-	"crypto/sha256"
 	"fmt"
-	"io"
 	"log/slog"
 	"os"
+	"time"
 
 	"github.com/ashokhin/am4bot/internal/utils"
 	"github.com/creasty/defaults"
@@ -50,9 +49,9 @@ type Config struct {
 	ChromeDebug    bool `default:"false" yaml:"chrome_debug"`
 
 	// internal fields
-	passwordRunes  []rune // most safe storage for password in memory
-	confFilePath   string
-	configChecksum string
+	passwordRunes []rune // most safe storage for password in memory
+	confFilePath  string
+	confModTime   time.Time
 }
 
 // BudgetType holds budget percentage settings for various categories.
@@ -118,23 +117,22 @@ func (c *Config) GetPassword() string {
 func (c *Config) ReloadConfigIfChanged() (bool, error) {
 	slog.Debug("reloading config file", "file", c.confFilePath)
 
-	var err error
-
-	newChecksum, err := getFileChecksum(c.confFilePath)
-
+	info, err := os.Stat(c.confFilePath)
 	if err != nil {
-		slog.Debug("error calculating config file checksum", "error", err)
+		slog.Debug("error stating config file", "error", err)
 
 		return false, err
 	}
 
-	if newChecksum == c.configChecksum {
+	newModTime := info.ModTime()
+
+	if !newModTime.After(c.confModTime) {
 		slog.Debug("config file unchanged, no reload needed")
 
 		return false, nil
 	}
 
-	slog.Debug("config file changed, reloading", "old_checksum", c.configChecksum, "new_checksum", newChecksum)
+	slog.Debug("config file changed, reloading", "old_mtime", c.confModTime, "new_mtime", newModTime)
 
 	// save previous config before reload
 	prevConfig := *c
@@ -151,8 +149,8 @@ func (c *Config) ReloadConfigIfChanged() (bool, error) {
 
 	// set log level from config
 	c.PromslogConfig.Level.Set(c.LogLevel)
-	// update stored checksum
-	c.configChecksum = newChecksum
+	// update stored mtime
+	c.confModTime = newModTime
 
 	slog.Debug("config reloaded", "config", c)
 
@@ -178,7 +176,7 @@ func (c *Config) loadConfig() error {
 
 	// preserve internal/runtime fields that are not part of the YAML file
 	fresh.confFilePath = c.confFilePath
-	fresh.configChecksum = c.configChecksum
+	fresh.confModTime = c.confModTime
 	fresh.PromslogConfig = c.PromslogConfig
 
 	*c = *fresh
@@ -187,6 +185,23 @@ func (c *Config) loadConfig() error {
 	c.safeStorePassword()
 
 	slog.Debug("configuration loaded successfully", "config", c)
+
+	return nil
+}
+
+// validate checks that required configuration fields are present.
+func (c *Config) validate() error {
+	if c.Url == "" {
+		return fmt.Errorf("config: url is required")
+	}
+
+	if c.User == "" {
+		return fmt.Errorf("config: username is required")
+	}
+
+	if c.GetPassword() == "" {
+		return fmt.Errorf("config: password is required")
+	}
 
 	return nil
 }
@@ -201,16 +216,22 @@ func New(filePath string) (*Config, error) {
 	// create new Config instance
 	c := new(Config)
 	c.confFilePath = filePath
-	c.configChecksum, err = getFileChecksum(filePath)
 
+	info, err := os.Stat(filePath)
 	if err != nil {
-		slog.Debug("error calculating config file checksum", "error", err)
+		slog.Debug("error stating config file", "error", err)
 
 		return nil, err
 	}
 
+	c.confModTime = info.ModTime()
+
 	// load configuration
 	if err := c.loadConfig(); err != nil {
+		return nil, err
+	}
+
+	if err := c.validate(); err != nil {
 		return nil, err
 	}
 
@@ -240,28 +261,3 @@ func loadYaml(filePath string, out any) error {
 	return err
 }
 
-// getFileChecksum computes and returns the SHA-256 checksum of the specified file.
-func getFileChecksum(filePath string) (string, error) {
-	slog.Debug("Checksum file", "file", filePath)
-
-	var err error
-
-	f, err := os.Open(filePath)
-	if err != nil {
-		return "", err
-	}
-
-	defer f.Close()
-
-	hash := sha256.New()
-
-	if _, err := io.Copy(hash, f); err != nil {
-		slog.Error("Error computing checksum", "error", err)
-
-		return "", err
-	}
-
-	slog.Debug("checksum calculated", "checksum", fmt.Sprintf("%x", hash.Sum(nil)))
-
-	return fmt.Sprintf("%x", hash.Sum(nil)), nil
-}

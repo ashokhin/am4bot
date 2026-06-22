@@ -2,6 +2,7 @@ package bot
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"strings"
 
@@ -22,9 +23,7 @@ func (b *Bot) money(ctx context.Context) error {
 		utils.ClickElement(model.BUTTON_MAIN_ACCOUNT),
 		chromedp.Nodes(model.LIST_ACCOUNT_ACCOUNTS, &accElemList, chromedp.ByQueryAll),
 	); err != nil {
-		slog.Warn("error in bot.Money > get accounts list", "error", err)
-
-		return err
+		return fmt.Errorf("money: get accounts list: %w", err)
 	}
 
 	defer utils.DoClickElement(ctx, model.BUTTON_COMMON_CLOSE_POPUP)
@@ -39,9 +38,7 @@ func (b *Bot) money(ctx context.Context) error {
 			chromedp.Text(model.TEXT_ACCOUNT_ACCOUNT_NAME, &accountName, chromedp.ByQuery, chromedp.FromNode(accountElem)),
 			utils.GetFloatFromChildElement(model.TEXT_ACCOUNT_ACCOUNT_BALANCE, &accountBalance, accountElem),
 		); err != nil {
-			slog.Warn("error in Bot.Money > get account info", "error", err)
-
-			return err
+			return fmt.Errorf("money: get account info: %w", err)
 		}
 
 		accountName = strings.TrimSpace(accountName)

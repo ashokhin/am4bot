@@ -168,9 +168,7 @@ func (b *Bot) allianceStatsByID(ctx context.Context, allianceID string) (map[str
 	if err = chromedp.Run(alStatsCtx,
 		chromedp.Navigate(pageURL),
 	); err != nil {
-		slog.Warn("error in Bot.allianceStatsByID > navigate to alliance page", "allianceID", allianceID, "error", err)
-
-		return nil, err
+		return nil, fmt.Errorf("allianceStatsByID %s: navigate: %w", allianceID, err)
 	}
 
 	// activate alliance page target because it opens in a new tab
@@ -181,9 +179,7 @@ func (b *Bot) allianceStatsByID(ctx context.Context, allianceID string) (map[str
 	if err = chromedp.Run(alStatsCtx,
 		target.ActivateTarget(c.Target.TargetID),
 	); err != nil {
-		slog.Warn("error in Bot.allianceStatsByID > activate target", "allianceID", allianceID, "error", err)
-
-		return nil, err
+		return nil, fmt.Errorf("allianceStatsByID %s: activate target: %w", allianceID, err)
 	}
 
 	// collect stats for all alliance members
@@ -205,9 +201,7 @@ func (b *Bot) wholeAllianceStats(ctx context.Context, allianceID string) (map[st
 	if err = chromedp.Run(ctx,
 		chromedp.Text(model.TEXT_ALLIANCE_PG_DETAIL_NAME, &allianceName, chromedp.ByQuery),
 	); err != nil {
-		slog.Warn("error in Bot.allianceStatsByID > get alliance name", "allianceID", allianceID, "error", err)
-
-		return nil, err
+		return nil, fmt.Errorf("wholeAllianceStats %s: get alliance name: %w", allianceID, err)
 	}
 
 	slog.Debug("check whole alliance stats", "allianceID", allianceID, "allianceName", allianceName)
@@ -220,9 +214,7 @@ func (b *Bot) wholeAllianceStats(ctx context.Context, allianceID string) (map[st
 	if err = chromedp.Run(ctx,
 		chromedp.Nodes(model.LIST_ALLIANCE_MEMBERS, &allianceMembersElemList, chromedp.ByQueryAll),
 	); err != nil {
-		slog.Warn("error in Bot.wholeAllianceStats > get hubs list", "error", err)
-
-		return nil, err
+		return nil, fmt.Errorf("wholeAllianceStats %s: get members list: %w", allianceID, err)
 	}
 
 	allianceMembersMap := make(map[string]model.AllianceMember)

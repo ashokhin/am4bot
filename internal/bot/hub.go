@@ -2,6 +2,7 @@ package bot
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"sort"
 	"strings"
@@ -35,9 +36,7 @@ func (b *Bot) hubs(ctx context.Context) error {
 	if err = chromedp.Run(ctx,
 		utils.ClickElement(model.BUTTON_MAIN_HUBS),
 	); err != nil {
-		slog.Warn("error in Bot.hubs > open hubs", "error", err)
-
-		return err
+		return fmt.Errorf("hubs: open hubs: %w", err)
 	}
 
 	defer utils.DoClickElement(ctx, model.BUTTON_COMMON_CLOSE_POPUP)
@@ -50,25 +49,19 @@ func (b *Bot) hubs(ctx context.Context) error {
 	if err = chromedp.Run(ctx,
 		chromedp.Nodes(model.LIST_HUBS_HUBS, &hubsElemList, chromedp.ByQueryAll),
 	); err != nil {
-		slog.Warn("error in Bot.hubs > get hubs list", "error", err)
-
-		return err
+		return fmt.Errorf("hubs: get hubs list: %w", err)
 	}
 
 	var hubsMap map[string]model.Hub
 	// collect metrics for all hubs
 	if hubsMap, err = b.hubsCollectMetrics(ctx, hubsElemList); err != nil {
-		slog.Warn("error in Bot.hubs > Bot.hubsCollectMetrics", "error", err)
-
-		return err
+		return fmt.Errorf("hubs: hubsCollectMetrics: %w", err)
 	}
 
 	// repair lounges if needed
 	if globalNeedRepair && b.Conf.RepairLounges {
 		if err := b.hubsLoungesRepair(ctx, hubsMap); err != nil {
-			slog.Warn("error in Bot.hubs > Bot.hubsLoungesRepair", "error", err)
-
-			return err
+			return fmt.Errorf("hubs: hubsLoungesRepair: %w", err)
 		}
 	}
 
@@ -77,9 +70,7 @@ func (b *Bot) hubs(ctx context.Context) error {
 		slog.Debug("buy catering for hubs which miss it")
 
 		if err := b.hubsBuyCatering(ctx, hubsMap); err != nil {
-			slog.Warn("error in Bot.hubs > Bot.hubsBuyCatering", "error", err)
-
-			return err
+			return fmt.Errorf("hubs: hubsBuyCatering: %w", err)
 		}
 	}
 
@@ -119,9 +110,7 @@ func (b *Bot) hubsCollectMetrics(ctx context.Context, hubsElemList []*cdp.Node) 
 			utils.GetFloatFromChildElement(model.TEXT_HUBS_HUB_PAX_DEPARTED, &hub.PaxDeparted, hub.HubCdpNode),
 			utils.GetFloatFromChildElement(model.TEXT_HUBS_HUB_PAX_ARRIVED, &hub.PaxArrived, hub.HubCdpNode),
 		); err != nil {
-			slog.Warn("error in Bot.hubsCollectMetrics > get hub info", "error", err)
-
-			return nil, err
+			return nil, fmt.Errorf("hubsCollectMetrics: get hub info: %w", err)
 		}
 
 		// check if catering is present
@@ -148,9 +137,7 @@ func (b *Bot) hubsLoungesRepair(ctx context.Context, hubsMap map[string]model.Hu
 	if err = chromedp.Run(ctx,
 		utils.ClickElement(model.BUTTON_HUBS_LOUNGES_MAINTENANCE),
 	); err != nil {
-		slog.Warn("error in Bot.hubsLoungesRepair > open lounges maintenance tab", "error", err)
-
-		return err
+		return fmt.Errorf("hubsLoungesRepair: open lounges maintenance tab: %w", err)
 	}
 
 	defer utils.DoClickElement(ctx, model.BUTTON_HUBS_LOUNGES_BACK_TO_HUBS)
@@ -169,9 +156,7 @@ func (b *Bot) hubsLoungesRepair(ctx context.Context, hubsMap map[string]model.Hu
 
 		// collect lounges info and update hub object by reference
 		if err = b.collectLoungeInfo(ctx, hubName, &hub); err != nil {
-			slog.Warn("error in Bot.hubsLoungesRepair > Bot.collectLoungeInfo", "error", err)
-
-			return err
+			return fmt.Errorf("hubsLoungesRepair: collectLoungeInfo: %w", err)
 		}
 
 		// update hub info in hubsMap
@@ -187,9 +172,7 @@ func (b *Bot) hubsLoungesRepair(ctx context.Context, hubsMap map[string]model.Hu
 		slog.Info("repair lounge", "hub", hubName)
 
 		if err := b.repairLounge(ctx, &hub); err != nil {
-			slog.Warn("error in Bot.hubsLoungesRepair > Bot.repairLounge", "error", err)
-
-			return err
+			return fmt.Errorf("hubsLoungesRepair: repairLounge: %w", err)
 		}
 
 		loungesRepairCount++
@@ -208,9 +191,7 @@ func (b *Bot) collectLoungeInfo(ctx context.Context, hubName string, hub *model.
 	if err = chromedp.Run(ctx,
 		chromedp.Nodes(model.LIST_HUBS_LOUNGES, &loungesElemList, chromedp.ByQueryAll),
 	); err != nil {
-		slog.Warn("error in Bot.collectLoungeInfo > get lounges list", "error", err)
-
-		return err
+		return fmt.Errorf("collectLoungeInfo: get lounges list: %w", err)
 	}
 
 	// enrich lounges info into hubsMap
@@ -224,9 +205,7 @@ func (b *Bot) collectLoungeInfo(ctx context.Context, hubName string, hub *model.
 			chromedp.Text(model.TEXT_HUBS_LOUNGES_LOUNGE_NAME, &loungeName, chromedp.ByQuery, chromedp.FromNode(loungeElem)),
 			utils.GetFloatFromChildElement(model.TEXT_HUBS_LOUNGES_LOUNGE_WEAR_PERCENT, &loungeWearPercent, loungeElem),
 		); err != nil {
-			slog.Warn("error in Bot.collectLoungeInfo > get lounge info", "error", err)
-
-			return err
+			return fmt.Errorf("collectLoungeInfo: get lounge info: %w", err)
 		}
 
 		// standardize lounge name to upper case for further comparison
@@ -278,9 +257,7 @@ func (b *Bot) hubsBuyCatering(ctx context.Context, hubsMap map[string]model.Hub)
 			slog.Info("buy catering for hub", "hub", hubName)
 
 			if err := b.buyCatering(ctx, hub); err != nil {
-				slog.Warn("error in Bot.hubsBuyCatering > Bot.buyCatering", "error", err)
-
-				return err
+				return fmt.Errorf("hubsBuyCatering: buyCatering: %w", err)
 			}
 
 			hubsBuyCateringCount++
@@ -301,9 +278,7 @@ func (b *Bot) repairLounge(ctx context.Context, hub *model.Hub) error {
 		if err := chromedp.Run(ctx,
 			utils.GetFloatFromChildElement(model.TEXT_HUBS_LOUNGES_LOUNGE_REPAIR_COST, &loungeRepairCost, hub.LoungeCdpNode),
 		); err != nil {
-			slog.Warn("error in Bot.repairLounge > get lounge repair cost", "error", err)
-
-			return err
+			return fmt.Errorf("repairLounge: get lounge repair cost: %w", err)
 		}
 	} else {
 		slog.Debug("lounge repair cost element isn't visible, set repair cost to 0.0")
@@ -328,14 +303,11 @@ func (b *Bot) repairLounge(ctx context.Context, hub *model.Hub) error {
 	if err := chromedp.Run(ctx,
 		chromedp.Click(model.BUTTON_HUBS_LOUNGES_LOUNGE_REPAIR, chromedp.ByQuery, chromedp.FromNode(hub.LoungeCdpNode)),
 	); err != nil {
-		slog.Warn("error in Bot.repairLounge > click repair", "error", err)
-
-		return err
+		return fmt.Errorf("repairLounge: click repair: %w", err)
 	}
 
-	// reduce current account money and maintenance budged by repair cost
-	b.AccountBalance -= loungeRepairCost
-	b.BudgetMoney.Maintenance -= loungeRepairCost
+	// reduce current account money and maintenance budget by repair cost
+	b.deductBudget(loungeRepairCost, &b.BudgetMoney.Maintenance)
 
 	// after clicking the "repair" button,
 	// lounges grid is redrawn, so we need to re-open lounges maintenance tab
@@ -343,9 +315,7 @@ func (b *Bot) repairLounge(ctx context.Context, hub *model.Hub) error {
 		utils.ClickElement(model.BUTTON_HUBS_LOUNGES_BACK_TO_HUBS),
 		utils.ClickElement(model.BUTTON_HUBS_LOUNGES_MAINTENANCE),
 	); err != nil {
-		slog.Warn("error in Bot.repairLounge > reopen lounges tab", "error", err)
-
-		return err
+		return fmt.Errorf("repairLounge: reopen lounges tab: %w", err)
 	}
 
 	return nil
@@ -358,9 +328,7 @@ func (b *Bot) buyCatering(ctx context.Context, hub model.Hub) error {
 	if err := chromedp.Run(ctx,
 		chromedp.Click(model.ELEMENT_HUB, chromedp.ByQuery, chromedp.FromNode(hub.HubCdpNode)),
 	); err != nil {
-		slog.Warn("error in Bot.buyCatering > select hub", "error", err)
-
-		return err
+		return fmt.Errorf("buyCatering: select hub: %w", err)
 	}
 
 	// return to list of hubs when exiting from function
@@ -382,9 +350,7 @@ func (b *Bot) buyCatering(ctx context.Context, hub model.Hub) error {
 		chromedp.SetValue(model.SELECT_HUBS_CATERING_AMOUNT, b.Conf.CateringAmountOption, chromedp.ByQuery),
 		utils.GetFloatFromElement(model.TEXT_HUBS_CATERING_COST, &cateringCost),
 	); err != nil {
-		slog.Warn("error in Bot.buyCatering > select hub", "error", err)
-
-		return err
+		return fmt.Errorf("buyCatering: get catering cost: %w", err)
 	}
 
 	if cateringCost > b.BudgetMoney.Maintenance {
@@ -398,14 +364,11 @@ func (b *Bot) buyCatering(ctx context.Context, hub model.Hub) error {
 	if err := chromedp.Run(ctx,
 		utils.ClickElement(model.BUTTON_HUBS_CATERING_BUY),
 	); err != nil {
-		slog.Warn("error in Bot.buyCatering > buy catering", "error", err)
-
-		return err
+		return fmt.Errorf("buyCatering: buy catering: %w", err)
 	}
 
 	// reduce current account money and maintenance budget by catering cost
-	b.AccountBalance -= cateringCost
-	b.BudgetMoney.Maintenance -= cateringCost
+	b.deductBudget(cateringCost, &b.BudgetMoney.Maintenance)
 
 	return nil
 }

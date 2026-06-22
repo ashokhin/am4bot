@@ -53,6 +53,12 @@ func New(conf *config.Config, registry *prometheus.Registry) Bot {
 	}
 }
 
+// deductBudget subtracts amount from both AccountBalance and the given budget category.
+func (b *Bot) deductBudget(amount float64, category *float64) {
+	b.AccountBalance -= amount
+	*category -= amount
+}
+
 // ReloadBotConfig reloads the bot's configuration and updates relevant settings.
 func (b *Bot) ReloadBotConfig() error {
 
@@ -101,94 +107,55 @@ func (b *Bot) Run(ctx context.Context) error {
 		// open URL to initialize session and cookies before authentication
 		chromedp.Navigate(b.Conf.Url),
 	); err != nil {
-		slog.Warn("error in Bot.Run navigate", "error", err)
+		slog.Error("navigate failed", "error", err)
 
 		return err
 	}
 
 	// perform authentication
 	if err := b.auth(taskCtx); err != nil {
-		slog.Warn("error in Bot.Run > Bot.auth", "error", err)
+		slog.Error("auth failed", "error", err)
 
 		return err
 	}
 
 	// perform money check
 	if err := b.money(taskCtx); err != nil {
-		slog.Warn("error in Bot.Run > Bot.money", "error", err)
+		slog.Error("money check failed", "error", err)
 
 		return err
 	}
 
-	// iterate over configured services and execute them
+	// service registry — built here because handlers need the `b` receiver
+	services := map[string]func(context.Context) error{
+		"company_stats":  b.companyStats,
+		"alliance_stats": b.allianceStats,
+		"claim_rewards":  b.claimRewards,
+		"staff_morale":   b.staffMorale,
+		"hubs":           b.hubs,
+		"buy_fuel":       b.fuel,
+		"marketing":      b.marketingCompanies,
+		"ac_maintenance": b.maintenance,
+		"depart":         b.depart,
+	}
+
+	availableServices := []string{
+		"company_stats", "alliance_stats", "claim_rewards", "staff_morale",
+		"hubs", "buy_fuel", "marketing", "ac_maintenance", "depart",
+	}
+
 	for _, serviceName := range b.Conf.Services {
-		switch serviceName {
-		case "company_stats":
-			if err := b.companyStats(taskCtx); err != nil {
-				slog.Warn("error in Bot.Run > Bot.companyStats", "error", err)
+		handler, ok := services[serviceName]
+		if !ok {
+			slog.Warn("unknown service", "service", serviceName, "available_services", availableServices)
 
-				return err
-			}
+			continue
+		}
 
-		case "alliance_stats":
-			if err := b.allianceStats(taskCtx); err != nil {
-				slog.Warn("error in Bot.Run > Bot.allianceStats", "error", err)
+		if err := handler(taskCtx); err != nil {
+			slog.Error("service failed", "service", serviceName, "error", err)
 
-				return err
-			}
-
-		case "claim_rewards":
-			if err := b.claimRewards(taskCtx); err != nil {
-				slog.Warn("error in Bot.Run > Bot.claimRewards", "error", err)
-
-				return err
-			}
-
-		case "staff_morale":
-			if err := b.staffMorale(taskCtx); err != nil {
-				slog.Warn("error in Bot.Run > Bot.staffMorale", "error", err)
-
-				return err
-			}
-
-		case "hubs":
-			if err := b.hubs(taskCtx); err != nil {
-				slog.Warn("error in Bot.Run > Bot.hubs", "error", err)
-
-				return err
-			}
-
-		case "buy_fuel":
-			if err := b.fuel(taskCtx); err != nil {
-				slog.Warn("error in Bot.Run > Bot.fuel", "error", err)
-
-				return err
-			}
-
-		case "marketing":
-			if err := b.marketingCompanies(taskCtx); err != nil {
-				slog.Warn("error in Bot.Run > Bot.marketingCompanies", "error", err)
-
-				return err
-			}
-
-		case "ac_maintenance":
-			if err := b.maintenance(taskCtx); err != nil {
-				slog.Warn("error in Bot.Run > Bot.maintenance", "error", err)
-
-				return err
-			}
-		case "depart":
-			if err := b.depart(taskCtx); err != nil {
-				slog.Warn("error in Bot.Run > Bot.depart", "error", err)
-
-				return err
-			}
-
-		default:
-			slog.Warn("unknown service", "service", serviceName,
-				"available_services",
-				[]string{"company_stats", "alliance_stats", "claim_rewards", "staff_morale", "hubs", "buy_fuel", "marketing", "ac_maintenance", "depart"})
+			return err
 		}
 	}
 

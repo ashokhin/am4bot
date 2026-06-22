@@ -2,6 +2,7 @@ package bot
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 
 	"github.com/ashokhin/am4bot/internal/model"
@@ -43,9 +44,7 @@ func (b *Bot) staffMorale(ctx context.Context) error {
 		slog.Debug("check staff morale", "entry", staffEntry.Name)
 
 		if err := b.checkStaffEntry(ctx, staffEntry); err != nil {
-			slog.Warn("error in Bot.staffMorale > Bot.checkStaffEntry", "entry", staffEntry.Name, "error", err)
-
-			return err
+			return fmt.Errorf("staffMorale: checkStaffEntry %s: %w", staffEntry.Name, err)
 		}
 	}
 
@@ -61,9 +60,7 @@ func (b *Bot) checkStaffEntry(ctx context.Context, e model.StaffEntry) error {
 	if err := chromedp.Run(ctx,
 		utils.GetIntFromElement(e.TextMorale, &moralePercent),
 	); err != nil {
-		slog.Error("error in morale.checkStaffEntry", "error", err)
-
-		return err
+		return fmt.Errorf("checkStaffEntry %s: get morale: %w", e.Name, err)
 	}
 	startSalary := 0.0
 
@@ -107,9 +104,7 @@ func (b *Bot) checkStaffEntry(ctx context.Context, e model.StaffEntry) error {
 			// check salary
 			utils.GetFloatFromElement(e.TextSalary, &newSalary),
 		); err != nil {
-			slog.Error("error in morale.checkStaffEntry", "error", err)
-
-			return err
+			return fmt.Errorf("checkStaffEntry %s: align morale: %w", e.Name, err)
 		}
 
 		// Keep salary equal or lower than startSalary
@@ -127,9 +122,7 @@ func (b *Bot) checkStaffEntry(ctx context.Context, e model.StaffEntry) error {
 				// check salary
 				utils.GetFloatFromElement(e.TextSalary, &newSalary),
 			); err != nil {
-				slog.Error("error in morale.checkStaffEntry", "error", err)
-
-				return err
+				return fmt.Errorf("checkStaffEntry %s: align salary: %w", e.Name, err)
 			}
 
 			slog.Warn("aligned salary", "entry", e.Name, "morale", moralePercent, "salary", newSalary)

@@ -2,6 +2,7 @@ package bot
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 
 	"github.com/ashokhin/am4bot/internal/model"
@@ -42,9 +43,7 @@ func (b *Bot) auth(ctx context.Context) error {
 		chromedp.WaitNotVisible(model.OVERLAY_LOADING, chromedp.ByQuery),
 		utils.RefreshPage(),
 	); err != nil {
-		slog.Warn("error in bot.auth", "error", err)
-
-		return err
+		return fmt.Errorf("auth: %w", err)
 	}
 
 	return nil

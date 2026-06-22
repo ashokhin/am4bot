@@ -2,6 +2,7 @@ package bot
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"sort"
 	"strings"
@@ -24,23 +25,17 @@ func (b *Bot) maintenance(ctx context.Context) error {
 
 	// perform the 'A-Check' operation on all eligible aircraft
 	if err := b.aCheckAllAircraft(ctx); err != nil {
-		slog.Warn("error in Bot.maintenance > Bot.aCheckAllAircraft", "error", err)
-
-		return err
+		return fmt.Errorf("maintenance: aCheckAllAircraft: %w", err)
 	}
 
 	// perform the 'Repair' operation on all eligible aircraft
 	if err := b.repairAllAircraft(ctx); err != nil {
-		slog.Warn("error in Bot.maintenance > Bot.repairAllAircraft", "error", err)
-
-		return err
+		return fmt.Errorf("maintenance: repairAllAircraft: %w", err)
 	}
 
 	// perform the 'Modify' operation on all eligible aircraft
 	if err := b.modifyAllAircraft(ctx); err != nil {
-		slog.Warn("error in Bot.maintenance > Bot.modifyAllAircraft", "error", err)
-
-		return err
+		return fmt.Errorf("maintenance: modifyAllAircraft: %w", err)
 	}
 
 	return nil
@@ -62,9 +57,7 @@ func (b *Bot) aCheckAllAircraft(ctx context.Context) error {
 		// search all "aircraft" rows
 		chromedp.Nodes(model.LIST_MAINTENANCE_BULK_ACHECK_AC_LIST, &aircraftElemList, chromedp.ByQueryAll),
 	); err != nil {
-		slog.Warn("error in Bot.aCheckAllAircraft > get aircraftElements list", "error", err)
-
-		return err
+		return fmt.Errorf("aCheckAllAircraft: get aircraft list: %w", err)
 	}
 
 	// Select all eligible aircraft for A-Check maintenance and count total A-Check cost
@@ -110,9 +103,7 @@ func (b *Bot) aCheckAllAircraft(ctx context.Context) error {
 	if err := chromedp.Run(ctx,
 		utils.GetFloatFromElement(model.TEXT_MAINTENANCE_BULK_ACHECK_COST, &totalACheckCost),
 	); err != nil {
-		slog.Warn("error in Bot.aCheckAllAircraft > get total A-Check cost", "error", err)
-
-		return err
+		return fmt.Errorf("aCheckAllAircraft: get total A-Check cost: %w", err)
 	}
 
 	slog.Info("found aircraft for a-check", "count", aircraftNeedACheck, "totalCost", int(totalACheckCost))
@@ -130,14 +121,11 @@ func (b *Bot) aCheckAllAircraft(ctx context.Context) error {
 	if err := chromedp.Run(ctx,
 		utils.ClickElement(model.BUTTON_MAINTENANCE_BULK_ACHECK_PLAN),
 	); err != nil {
-		slog.Warn("error in Bot.aCheckAllAircraft > plan A-Check maintenance for selected aircraft", "error", err)
-
-		return err
+		return fmt.Errorf("aCheckAllAircraft: plan A-Check: %w", err)
 	}
 
 	// update budget and account balance
-	b.BudgetMoney.Maintenance -= totalACheckCost
-	b.AccountBalance -= totalACheckCost
+	b.deductBudget(totalACheckCost, &b.BudgetMoney.Maintenance)
 
 	return nil
 }
@@ -155,9 +143,7 @@ func (b *Bot) repairAllAircraft(ctx context.Context) error {
 		// set "Repair %" filter
 		chromedp.SetValue(model.SELECT_MAINTENANCE_BULK_REPAIR_PERCENT, b.Conf.AircraftWearPercent, chromedp.ByQuery),
 	); err != nil {
-		slog.Warn("error in Bot.repairAllAircraft > set repair value filter", "error", err)
-
-		return err
+		return fmt.Errorf("repairAllAircraft: set repair filter: %w", err)
 	}
 
 	// Check if repair cost is visible after setting the filter, if not - then no aircraft need repair
@@ -172,9 +158,7 @@ func (b *Bot) repairAllAircraft(ctx context.Context) error {
 	if err := chromedp.Run(ctx,
 		utils.GetFloatFromElement(model.TEXT_MAINTENANCE_BULK_REPAIR_COST, &totalRepairCost),
 	); err != nil {
-		slog.Warn("error in Bot.repairAllAircraft > get total repair cost", "error", err)
-
-		return err
+		return fmt.Errorf("repairAllAircraft: get total repair cost: %w", err)
 	}
 
 	slog.Info("found aircraft for repair", "totalCost", int(totalRepairCost))
@@ -191,14 +175,11 @@ func (b *Bot) repairAllAircraft(ctx context.Context) error {
 	if err := chromedp.Run(ctx,
 		utils.ClickElement(model.BUTTON_MAINTENANCE_BULK_REPAIR_PLAN),
 	); err != nil {
-		slog.Warn("error in Bot.repairAllAircraft > plan repair maintenance for selected aircraft", "error", err)
-
-		return err
+		return fmt.Errorf("repairAllAircraft: plan repair: %w", err)
 	}
 
 	// update budget and account balance
-	b.BudgetMoney.Maintenance -= totalRepairCost
-	b.AccountBalance -= totalRepairCost
+	b.deductBudget(totalRepairCost, &b.BudgetMoney.Maintenance)
 
 	return nil
 }
@@ -221,9 +202,7 @@ func (b *Bot) modifyAllAircraft(ctx context.Context) error {
 		// search all "aircraft" rows
 		chromedp.Nodes(model.LIST_MAINTENANCE_AC_LIST, &aircraftElemList, chromedp.ByQueryAll),
 	); err != nil {
-		slog.Warn("error in Bot.modifyAllAircraft > get aircraftElements list", "error", err)
-
-		return err
+		return fmt.Errorf("modifyAllAircraft: get aircraft list: %w", err)
 	}
 
 	// the "Maintenance list" element is dynamic, it means that we have to search
@@ -261,9 +240,7 @@ func (b *Bot) modifyAllAircraft(ctx context.Context) error {
 		slog.Debug("try to modify aircraft", "aircraft", aircraft.RegNumber)
 
 		if mntOperationPerformed, err := b.modifyAc(ctx, aircraft); err != nil {
-			slog.Warn("error in Bot.modifyAllAircraft > Bot.maintenanceAcByType", "error", err)
-
-			return err
+			return fmt.Errorf("modifyAllAircraft: modifyAc: %w", err)
 		} else if mntOperationPerformed {
 			aircraftPlaned++
 		}
@@ -292,9 +269,7 @@ func (b *Bot) modifyAc(ctx context.Context, ac model.Aircraft) (bool, error) {
 		utils.ClickElement(model.BUTTON_COMMON_TAB2),
 		chromedp.Nodes(model.LIST_MAINTENANCE_AC_LIST, &aircraftElemList, chromedp.ByQueryAll),
 	); err != nil {
-		slog.Warn("error in Bot.modifyAc > get aircraftElements list", "error", err)
-
-		return false, err
+		return false, fmt.Errorf("modifyAc: get aircraft list: %w", err)
 	}
 
 	slog.Debug("search aircraft row")
@@ -321,9 +296,7 @@ func (b *Bot) modifyAc(ctx context.Context, ac model.Aircraft) (bool, error) {
 	if err := chromedp.Run(ctx,
 		chromedp.Click(model.BUTTON_MAINTENANCE_MODIFY, chromedp.ByQuery, chromedp.FromNode(acWebElemNode)),
 	); err != nil {
-		slog.Warn("error in Bot.modifyAc > open modification window", "error", err)
-
-		return false, err
+		return false, fmt.Errorf("modifyAc: open modification window: %w", err)
 	}
 
 	// select all available modification options
@@ -332,18 +305,14 @@ func (b *Bot) modifyAc(ctx context.Context, ac model.Aircraft) (bool, error) {
 		chromedp.Click(model.CHECKBOX_MAINTENANCE_MODIFY_MOD2, chromedp.ByQuery),
 		chromedp.Click(model.CHECKBOX_MAINTENANCE_MODIFY_MOD3, chromedp.ByQuery),
 	); err != nil {
-		slog.Warn("error in Bot.modifyAc > flag 'modify' options", "error", err)
-
-		return false, err
+		return false, fmt.Errorf("modifyAc: flag modify options: %w", err)
 	}
 
 	// get final cost for maintenance operation
 	if err := chromedp.Run(ctx,
 		utils.GetFloatFromElement(model.TEXT_MAINTENANCE_MODIFY_TOTAL_COST, &mntOperationCost),
 	); err != nil {
-		slog.Warn("error in Bot.modifyAc > get operation cost", "error", err)
-
-		return false, err
+		return false, fmt.Errorf("modifyAc: get operation cost: %w", err)
 	}
 
 	slog.Debug("modification cost", "cost", int(mntOperationCost), "reg.number", strings.ToUpper(ac.RegNumber))
@@ -367,14 +336,11 @@ func (b *Bot) modifyAc(ctx context.Context, ac model.Aircraft) (bool, error) {
 	if err := chromedp.Run(ctx,
 		utils.ClickElement(model.BUTTON_MAINTENANCE_PLAN_MODIFY),
 	); err != nil {
-		slog.Warn("error in Bot.modifyAc > plan modification operation", "error", err)
-
-		return false, err
+		return false, fmt.Errorf("modifyAc: plan modification: %w", err)
 	}
 
 	// update budget and account balance
-	b.BudgetMoney.Maintenance -= mntOperationCost
-	b.AccountBalance -= mntOperationCost
+	b.deductBudget(mntOperationCost, &b.BudgetMoney.Maintenance)
 
 	return true, nil
 }

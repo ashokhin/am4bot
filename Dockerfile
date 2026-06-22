@@ -1,6 +1,5 @@
 # syntax=docker/dockerfile:1
 
-# --- build stage ---
 FROM golang:1.26-alpine AS build
 
 WORKDIR /src
@@ -28,7 +27,6 @@ RUN CGO_ENABLED=0 go build \
           -X github.com/prometheus/common/version.BuildDate=${BUILD_DATE}" \
         -o /out/ambot ./cmd/ambot
 
-# --- runtime stage ---
 FROM alpine:3.21
 
 RUN apk add --no-cache tini chromium ca-certificates \

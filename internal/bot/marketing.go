@@ -2,6 +2,7 @@ package bot
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"strings"
 	"time"
@@ -12,33 +13,33 @@ import (
 	"github.com/chromedp/chromedp"
 )
 
-var marketingCompaniesMap = map[string]model.MarketingCompany{
-	"AirlineReputation": {
-		Name:               "Airline reputation",
-		CompanyRow:         model.ELEM_FINANCE_MARKETING_INC_AIRLINE_REP,
-		CompanyOptionValue: model.OPTION_FINANCE_MARKETING_INC_AIRLINE_REP_24H_VALUE,
-		CompanyCost:        model.TEXT_FINANCE_MARKETING_INC_AIRLINE_REP_COST,
-		CompanyButton:      model.BUTTON_FINANCE_MARKETING_INC_AIRLINE_REP_BUY,
-	},
-	"CargoReputation": {
-		Name:               "Cargo reputation",
-		CompanyRow:         model.ELEM_FINANCE_MARKETING_INC_CARGO_REP,
-		CompanyOptionValue: model.OPTION_FINANCE_MARKETING_INC_CARGO_REP_24H_VALUE,
-		CompanyCost:        model.TEXT_FINANCE_MARKETING_INC_CARGO_REP_COST,
-		CompanyButton:      model.BUTTON_FINANCE_MARKETING_INC_CARGO_REP_BUY,
-	},
-	"EcoFriendly": {
-		Name:               "Eco friendly",
-		CompanyRow:         model.ELEM_FINANCE_MARKETING_ECO_FRIENDLY,
-		CompanyOptionValue: "",
-		CompanyCost:        model.TEXT_FINANCE_MARKETING_ECO_FRIENDLY_COST,
-		CompanyButton:      model.BUTTON_FINANCE_MARKETING_ECO_FRIENDLY_BUY,
-	},
-}
-
 // marketingCompanies checks and activates marketing companies based on budget and status.
 func (b *Bot) marketingCompanies(ctx context.Context) error {
 	slog.Info("check marketing companies")
+
+	marketingCompaniesMap := map[string]model.MarketingCompany{
+		"AirlineReputation": {
+			Name:               "Airline reputation",
+			CompanyRow:         model.ELEM_FINANCE_MARKETING_INC_AIRLINE_REP,
+			CompanyOptionValue: model.OPTION_FINANCE_MARKETING_INC_AIRLINE_REP_24H_VALUE,
+			CompanyCost:        model.TEXT_FINANCE_MARKETING_INC_AIRLINE_REP_COST,
+			CompanyButton:      model.BUTTON_FINANCE_MARKETING_INC_AIRLINE_REP_BUY,
+		},
+		"CargoReputation": {
+			Name:               "Cargo reputation",
+			CompanyRow:         model.ELEM_FINANCE_MARKETING_INC_CARGO_REP,
+			CompanyOptionValue: model.OPTION_FINANCE_MARKETING_INC_CARGO_REP_24H_VALUE,
+			CompanyCost:        model.TEXT_FINANCE_MARKETING_INC_CARGO_REP_COST,
+			CompanyButton:      model.BUTTON_FINANCE_MARKETING_INC_CARGO_REP_BUY,
+		},
+		"EcoFriendly": {
+			Name:               "Eco friendly",
+			CompanyRow:         model.ELEM_FINANCE_MARKETING_ECO_FRIENDLY,
+			CompanyOptionValue: "",
+			CompanyCost:        model.TEXT_FINANCE_MARKETING_ECO_FRIENDLY_COST,
+			CompanyButton:      model.BUTTON_FINANCE_MARKETING_ECO_FRIENDLY_BUY,
+		},
+	}
 
 	// open finance pop-up
 	utils.DoClickElement(ctx, model.BUTTON_MAIN_FINANCE)
@@ -48,17 +49,13 @@ func (b *Bot) marketingCompanies(ctx context.Context) error {
 		utils.ClickElement(model.BUTTON_COMMON_TAB2),
 		utils.ClickElement(model.BUTTON_FINANCE_MARKETING_NEW_COMPANY),
 	); err != nil {
-		slog.Warn("error in Bot.marketingCompanies > open marketing companies window", "error", err)
-
-		return err
+		return fmt.Errorf("marketingCompanies: open marketing companies window: %w", err)
 	}
 
 	// check marketing companies status
 	for markCompName, markComp := range marketingCompaniesMap {
 		if err := b.checkMarketingCompanyStatus(ctx, &markComp); err != nil {
-			slog.Warn("error in Bot.marketingCompanies > Bot.checkMarketingCompanyStatus", "company", markComp.Name, "error", err)
-
-			return err
+			return fmt.Errorf("marketingCompanies: checkMarketingCompanyStatus %s: %w", markComp.Name, err)
 		}
 
 		slog.Debug("marketing company status", "company", markComp.Name, "isActive", markComp.IsActive)
@@ -107,9 +104,7 @@ func (b *Bot) checkMarketingCompanyStatus(ctx context.Context, mc *model.Marketi
 	if err := chromedp.Run(ctx,
 		chromedp.Attributes(mc.CompanyRow, &marketingCompanyElemAttributes, chromedp.ByQuery),
 	); err != nil {
-		slog.Warn("error in Bot.activateMarketingCompany > get company elem attributes", "company", mc.Name, "error", err)
-
-		return err
+		return fmt.Errorf("checkMarketingCompanyStatus %s: %w", mc.Name, err)
 	}
 
 	slog.Debug("attributes found", "company", mc.Name, "attributes", marketingCompanyElemAttributes)
@@ -137,9 +132,7 @@ func (b *Bot) activateMarketingCompany(ctx context.Context, mc *model.MarketingC
 		utils.ClickElement(model.BUTTON_FINANCE_MARKETING_NEW_COMPANY),
 		utils.ClickElement(mc.CompanyRow),
 	); err != nil {
-		slog.Warn("error in Bot.activateMarketingCompany > click company row", "error", err)
-
-		return err
+		return fmt.Errorf("activateMarketingCompany %s: click company row: %w", mc.Name, err)
 	}
 
 	var marketingCompanyCost float64
@@ -150,18 +143,14 @@ func (b *Bot) activateMarketingCompany(ctx context.Context, mc *model.MarketingC
 		if err := chromedp.Run(ctx,
 			utils.GetFloatFromElement(mc.CompanyCost, &marketingCompanyCost),
 		); err != nil {
-			slog.Warn("error in Bot.activateMarketingCompany > get company cost", "company", mc.Name, "error", err)
-
-			return err
+			return fmt.Errorf("activateMarketingCompany %s: get company cost: %w", mc.Name, err)
 		}
 	default:
 		if err := chromedp.Run(ctx,
 			chromedp.SetValue(model.SELECT_FINANCE_MARKETING_COMPANY_DURATION, mc.CompanyOptionValue, chromedp.ByQuery),
 			utils.GetFloatFromElement(mc.CompanyCost, &marketingCompanyCost),
 		); err != nil {
-			slog.Warn("error in Bot.activateMarketingCompany > get company cost", "company", mc.Name, "error", err)
-
-			return err
+			return fmt.Errorf("activateMarketingCompany %s: get company cost: %w", mc.Name, err)
 		}
 	}
 
@@ -178,14 +167,11 @@ func (b *Bot) activateMarketingCompany(ctx context.Context, mc *model.MarketingC
 	if err := chromedp.Run(ctx,
 		utils.ClickElement(mc.CompanyButton),
 	); err != nil {
-		slog.Warn("error in Bot.activateMarketingCompany > buy company", "company", mc.Name, "error", err)
-
-		return err
+		return fmt.Errorf("activateMarketingCompany %s: buy company: %w", mc.Name, err)
 	}
 
 	// update budgets and account balance
-	b.BudgetMoney.Marketing -= marketingCompanyCost
-	b.AccountBalance -= marketingCompanyCost
+	b.deductBudget(marketingCompanyCost, &b.BudgetMoney.Marketing)
 	mc.IsActive = true
 
 	slog.Info("marketing company activated", "company", mc.Name,
@@ -211,9 +197,7 @@ func (b *Bot) collectMarketingCompanyDuration(ctx context.Context, mc *model.Mar
 		utils.ClickElement(model.BUTTON_COMMON_TAB2),
 		chromedp.Nodes(model.LIST_FINANCE_MARKETING_COMPANIES, &marketingCompaniesList, chromedp.ByQueryAll),
 	); err != nil {
-		slog.Warn("error in Bot.collectMarketingCompanyDuration > get marketing companies list", "error", err)
-
-		return err
+		return fmt.Errorf("collectMarketingCompanyDuration: get companies list: %w", err)
 	}
 	// get marketing company duration string
 	for _, companyElem := range marketingCompaniesList {
@@ -222,9 +206,7 @@ func (b *Bot) collectMarketingCompanyDuration(ctx context.Context, mc *model.Mar
 		if err := chromedp.Run(ctx,
 			chromedp.Text(model.TEXT_MARKETING_COMPANY_NAME, &companyName, chromedp.ByQuery, chromedp.FromNode(companyElem)),
 		); err != nil {
-			slog.Warn("error in Bot.collectMarketingCompanyDuration > get company name from list", "error", err)
-
-			return err
+			return fmt.Errorf("collectMarketingCompanyDuration: get company name: %w", err)
 		}
 
 		companyName = strings.TrimSpace(companyName)
@@ -239,9 +221,7 @@ func (b *Bot) collectMarketingCompanyDuration(ctx context.Context, mc *model.Mar
 				if err := chromedp.Run(ctx,
 					chromedp.Text(model.TEXT_MARKETING_COMPANY_DURATION, &durationStr, chromedp.ByQuery, chromedp.FromNode(companyElem)),
 				); err != nil {
-					slog.Warn("error in Bot.collectMarketingCompanyDuration > get company duration string", "company", mc.Name, "error", err)
-
-					return err
+					return fmt.Errorf("collectMarketingCompanyDuration %s: get duration: %w", mc.Name, err)
 				}
 
 				if durationStr != "" {
@@ -262,9 +242,7 @@ func (b *Bot) collectMarketingCompanyDuration(ctx context.Context, mc *model.Mar
 	// parse duration string to seconds
 	durationSeconds, err := utils.ParseDurationStringToSeconds(durationStr)
 	if err != nil {
-		slog.Warn("error in Bot.collectMarketingCompanyDuration > parse duration string", "company", mc.Name, "error", err)
-
-		return err
+		return fmt.Errorf("collectMarketingCompanyDuration %s: parse duration: %w", mc.Name, err)
 	}
 
 	slog.Debug("marketing company duration collected", "company", mc.Name, "durationStr", durationStr, "durationSeconds", durationSeconds)
