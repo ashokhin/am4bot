@@ -3,3 +3,9 @@
 /bin
 /config.yaml
 /*.csv
+# SQLite database files (e.g. from `--db.path ./am4.db`), including WAL mode siblings
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3

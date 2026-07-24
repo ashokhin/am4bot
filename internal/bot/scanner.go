@@ -49,13 +49,17 @@ func (b *Bot) startScanner(ctx context.Context) (context.Context, context.Cancel
 	slog.Debug("run bot", "start_time", time.Now().UTC())
 	slog.Info("authentication")
 
-	// perform authentication
-	if err := b.auth(taskCtx); err != nil {
-		slog.Warn("error in Bot.Run > Bot.auth", "error", err)
-
+	if err := chromedp.Run(taskCtx, chromedp.Navigate(b.Conf.Url)); err != nil {
 		cancel()
 
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("startScanner: navigate: %w", err)
+	}
+
+	// perform authentication
+	if err := b.auth(taskCtx); err != nil {
+		cancel()
+
+		return nil, nil, fmt.Errorf("startScanner: auth: %w", err)
 	}
 	slog.Info("authentication successful")
 
