@@ -378,6 +378,8 @@ func SetPromGaugeNonNeg(promMetric prometheus.Gauge, value float64) {
 	promMetric.Set(value)
 }
 
+// AtoiSafe converts a numeric string (integer or float) to an int, rounding floats
+// to the nearest integer. Returns -1 if the string cannot be parsed.
 func AtoiSafe(str string) int {
 	floatValue, err := strconv.ParseFloat(str, 64)
 	if err != nil {
@@ -387,4 +389,30 @@ func AtoiSafe(str string) int {
 	}
 
 	return int(math.Round(floatValue))
+}
+
+// depArrPattern matches the "dep"/"arr" airport ID query parameters embedded in a
+// route search result row's onclick attribute, e.g.
+// "Ajax('route_research_route.php?dep=2399&amp;arr=3425','rDetails')".
+var depArrPattern = regexp.MustCompile(`dep=(\d+)&(?:amp;)?arr=(\d+)`)
+
+// ParseDepArr extracts the departure and arrival airport IDs from a route search
+// result row's onclick attribute. Returns an error if the pattern is not found.
+func ParseDepArr(onclick string) (depID int, arrID int, err error) {
+	matches := depArrPattern.FindStringSubmatch(onclick)
+	if matches == nil {
+		return 0, 0, fmt.Errorf("dep/arr IDs not found in onclick attribute: %s", onclick)
+	}
+
+	depID, err = strconv.Atoi(matches[1])
+	if err != nil {
+		return 0, 0, fmt.Errorf("parsing dep ID: %w", err)
+	}
+
+	arrID, err = strconv.Atoi(matches[2])
+	if err != nil {
+		return 0, 0, fmt.Errorf("parsing arr ID: %w", err)
+	}
+
+	return depID, arrID, nil
 }

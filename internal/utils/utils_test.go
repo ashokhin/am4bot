@@ -104,3 +104,48 @@ func TestParseDurationStringToSeconds(t *testing.T) {
 		})
 	}
 }
+
+func TestParseDepArr(t *testing.T) {
+	testCases := map[string]struct {
+		onclick   string
+		wantDep   int
+		wantArr   int
+		wantError bool
+	}{
+		"html-encoded ampersand": {
+			`$('#list').hide();Ajax('route_research_route.php?dep=2399&amp;arr=3425','rDetails');`,
+			2399, 3425, false,
+		},
+		"plain ampersand": {
+			`Ajax('route_research_route.php?dep=100&arr=200','rDetails');`,
+			100, 200, false,
+		},
+		"no match": {
+			`$('#list').hide();`,
+			0, 0, true,
+		},
+	}
+
+	for testName, testData := range testCases {
+		t.Run(testName, func(t *testing.T) {
+			dep, arr, err := ParseDepArr(testData.onclick)
+
+			if testData.wantError {
+				if err == nil {
+					t.Errorf(`ParseDepArr("%s") expected an error, got none`, testData.onclick)
+				}
+
+				return
+			}
+
+			if err != nil {
+				t.Errorf(`ParseDepArr("%s") returned unexpected error: %v`, testData.onclick, err)
+			}
+
+			if dep != testData.wantDep || arr != testData.wantArr {
+				t.Errorf(`ParseDepArr("%s") = (%d, %d), want (%d, %d)`,
+					testData.onclick, dep, arr, testData.wantDep, testData.wantArr)
+			}
+		})
+	}
+}

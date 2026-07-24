@@ -108,6 +108,18 @@ func main() {
 
 			return
 		}
+	case "full_catalog_scanner":
+		if err := bot.ScanFullCatalog(ctx, conf.CatalogDBPath); err != nil {
+			slog.Error("error in main > bot.ScanFullCatalog", "error", err)
+
+			return
+		}
+	case "catalog_codes_scanner":
+		if err := bot.ScanAirportCodes(ctx, conf.CatalogDBPath, conf.CatalogCodeType); err != nil {
+			slog.Error("error in main > bot.ScanAirportCodes", "error", err)
+
+			return
+		}
 	default:
 		slog.Warn("invalid scan type specified in config", "scan_type", conf.ScanType)
 	}

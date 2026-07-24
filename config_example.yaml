@@ -73,6 +73,14 @@ prometheus_address: ":9150"
 
 ### Scanner-specific configuration
 #
+# Scan type: "route_scanner" (default, scans hubs_list), "airport_scanner"
+# (lists countries/airports without saving), "full_catalog_scanner" (scans
+# every airport in the game and writes routes to catalog_db_path — a
+# multi-day, one-time job), or "catalog_codes_scanner" (lightweight pass that
+# backfills the IATA or ICAO code for every airport already in catalog_db_path;
+# set the account's code-display setting in-game to match catalog_code_type
+# before running it)
+scan_type: "route_scanner"
 # List of hubs to scan routes
 hubs_list:
     - "New York JFK, United States"
@@ -82,11 +90,20 @@ hubs_list:
     - "Brasília, Brazil"
     - "Atlanta Int, United States"
     - "Reykjavík - Keflavik, Iceland"
-# Maximum distance for route
+# Maximum distance for route.
+# NOTE: also used by "full_catalog_scanner" — for a full scrape this should be
+# set permissively (e.g. 20000) rather than tuned to a specific aircraft, so no
+# real route is excluded from the catalog.
 max_route_range_km: 14500
-# Minimum distance for route
+# Minimum distance for route. For "full_catalog_scanner", set to 0.
 min_route_range_km: 6500
-# Minimal runway length for route
+# Minimal runway length for route. For "full_catalog_scanner", set to 0 so no
+# destination is excluded — the calculator applies aircraft-specific runway
+# constraints later, at query time.
 min_runway_length: 9680
 # Scan step between "max_route_range_km" and "min_route_range_km"
 scan_step_km: 100
+# Output SQLite path for "full_catalog_scanner" / "catalog_codes_scanner"
+catalog_db_path: "am4_catalog.db"
+# Which code column "catalog_codes_scanner" fills in: "iata" or "icao"
+catalog_code_type: "iata"

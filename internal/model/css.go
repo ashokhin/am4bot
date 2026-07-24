@@ -135,6 +135,8 @@ const (
 	LINK_FLEET_RESEARCH_CUSTOM_DEPARTURE   string = "div#routeAction > div#routeSearch #hubDeparture > div:nth-child(1) > div:nth-child(2) > a:nth-child(1)" // "Custom departure" link
 	SELECT_FLEET_RESEARCH_COUNTRY_SELECTOR string = "div#routeAction > div#routeSearch div#customDeparture #countrySelector"                                 // Country selector in "Custom departure" form
 	LIST_FLEET_RESEARCH_COUNTRY_OPTIONS    string = "div#routeAction > div#routeSearch div#customDeparture #countrySelector > option"                        // List of country options in "Custom departure" form
+	SELECT_FLEET_RESEARCH_AIRPORT_SELECTOR string = "div#routeAction > div#routeSearch div#customDeparture #cityList #citySelect"                            // Airport selector in "Custom departure" form, populated after a country is selected
+	LIST_FLEET_RESEARCH_AIRPORT_OPTIONS    string = "div#routeAction > div#routeSearch div#customDeparture #cityList #citySelect > option"                   // List of airport options in "Custom departure" form
 	SELECT_FLEET_RESEARCH_DEPARTING_FROM   string = "div#routeAction > div#routeSearch div#hubDeparture > select#hubSelect"                                  // "Departing from" hub select element
 	LIST_FLEET_RESEARCH_DEPARTING_FROM     string = "div#routeAction > div#routeSearch div#hubDeparture > select#hubSelect > option"                         // List of "Departing from" hub options
 	TEXTFIELD_FLEET_RESEARCH_MAX_DISTANCE  string = "div#routeAction > div#routeSearch input#maxDist"                                                        // "Max. distance" input field

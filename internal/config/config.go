@@ -44,6 +44,9 @@ type Config struct {
 	MinRouteDistanceKm int      `default:"6500" yaml:"min_route_range_km"`
 	MinRunwayLength    int      `default:"9680" yaml:"min_runway_length"`
 	ScanStepKm         int      `default:"100" yaml:"scan_step_km"`
+	// Parameters for "full_catalog_scanner" / "catalog_codes_scanner" scan types
+	CatalogDBPath   string `default:"am4_catalog.db" yaml:"catalog_db_path"`
+	CatalogCodeType string `default:"iata" yaml:"catalog_code_type"`
 	// Parameters for both Bot and Scanner configuration
 	ChromeHeadless bool `default:"true" yaml:"chrome_headless"`
 	ChromeDebug    bool `default:"false" yaml:"chrome_debug"`
@@ -96,6 +99,8 @@ func (c Config) String() string {
 		", MinRouteDistanceKm:", c.MinRouteDistanceKm,
 		", MinRunwayLength:", c.MinRunwayLength,
 		", ScanStepKm:", c.ScanStepKm,
+		", CatalogDBPath:", c.CatalogDBPath,
+		", CatalogCodeType:", c.CatalogCodeType,
 		"}")
 }
 
@@ -260,4 +265,3 @@ func loadYaml(filePath string, out any) error {
 
 	return err
 }
-
