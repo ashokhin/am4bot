@@ -97,12 +97,53 @@ hubs_list:
 max_route_range_km: 14500
 # Minimum distance for route. For "full_catalog_scanner", set to 0.
 min_route_range_km: 6500
-# Minimal runway length for route. For "full_catalog_scanner", set to 0 so no
-# destination is excluded — the calculator applies aircraft-specific runway
-# constraints later, at query time.
-min_runway_length: 9680
+# Minimal runway length for route. "route_scanner" only — used to filter
+# routes for the aircraft you're scanning hubs_list for. Unused by
+# "full_catalog_scanner" (see catalog_min_runway_length_ft/
+# catalog_max_runway_length_ft below); the calculator applies aircraft-specific
+# runway constraints later, at query time.
+hub_min_runway_length_ft: 9680
 # Scan step between "max_route_range_km" and "min_route_range_km"
 scan_step_km: 100
+# "full_catalog_scanner" only: when a distance window's unfiltered query
+# returns exactly 50 results (the game's per-query cap), it is re-swept across
+# "min. runway" thresholds from catalog_min_runway_length_ft to
+# catalog_max_runway_length_ft in catalog_runway_step_ft steps, since a single
+# distance window can itself hide routes past the cap.
+#
+# catalog_min_runway_length_ft must be >= 1 (0 breaks the game's search form).
+# Keep it at 1 unless you've empirically confirmed (e.g. via a small
+# catalog_airport_ids + catalog_disable_runway_sweep test) that no real
+# airport has a shorter runway than the value you raise it to — every step
+# below it is skipped entirely, not just "assumed empty".
+catalog_min_runway_length_ft: 1
+catalog_max_runway_length_ft: 20000
+catalog_runway_step_ft: 500
+# Testing/debugging aid: set true to skip the runway sweep above entirely
+# (every window is queried once, at min. runway = catalog_min_runway_length_ft)
+# — useful for comparing route counts with vs. without the runway sweep before
+# committing to a full run.
+catalog_disable_runway_sweep: false
+# Testing/debugging aid: if set, "full_catalog_scanner"/"catalog_codes_scanner"
+# only scan these airport IDs (the game's internal numeric ID — see the
+# "dep"/"arr" params logged for each route) instead of every airport in the
+# game. Leave empty/unset for a real run.
+catalog_airport_ids: []
+#     - 2399
+#     - 3425
+# Sharding: run multiple scanner instances in parallel, each covering a
+# disjoint slice of the airport ID space, to cut wall-clock time on a full
+# scan (verify first that your account tolerates multiple concurrent
+# sessions — this drives several at once). Airport IDs aren't assigned by
+# geography, so each shard still walks every country to find which of its
+# airports fall in this range, but only scans those; give each instance its
+# own catalog_db_path, then combine the resulting files with
+# ./bin/mergecatalog <output.db> <shard1.db> <shard2.db> ...
+# 0/0 (the default) means no restriction — every airport ID is in range.
+# Independent of catalog_airport_ids above; if both are set, an airport is
+# scanned only when it satisfies both.
+catalog_airport_id_min: 0
+catalog_airport_id_max: 0
 # Output SQLite path for "full_catalog_scanner" / "catalog_codes_scanner"
 catalog_db_path: "am4_catalog.db"
 # Which code column "catalog_codes_scanner" fills in: "iata" or "icao"

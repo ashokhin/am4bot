@@ -145,6 +145,7 @@ const (
 	LIST_FLEET_RESEARCH_SEARCH_RESULTS     string = "div#routeAction > div#routeSearch > div#resResult > div#list > div.row.border.opa.sorter"               // List of search results
 	TEXT_FLEET_RESEARCH_ROUTE_FROM         string = "div.row.border.opa.sorter > div.col-6.m-text > div.exo > b:nth-child(1)"                                // route "From" text
 	TEXT_FLEET_RESEARCH_ROUTE_TO           string = "div.row.border.opa.sorter > div.col-6.m-text > div.exo > b:nth-child(2)"                                // route "To" text
+	TEXT_FLEET_RESEARCH_ROUTE_TO_LOCATION  string = "div.row.border.opa.sorter > div.col-6.m-text > span.s-text:nth-of-type(2)"                              // route "To" airport's "Country, Airport name" text
 
 	// "Fuel" pop-up
 

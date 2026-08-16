@@ -79,13 +79,20 @@ You can visualize these metrics using [Grafana](https://grafana.com/grafana/).
    Paste your configuration and save the file.
 3. Run the bot:
    ```bash
-   docker run --rm --name ambot --volume /opt/ambot/conf/config.yaml:/config.yaml ashokhin/am4bot:latest
+   docker run --rm --name ambot --restart=on-failure --volume /opt/ambot/conf/config.yaml:/config.yaml ashokhin/am4bot:latest
    ```
    
    For collecting Prometheus metrics, you can expose port 9150 (default in the config option `prometheus_address`) from container to host:
    ```bash
-   docker run --rm --name ambot --volume /opt/ambot/conf/config.yaml:/config.yaml -p 9150:9150 ashokhin/am4bot:latest
+   docker run --rm --name ambot --restart=on-failure --volume /opt/ambot/conf/config.yaml:/config.yaml -p 9150:9150 ashokhin/am4bot:latest
    ```
+
+   > [!NOTE]
+   >
+   > The bot exits the process (`os.Exit(1)`) after 5 consecutive failed runs in a row.
+   > Without a restart policy, the container would then stay stopped. `--restart=on-failure`
+   > makes Docker restart the container automatically whenever this happens.
+
 4. (Optional) To run the bot as a [systemd service](https://www.freedesktop.org/software/systemd/man/latest/systemd.service.html), create a file `/etc/systemd/system/am4bot.service` with the following content:
    ```ini
    [Unit]
@@ -98,7 +105,7 @@ You can visualize these metrics using [Grafana](https://grafana.com/grafana/).
    Type=simple
    Restart=always
    ExecStartPre=-/usr/bin/docker pull ashokhin/am4bot:latest
-   ExecStart=/usr/bin/docker run --rm --name %n --volume /opt/ambot/conf/config.yaml:/config.yaml --publish 9150:9150 ashokhin/am4bot:latest
+   ExecStart=/usr/bin/docker run --rm --name %n --restart=on-failure --volume /opt/ambot/conf/config.yaml:/config.yaml --publish 9150:9150 ashokhin/am4bot:latest
 
    [Install]
    WantedBy=multi-user.target
@@ -109,6 +116,21 @@ You can visualize these metrics using [Grafana](https://grafana.com/grafana/).
    sudo systemctl daemon-reload
    sudo systemctl enable am4bot.service --now
    ```
+
+### Command-line flags
+
+The `ambot` binary also accepts CLI flags, which take priority over the equivalent `config.yaml`
+option whenever both are set to a non-default value:
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--app.config`, `-c` | `config.yaml` | Path to the YAML configuration file. |
+| `--web.listen-address` | `:9150` | Address to expose Prometheus metrics on. Overrides `prometheus_address` in the config. |
+| `--web.telemetry-path` | `/metrics` | Path under which metrics are exposed. |
+| `--log.level` | `info` | Logging level (`debug`, `info`, `warn`, `error`). Overrides `log_level` in the config. |
+| `--log.format` | `logfmt` | Log output format (`logfmt`, `json`). |
+| `--help`, `-h` | | Show help. |
+| `--version` | | Show version information. |
 
 
 ## Configuration
@@ -206,6 +228,13 @@ password: "your_password_here"
 > 
 > Note that the order of services in the configuration matters.
 > All services are executed sequentially in the order they are listed.
+
+
+### Configuration hot-reload
+
+The bot checks `config.yaml`'s modification time before every cron run and, if the file has
+changed since the last run, reloads it automatically — no restart required. This applies to
+all options in the [Available options](#available-options) table above.
 
 
 ## Prometheus Metrics

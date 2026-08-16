@@ -42,11 +42,59 @@ type Config struct {
 	HubsList           []string `yaml:"hubs_list"`
 	MaxRouteDistanceKm int      `default:"14500" yaml:"max_route_range_km"`
 	MinRouteDistanceKm int      `default:"6500" yaml:"min_route_range_km"`
-	MinRunwayLength    int      `default:"9680" yaml:"min_runway_length"`
-	ScanStepKm         int      `default:"100" yaml:"scan_step_km"`
+	// Minimum runway length "route_scanner" requires when searching routes
+	// for the configured HubsList/aircraft.
+	HubMinRunwayLengthFt int `default:"9680" yaml:"hub_min_runway_length_ft"`
+	ScanStepKm           int `default:"100" yaml:"scan_step_km"`
 	// Parameters for "full_catalog_scanner" / "catalog_codes_scanner" scan types
 	CatalogDBPath   string `default:"am4_catalog.db" yaml:"catalog_db_path"`
 	CatalogCodeType string `default:"iata" yaml:"catalog_code_type"`
+	// Lowest "min. runway" value "full_catalog_scanner" queries with — both
+	// for its base (unfiltered) query and as the start of the runway sweep
+	// (see CatalogRunwayStepFt). Must be >= 1: the game's search form breaks
+	// with an empty/0 value. Raise this above 1 only once you've confirmed
+	// (e.g. via CatalogDisableRunwaySweep test runs) that no real airport in
+	// the game has a shorter runway than the value you pick — it skips real
+	// queries, not just empty ones.
+	CatalogMinRunwayLengthFt int `default:"1" yaml:"catalog_min_runway_length_ft"`
+	// Highest "min. runway" threshold "full_catalog_scanner" will try when a
+	// distance window comes back saturated (see CatalogRunwayStepFt).
+	CatalogMaxRunwayLengthFt int `default:"20000" yaml:"catalog_max_runway_length_ft"`
+	// Step between runway thresholds "full_catalog_scanner" sweeps through
+	// (CatalogMinRunwayLengthFt up to CatalogMaxRunwayLengthFt) when a
+	// distance window's unfiltered query returns exactly 50 results — the
+	// game's per-query cap — since that many results at one distance can
+	// itself hide routes behind the cap.
+	CatalogRunwayStepFt int `default:"500" yaml:"catalog_runway_step_ft"`
+	// Testing/debugging aid: if true, "full_catalog_scanner" never sweeps
+	// runway thresholds for a saturated window — useful for comparing route
+	// counts with vs. without the runway sweep.
+	CatalogDisableRunwaySweep bool `default:"false" yaml:"catalog_disable_runway_sweep"`
+	// Testing/debugging aid: if true, "full_catalog_scanner" ignores both
+	// early-exit optimizations (distance-level in scanCatalogAirport,
+	// runway-level in scanCatalogDistanceByRunway) and always sweeps the
+	// full configured range regardless of whether a window came back
+	// unsaturated. Used to validate that trusting "unsaturated at X means
+	// everything below X is known" doesn't actually lose routes — compare
+	// route counts with vs. without this flag on the same airport.
+	CatalogDisableEarlyExit bool `default:"false" yaml:"catalog_disable_early_exit"`
+	// Testing/debugging aid: if non-empty, "full_catalog_scanner" and
+	// "catalog_codes_scanner" only scan these airport IDs (the numeric game
+	// ID, e.g. from citySelect/dep/arr) instead of every airport in the game.
+	// Airports outside this list are left untouched — a later unrestricted
+	// run still covers them normally.
+	CatalogAirportIDs []int `yaml:"catalog_airport_ids"`
+	// Sharding for running multiple scanner instances in parallel against
+	// disjoint slices of the airport ID space, each with its own
+	// CatalogDBPath — merge the resulting files afterward. Airport IDs
+	// aren't assigned by geography, so a shard still walks every country to
+	// find which of its airports fall in [CatalogAirportIDMin,
+	// CatalogAirportIDMax], but only actually scans those. 0/0 (the
+	// zero-value default) means "no range restriction" — every airport ID
+	// is in range. Independent of CatalogAirportIDs; if both are set, an
+	// airport is scanned only when it satisfies both.
+	CatalogAirportIDMin int `default:"0" yaml:"catalog_airport_id_min"`
+	CatalogAirportIDMax int `default:"0" yaml:"catalog_airport_id_max"`
 	// Parameters for both Bot and Scanner configuration
 	ChromeHeadless bool `default:"true" yaml:"chrome_headless"`
 	ChromeDebug    bool `default:"false" yaml:"chrome_debug"`
@@ -59,7 +107,7 @@ type Config struct {
 
 // BudgetType holds budget percentage settings for various categories.
 type BudgetType struct {
-	Maintenance float64 `default:"50" yaml:"maintenance"`
+	Maintenance float64 `default:"30" yaml:"maintenance"`
 	Marketing   float64 `default:"70" yaml:"marketing"`
 	Fuel        float64 `default:"70" yaml:"fuel"`
 }
@@ -97,10 +145,18 @@ func (c Config) String() string {
 		", HubsList:", c.HubsList,
 		", MaxRouteDistanceKm:", c.MaxRouteDistanceKm,
 		", MinRouteDistanceKm:", c.MinRouteDistanceKm,
-		", MinRunwayLength:", c.MinRunwayLength,
+		", HubMinRunwayLengthFt:", c.HubMinRunwayLengthFt,
 		", ScanStepKm:", c.ScanStepKm,
 		", CatalogDBPath:", c.CatalogDBPath,
 		", CatalogCodeType:", c.CatalogCodeType,
+		", CatalogMinRunwayLengthFt:", c.CatalogMinRunwayLengthFt,
+		", CatalogMaxRunwayLengthFt:", c.CatalogMaxRunwayLengthFt,
+		", CatalogRunwayStepFt:", c.CatalogRunwayStepFt,
+		", CatalogDisableRunwaySweep:", c.CatalogDisableRunwaySweep,
+		", CatalogDisableEarlyExit:", c.CatalogDisableEarlyExit,
+		", CatalogAirportIDs:", c.CatalogAirportIDs,
+		", CatalogAirportIDMin:", c.CatalogAirportIDMin,
+		", CatalogAirportIDMax:", c.CatalogAirportIDMax,
 		"}")
 }
 
@@ -206,6 +262,15 @@ func (c *Config) validate() error {
 
 	if c.GetPassword() == "" {
 		return fmt.Errorf("config: password is required")
+	}
+
+	if c.CatalogMinRunwayLengthFt < 1 {
+		return fmt.Errorf("config: catalog_min_runway_length_ft must be >= 1 (0 breaks the game's search form)")
+	}
+
+	if c.CatalogAirportIDMax > 0 && c.CatalogAirportIDMin > c.CatalogAirportIDMax {
+		return fmt.Errorf("config: catalog_airport_id_min (%d) must be <= catalog_airport_id_max (%d)",
+			c.CatalogAirportIDMin, c.CatalogAirportIDMax)
 	}
 
 	return nil

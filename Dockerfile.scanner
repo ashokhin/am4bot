@@ -1,0 +1,15 @@
+# syntax=docker/dockerfile:1
+#
+# Base image for the scanner containers: just chromium + ca-certificates
+# baked in, nothing else. The Go binary itself is NOT copied into this image
+# — it's picked up at runtime from the bind-mounted project directory
+# (./bin/scanner, built on the host via `make build`), same as before.
+# Rebuilding after a code change is now just `make build` on the host plus a
+# container restart — no `docker build` at all, since nothing in this image
+# depends on the binary.
+#
+# Build once: docker build -f Dockerfile.scanner -t am4bot-scanner-base .
+
+FROM alpine:3.21
+
+RUN apk add --no-cache chromium ca-certificates

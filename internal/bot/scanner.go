@@ -138,7 +138,7 @@ func (b *Bot) ScanRoutes(ctx context.Context) error {
 // searchRoutesForHub searches for routes from a specific hub within the configured distance range.
 func (b *Bot) searchRoutesForHub(ctx context.Context, hubName string) error {
 	slog.Info("searching routes", "hub", hubName, "max_distance_km", b.Conf.MaxRouteDistanceKm,
-		"min_distance_km", b.Conf.MinRouteDistanceKm, "min_runway_length", b.Conf.MinRunwayLength,
+		"min_distance_km", b.Conf.MinRouteDistanceKm, "hub_min_runway_length_ft", b.Conf.HubMinRunwayLengthFt,
 		"scan_step_km", b.Conf.ScanStepKm)
 
 	currentDistance := b.Conf.MaxRouteDistanceKm
@@ -166,7 +166,7 @@ func (b *Bot) scanDistance(ctx context.Context, hubName string, maxDistance int)
 
 	if err := chromedp.Run(ctx,
 		chromedp.SetValue(model.TEXTFIELD_FLEET_RESEARCH_MAX_DISTANCE, strconv.Itoa(maxDistance), chromedp.ByQuery),
-		chromedp.SetValue(model.TEXTFIELD_FLEET_RESEARCH_MIN_RUNWAY, strconv.Itoa(b.Conf.MinRunwayLength), chromedp.ByQuery),
+		chromedp.SetValue(model.TEXTFIELD_FLEET_RESEARCH_MIN_RUNWAY, strconv.Itoa(b.Conf.HubMinRunwayLengthFt), chromedp.ByQuery),
 		utils.ClickElement(model.BUTTON_FLEET_RESEARCH_SEARCH),
 	); err != nil {
 		slog.Warn("error in searchRoutesForHub > searching routes", "hub", hubName, "max_distance_km", maxDistance, "error", err)

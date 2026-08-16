@@ -87,7 +87,7 @@ func main() {
 	if conf, err = config.New(confPath); err != nil {
 		slog.Error("config loading error", "error", err)
 
-		return
+		os.Exit(1)
 	}
 
 	bot := bot.NewScanner(conf)
@@ -100,25 +100,25 @@ func main() {
 		if err := scanRoutes(ctx, bot); err != nil {
 			slog.Error("error in main > scanRoutes", "error", err)
 
-			return
+			os.Exit(1)
 		}
 	case "airport_scanner":
 		if err := scanAirports(ctx, bot); err != nil {
 			slog.Error("error in main > scanAirports", "error", err)
 
-			return
+			os.Exit(1)
 		}
 	case "full_catalog_scanner":
 		if err := bot.ScanFullCatalog(ctx, conf.CatalogDBPath); err != nil {
 			slog.Error("error in main > bot.ScanFullCatalog", "error", err)
 
-			return
+			os.Exit(1)
 		}
 	case "catalog_codes_scanner":
 		if err := bot.ScanAirportCodes(ctx, conf.CatalogDBPath, conf.CatalogCodeType); err != nil {
 			slog.Error("error in main > bot.ScanAirportCodes", "error", err)
 
-			return
+			os.Exit(1)
 		}
 	default:
 		slog.Warn("invalid scan type specified in config", "scan_type", conf.ScanType)

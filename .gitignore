@@ -2,6 +2,9 @@
 .venv/
 /bin
 /config.yaml
+/config-shard*.yaml
+/docker-compose.yml
+/vpn/
 /*.csv
 # SQLite database files (e.g. from `--db.path ./am4.db`), including WAL mode siblings
 *.db
@@ -9,3 +12,6 @@
 *.db-shm
 *.sqlite
 *.sqlite3
+# Local-only helper scripts (release publishing, etc.) — not part of the
+# distributed project.
+/scripts/
