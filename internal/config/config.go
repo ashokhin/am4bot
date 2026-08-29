@@ -305,7 +305,7 @@ func New(filePath string) (*Config, error) {
 		return nil, err
 	}
 
-	slog.Debug("config loaded", "config", c)
+	slog.Debug("config loaded", "file", c.confFilePath, "mod_time", c.confModTime)
 
 	return c, nil
 }
