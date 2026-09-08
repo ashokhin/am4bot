@@ -102,12 +102,12 @@ func run(airportsPath, routesPath, aircraftsPath, outputPath string) error {
 
 	slog.Info("read airports", "count", len(airports))
 
-	aircrafts, err := readAircraft(aircraftsPath)
+	aircraft, err := readAircraft(aircraftsPath)
 	if err != nil {
-		return fmt.Errorf("reading aircrafts parquet: %w", err)
+		return fmt.Errorf("reading aircraft parquet: %w", err)
 	}
 
-	slog.Info("read aircraft", "count", len(aircrafts))
+	slog.Info("read aircraft", "count", len(aircraft))
 
 	// NewCatalogWriter ensures the output file has the full current schema
 	// before we bulk-load into it via a plain sqlx connection — mirrors
@@ -135,7 +135,7 @@ func run(airportsPath, routesPath, aircraftsPath, outputPath string) error {
 		return fmt.Errorf("importing routes: %w", err)
 	}
 
-	if err := importAircraft(db, aircrafts); err != nil {
+	if err := importAircraft(db, aircraft); err != nil {
 		return fmt.Errorf("importing aircraft: %w", err)
 	}
 
@@ -329,12 +329,12 @@ func readAircraft(path string) ([]aircraftRow, error) {
 	reader := parquet.NewGenericReader[aircraftRow](f)
 	defer reader.Close()
 
-	aircrafts := make([]aircraftRow, 0, reader.NumRows())
+	aircraft := make([]aircraftRow, 0, reader.NumRows())
 	buf := make([]aircraftRow, 256)
 
 	for {
 		n, err := reader.Read(buf)
-		aircrafts = append(aircrafts, buf[:n]...)
+		aircraft = append(aircraft, buf[:n]...)
 
 		if err == io.EOF {
 			break
@@ -344,13 +344,13 @@ func readAircraft(path string) ([]aircraftRow, error) {
 		}
 	}
 
-	return aircrafts, nil
+	return aircraft, nil
 }
 
 // importAircraft writes every (airframe, engine) row as a distinct catalog
 // aircraft — see package doc for why this must not collapse to one row per
 // airframe.
-func importAircraft(db *sqlx.DB, aircrafts []aircraftRow) error {
+func importAircraft(db *sqlx.DB, aircraft []aircraftRow) error {
 	tx, err := db.Begin()
 	if err != nil {
 		return err
@@ -375,7 +375,7 @@ func importAircraft(db *sqlx.DB, aircrafts []aircraftRow) error {
 	}
 	defer stmt.Close()
 
-	for _, a := range aircrafts {
+	for _, a := range aircraft {
 		acType, ok := aircraftTypeNames[a.Type]
 		if !ok {
 			_ = tx.Rollback()
