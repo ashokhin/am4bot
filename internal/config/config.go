@@ -213,7 +213,7 @@ func (c *Config) ReloadConfigIfChanged() (bool, error) {
 	// update stored mtime
 	c.confModTime = newModTime
 
-	slog.Debug("config reloaded", "config", c)
+	slog.Debug("config reloaded", "file", c.confFilePath, "new_mtime", c.confModTime, "log_level", c.LogLevel)
 
 	return true, nil
 }
@@ -245,7 +245,7 @@ func (c *Config) loadConfig() error {
 	// securely store password
 	c.safeStorePassword()
 
-	slog.Debug("configuration loaded successfully", "config", c)
+	slog.Debug("configuration loaded successfully", "file", c.confFilePath, "log_level", c.LogLevel)
 
 	return nil
 }
