@@ -49,8 +49,19 @@ aircraft_max_hours_to_check: 48
 aircraft_modify_limit: 5
 # Fuel level percentage to trigger refuel. Even the price isn't good
 fuel_critical_percent: 15
-# Cron-like schedule for services
-cron_schedule: "*/10 * * * *"
+# Cron-like schedules for services — at least one entry required. Each is a
+# standard 5-field cron expression; the day-of-week field alone covers
+# "different start time on weekdays vs. weekends" (a common way to make
+# login timing look human), e.g. instead of the single entry below:
+#     - "0 8 * * 1-5"   # weekdays: run once at 08:00
+#     - "0 10 * * 0,6"  # weekends: run once at 10:00
+cron_schedules:
+    - "*/10 * * * *"
+#
+# Upper bound, in seconds, of a random delay applied after each trigger and
+# before the run actually starts ("floating start"). Makes login/action
+# timestamps less mechanically regular. 0 (default) disables it.
+cron_jitter_seconds: 120
 # List of services to run
 services:
     - "company_stats"
@@ -95,7 +106,9 @@ hubs_list:
 # set permissively (e.g. 20000) rather than tuned to a specific aircraft, so no
 # real route is excluded from the catalog.
 max_route_range_km: 14500
-# Minimum distance for route. For "full_catalog_scanner", set to 0.
+# Minimum distance for route. For "full_catalog_scanner", set to 0 — the
+# in-game search form itself floors any value below 500 up to 500, so this
+# just documents intent; it won't reveal routes shorter than 500km.
 min_route_range_km: 6500
 # Minimal runway length for route. "route_scanner" only — used to filter
 # routes for the aircraft you're scanning hubs_list for. Unused by

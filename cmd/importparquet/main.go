@@ -1,6 +1,6 @@
 // Command importparquet builds a full catalog SQLite database directly from
 // the "am4" project's (github.com/abc8747/am4) pre-scraped static game-data
-// release assets — airports.parquet, routes.parquet and aircrafts.parquet —
+// release assets — airports.parquet, routes.parquet and aircraft.parquet —
 // instead of running full_catalog_scanner against the live game.
 //
 // routes.parquet is not keyed by airport ID: it's a flattened strictly-upper-
@@ -13,7 +13,7 @@
 // the matching (i, j) from that same double loop — no join key needed, only
 // matching iteration order.
 //
-// aircrafts.parquet has one row per (airframe, engine) combination — the same
+// aircraft.parquet has one row per (airframe, engine) combination — the same
 // airframe (e.g. "B747-400") appears once per selectable engine, each with its
 // own cruise speed. Every row is imported as a distinct catalog aircraft named
 // "<airframe> (<engine>)", so every real in-game speed variant is available —
@@ -55,7 +55,7 @@ type routeRow struct {
 	D  float64 `parquet:"d"`
 }
 
-// aircraftRow mirrors the columns of aircrafts.parquet we need. One row per
+// aircraftRow mirrors the columns of aircraft.parquet we need. One row per
 // (airframe, engine) combination — see package doc.
 type aircraftRow struct {
 	Name     string  `parquet:"name"`
@@ -67,7 +67,7 @@ type aircraftRow struct {
 	Range    uint16  `parquet:"range"`
 }
 
-// aircraftTypeNames maps aircrafts.parquet's numeric "type" column to the
+// aircraftTypeNames maps aircraft.parquet's numeric "type" column to the
 // calculator's ac_type strings — confirmed against known aircraft (A320-VIP
 // etc. are type 2, cargo-only airframes like the A400M are type 1).
 var aircraftTypeNames = map[uint8]string{
@@ -82,19 +82,19 @@ const batchSize = 50_000
 
 func main() {
 	if len(os.Args) != 5 {
-		fmt.Fprintf(os.Stderr, "usage: %s <airports.parquet> <routes.parquet> <aircrafts.parquet> <output.db>\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "usage: %s <airports.parquet> <routes.parquet> <aircraft.parquet> <output.db>\n", os.Args[0])
 		os.Exit(1)
 	}
 
-	airportsPath, routesPath, aircraftsPath, outputPath := os.Args[1], os.Args[2], os.Args[3], os.Args[4]
+	airportsPath, routesPath, aircraftPath, outputPath := os.Args[1], os.Args[2], os.Args[3], os.Args[4]
 
-	if err := run(airportsPath, routesPath, aircraftsPath, outputPath); err != nil {
+	if err := run(airportsPath, routesPath, aircraftPath, outputPath); err != nil {
 		slog.Error("import failed", "error", err)
 		os.Exit(1)
 	}
 }
 
-func run(airportsPath, routesPath, aircraftsPath, outputPath string) error {
+func run(airportsPath, routesPath, aircraftPath, outputPath string) error {
 	airports, err := readAirports(airportsPath)
 	if err != nil {
 		return fmt.Errorf("reading airports parquet: %w", err)
@@ -102,7 +102,7 @@ func run(airportsPath, routesPath, aircraftsPath, outputPath string) error {
 
 	slog.Info("read airports", "count", len(airports))
 
-	aircraft, err := readAircraft(aircraftsPath)
+	aircraft, err := readAircraft(aircraftPath)
 	if err != nil {
 		return fmt.Errorf("reading aircraft parquet: %w", err)
 	}

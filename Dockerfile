@@ -29,7 +29,7 @@ RUN CGO_ENABLED=0 go build \
 
 FROM alpine:3.21
 
-RUN apk add --no-cache tini chromium ca-certificates \
+RUN apk add --no-cache tini chromium ca-certificates tzdata \
     && addgroup -S ambot \
     && adduser -S -G ambot -h /home/ambot ambot \
     && mkdir -p /home/ambot/.cache \

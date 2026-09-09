@@ -23,7 +23,7 @@ func (b *Bot) money(ctx context.Context) error {
 		utils.ClickElement(model.BUTTON_MAIN_ACCOUNT),
 		chromedp.Nodes(model.LIST_ACCOUNT_ACCOUNTS, &accElemList, chromedp.ByQueryAll),
 	); err != nil {
-		return fmt.Errorf("money: get accounts list: %w", err)
+		slog.Error("money: get accounts list", "error", err)
 	}
 
 	defer utils.DoClickElement(ctx, model.BUTTON_COMMON_CLOSE_POPUP)

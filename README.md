@@ -6,7 +6,6 @@
 
 🐳[Docker Hub](https://hub.docker.com/r/ashokhin/am4bot)
 
-
 # Airline Manager Bot
 
 Automated bot for managing your Airline Manager company.
@@ -22,10 +21,9 @@ continuous management of your airline without manual intervention.
 It uses a headless browser to interact with the Airline Manager web interface,
 simulating user actions to perform the necessary tasks.
 
-
 ## How it works
 
-Under the hood, the bot uses [Chromedp](https://github.com/chromedp/chromedp) to control a headless Chrome/Chromium browser. 
+Under the hood, the bot uses [Chromedp](https://github.com/chromedp/chromedp) to control a headless Chrome/Chromium browser.
 
 It logs into the Airline Manager website using the provided credentials,
 navigates through the web elements, and performs actions based on the configured options.
@@ -67,33 +65,37 @@ You can visualize these metrics using [Grafana](https://grafana.com/grafana/).
 - Automatic duty free rewards (Biweekly gift) claiming.
 - Prometheus metrics support.
 
-
 ## Installation
 
 1. Install Docker from https://www.docker.com/get-started
 2. Create `config.yaml` file based on [Configuration](#configuration) section. For example:
+
    ```bash
    mkdir -p /opt/ambot/conf
    nano /opt/ambot/conf/config.yaml
    ```
+
    Paste your configuration and save the file.
 3. Run the bot:
+
    ```bash
    docker run --rm --name ambot --restart=on-failure --volume /opt/ambot/conf/config.yaml:/config.yaml ashokhin/am4bot:latest
    ```
-   
+
    For collecting Prometheus metrics, you can expose port 9150 (default in the config option `prometheus_address`) from container to host:
+
    ```bash
    docker run --rm --name ambot --restart=on-failure --volume /opt/ambot/conf/config.yaml:/config.yaml -p 9150:9150 ashokhin/am4bot:latest
    ```
 
-   > [!NOTE]
-   >
-   > The bot exits the process (`os.Exit(1)`) after 5 consecutive failed runs in a row.
-   > Without a restart policy, the container would then stay stopped. `--restart=on-failure`
-   > makes Docker restart the container automatically whenever this happens.
+> [!NOTE]
+>
+> The bot exits the process (`os.Exit(1)`) after 5 consecutive failed runs in a row.
+> Without a restart policy, the container would then stay stopped. `--restart=on-failure`
+> makes Docker restart the container automatically whenever this happens.
 
 4. (Optional) To run the bot as a [systemd service](https://www.freedesktop.org/software/systemd/man/latest/systemd.service.html), create a file `/etc/systemd/system/am4bot.service` with the following content:
+
    ```ini
    [Unit]
    Description=Airline Manager bot
@@ -110,8 +112,9 @@ You can visualize these metrics using [Grafana](https://grafana.com/grafana/).
    [Install]
    WantedBy=multi-user.target
    ```
-   
+
    Then enable and start the service:
+
    ```bash
    sudo systemctl daemon-reload
    sudo systemctl enable am4bot.service --now
@@ -123,7 +126,7 @@ The `ambot` binary also accepts CLI flags, which take priority over the equivale
 option whenever both are set to a non-default value:
 
 | Flag | Default | Description |
-|------|---------|-------------|
+| ------ | --------- | ------------- |
 | `--app.config`, `-c` | `config.yaml` | Path to the YAML configuration file. |
 | `--web.listen-address` | `:9150` | Address to expose Prometheus metrics on. Overrides `prometheus_address` in the config. |
 | `--web.telemetry-path` | `/metrics` | Path under which metrics are exposed. |
@@ -132,12 +135,12 @@ option whenever both are set to a non-default value:
 | `--help`, `-h` | | Show help. |
 | `--version` | | Show version information. |
 
-
 ## Configuration
 
-### Available options:
+### Available options
+
 | Option | Type | Default | Description |
-|--------|------|---------|-------------|
+| -------- | ------ | --------- | ------------- |
 | `url` | string | `"https://www.airlinemanager.com/"` | Airline Manager URL. |
 | `username` | string | `""` | Username for login. |
 | `password` | string | `""` | Password for login. |
@@ -159,14 +162,16 @@ option whenever both are set to a non-default value:
 | `aircraft_modify_limit` | int | `3` | Max aircraft for modifications checks. |
 | `fuel_critical_percent` | float | `20` | Fuel level percentage to trigger refuel. Even the price isn't good. |
 | `alliance_ids` | list of strings | `[]` | List of alliance IDs to scan. |
-| `cron_schedule` | string | `"*/5 * * * *"` | [Cron](https://en.wikipedia.org/wiki/Cron)-like schedule for services. Default: Every 5 minutes. |
+| `cron_schedules` | list of strings | `["*/5 * * * *"]` | [Cron](https://en.wikipedia.org/wiki/Cron)-like schedules for services — at least one entry required. Each entry is a standard 5-field cron expression — the day-of-week field alone covers "different start time on weekdays vs. weekends", e.g. `["0 8 * * 1-5", "0 10 * * 0,6"]`. All entries share the same run; overlapping triggers never run concurrently — one already in progress makes a newly triggered run skip instead of racing the same Chrome session. |
+| `cron_jitter_seconds` | int | `0` | Upper bound, in seconds, of a random delay applied after each trigger and before the run actually starts ("floating start"). Makes login/action timestamps less mechanically regular — helps avoid a suspiciously exact recurring timestamp in activity metrics. `0` disables it. |
 | `services` | list of strings | `["company_stats",` `"staff_morale",` `"alliance_stats",` `"hubs",` `"claim_rewards",` `"buy_fuel",` `"depart",` `"marketing",` `"ac_maintenance"]` | List of services to run. Possible values: `company_stats`, `alliance_stats`, `staff_morale`, `hubs`, `claim_rewards`, `buy_fuel`, `depart`, `marketing`, `ac_maintenance`. |
 | `timeout_seconds` | int | `180` | Timeout for full round in seconds. |
 | `chrome_headless` | bool | `true` | Run browser in headless mode. |
 | `chrome_debug` | bool | `false` | Enable detailed Chrome/Chromium debugging logs. |
 | `prometheus_address` | string | `":9150"` | Address to expose Prometheus metrics. |
 
-#### Example of `config.yaml` with the non-default options:
+#### Example of `config.yaml` with the non-default options
+
 ```yaml
 url: "https://www.airlinemanager.com/"
 username: "your_email@example.com"
@@ -188,7 +193,10 @@ aircraft_wear_percent: "70"
 aircraft_max_hours_to_check: 48
 aircraft_modify_limit: 5
 fuel_critical_percent: 15
-cron_schedule: "*/10 * * * *"
+cron_schedules:
+  - "0 8 * * 1-5"
+  - "0 10 * * 0,6"
+cron_jitter_seconds: 120
 services:
   - "company_stats"
   - "alliance_stats"
@@ -207,13 +215,15 @@ chrome_debug: true
 prometheus_address: ":9150"
 ```
 
-#### Minimal configuration example:
+#### Minimal configuration example
+
 ```yaml
 username: "username@email.example"
 password: "your_password_here"
 ```
 
-#### Service descriptions:
+#### Service descriptions
+
 - `company_stats`: Collects and exposes company statistics as Prometheus metrics.
 - `alliance_stats`: Collects and exposes alliance statistics as Prometheus metrics.
 - `claim_rewards`: Claims available rewards from the "Bonus" -> "Biweekly gift" menu.
@@ -225,10 +235,9 @@ password: "your_password_here"
 - `depart`: Schedules departures for flights ready to depart.
 
 > [!NOTE]
-> 
+>
 > Note that the order of services in the configuration matters.
 > All services are executed sequentially in the order they are listed.
-
 
 ### Configuration hot-reload
 
@@ -236,13 +245,12 @@ The bot checks `config.yaml`'s modification time before every cron run and, if t
 changed since the last run, reloads it automatically — no restart required. This applies to
 all options in the [Available options](#available-options) table above.
 
-
 ## Prometheus Metrics
 
 <details>
 	<summary>Prometheus metrics example output</summary>
 
-```
+```text
 # HELP am4_ac_fleet_size Company fleet size value.
 # TYPE am4_ac_fleet_size gauge
 am4_ac_fleet_size 154
@@ -375,24 +383,20 @@ am4_stats_passengers_transported_total{type="first"} 2.27574e+06
 
 </details>
 
-
 ## Grafana Dashboard
 
 You can use the following [Grafana dashboard](https://grafana.com/grafana/dashboards/24308-airline-manager/) to visualize the Prometheus metrics collected by the bot.
 
 ![Grafana dashboard](resources/Grafana_dashboard.png?raw=true "Grafana Dashboard Screenshot")
 
-
 ## Known Issues
 
 - During the maintenance operations, the "Modification" function chooses only the last `N` aircraft from the list of aircraft eligible for modification,
   where `N` is the `aircraft_modify_limit` configuration option. Note that the function chooses aircraft sorted by registration number, lexicographically (alphabetically). Insure that your fleet registration numbers are assigned in a way that allows the bot to select the desired aircraft for modification.
 
-
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
 
 ## Maintainer
 

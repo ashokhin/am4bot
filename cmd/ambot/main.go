@@ -5,10 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"math/rand/v2"
 	"net/http"
 	"os"
 	"os/signal"
 	"path/filepath"
+	"sync"
 	"syscall"
 	"time"
 
@@ -48,6 +50,12 @@ func main() {
 	kingpin.Version(version.Print(APP_NAME))
 	kingpin.HelpFlag.Short('h')
 	kingpin.Parse()
+
+	// Log to stdout (promslog defaults to stderr). Under the journald log
+	// driver, stderr is recorded at PRIORITY=err, which makes journalctl
+	// render every ordinary "level=info" line as an error. stdout lands at
+	// PRIORITY=info instead. Matches the scanner, which already uses stdout.
+	promslogConfig.Writer = os.Stdout
 
 	logger := promslog.New(promslogConfig)
 	slog.SetDefault(logger)
@@ -121,11 +129,40 @@ func main() {
 	c := cron.New()
 	// add counter for restore attempts after error
 	restoreAttemptsCount := 0
-	// entryID is captured by the job closure to look up its own next run time
-	var entryID cron.EntryID
-	// create cron job with schedule from configuration
-	entryID, err = c.AddFunc(bot.Conf.CronSchedule, func() {
+	// runMu serializes actual bot runs: with multiple schedules and/or
+	// jitter, two triggers can land close enough to overlap. A run already
+	// in progress makes a newly triggered one skip rather than race the
+	// same Chrome session.
+	var runMu sync.Mutex
+	// entryIDs holds one entry per configured schedule, used below to log
+	// the earliest upcoming run across all of them.
+	entryIDs := make([]cron.EntryID, 0, len(bot.Conf.CronSchedules))
+
+	// runJob is shared by every schedule entry. It applies the configured
+	// "floating start" jitter, then runs the bot -- skipping (rather than
+	// blocking) if a previous run is still in progress.
+	runJob := func() {
+		if bot.Conf.CronJitterSeconds > 0 {
+			delay := time.Duration(rand.IntN(bot.Conf.CronJitterSeconds+1)) * time.Second
+			slog.Info("floating start delay", "delay", delay)
+
+			select {
+			case <-ctx.Done():
+				return
+			case <-time.After(delay):
+			}
+		}
+
+		if !runMu.TryLock() {
+			slog.Warn("previous run still in progress, skipping this trigger")
+
+			return
+		}
+		defer runMu.Unlock()
+
 		slog.Info("start job", "start_time", time.Now().UTC())
+
+		nextRun := nextScheduledRun(c, entryIDs)
 
 		if err := bot.Run(ctx); err != nil {
 			// failed run increases counter
@@ -140,26 +177,33 @@ func main() {
 				os.Exit(1)
 			}
 
-			slog.Error("job has been failed", "end_time", time.Now().UTC(), "next_run", c.Entry(entryID).Next.UTC())
+			slog.Error("job has been failed", "end_time", time.Now().UTC(), "next_run", nextRun)
 		} else {
 			// successful run resets counter
 			restoreAttemptsCount = 0
 			bot.PrometheusMetrics.Up.Set(1)
 
-			slog.Info("job has been done", "end_time", time.Now().UTC(), "next_run", c.Entry(entryID).Next.UTC())
+			slog.Info("job has been done", "end_time", time.Now().UTC(), "next_run", nextRun)
+		}
+	}
+
+	// register the shared job against every configured schedule
+	for _, schedule := range bot.Conf.CronSchedules {
+		entryID, err := c.AddFunc(schedule, runJob)
+		if err != nil {
+			slog.Error("error scheduling cron job", "schedule", schedule, "error", err)
+
+			os.Exit(1)
 		}
 
-	})
-	if err != nil {
-		slog.Error("error scheduling cron job", "schedule", bot.Conf.CronSchedule, "error", err)
-
-		os.Exit(1)
+		entryIDs = append(entryIDs, entryID)
 	}
 
 	// start cron object, schedule jobs
 	c.Start()
 
-	slog.Info("job scheduled", "next_run", c.Entry(entryID).Next.UTC())
+	slog.Info("job scheduled", "schedules", bot.Conf.CronSchedules, "jitter_seconds", bot.Conf.CronJitterSeconds,
+		"next_run", nextScheduledRun(c, entryIDs))
 
 	// create and register handler for the webTelemetry page
 	handler := promhttp.HandlerFor(
@@ -219,4 +263,23 @@ func main() {
 	}
 
 	slog.Info("shutdown complete")
+}
+
+// nextScheduledRun returns the earliest upcoming run time across all given
+// cron entries (relevant once multiple schedules are configured).
+func nextScheduledRun(c *cron.Cron, entryIDs []cron.EntryID) time.Time {
+	var next time.Time
+
+	for _, id := range entryIDs {
+		entryNext := c.Entry(id).Next
+		if entryNext.IsZero() {
+			continue
+		}
+
+		if next.IsZero() || entryNext.Before(next) {
+			next = entryNext
+		}
+	}
+
+	return next
 }

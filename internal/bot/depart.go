@@ -24,7 +24,7 @@ func (b *Bot) depart(ctx context.Context) error {
 	for (aircraftReadyForDepart > 0) && (maxRetries > 0) {
 		var availableAfterDepart int
 
-		slog.Debug("depart available aircraft", "ready to depart", aircraftReadyForDepart, "depart retries", maxRetries)
+		slog.Info("depart available aircraft", "ready to depart", aircraftReadyForDepart, "depart retries", maxRetries)
 
 		// click the "Depart All" button
 		utils.DoClickElement(ctx, model.BUTTON_FI_DEPART_ALL)

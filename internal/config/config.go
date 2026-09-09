@@ -9,6 +9,7 @@ import (
 	"github.com/ashokhin/am4bot/internal/utils"
 	"github.com/creasty/defaults"
 	"github.com/prometheus/common/promslog"
+	"github.com/robfig/cron/v3"
 	"gopkg.in/yaml.v3"
 )
 
@@ -31,12 +32,25 @@ type Config struct {
 	AircraftWearPercent     string     `default:"80" yaml:"aircraft_wear_percent"`
 	AircraftMaxHoursToCheck int        `default:"24" yaml:"aircraft_max_hours_to_check"`
 	AircraftModifyLimit     int        `default:"3" yaml:"aircraft_modify_limit"`
-	CronSchedule            string     `default:"*/5 * * * *" yaml:"cron_schedule"`
-	TimeoutSeconds          int        `default:"180" yaml:"timeout_seconds"`
-	Services                []string   `default:"[\"company_stats\",\"alliance_stats\",\"staff_morale\",\"hubs\",\"claim_rewards\",\"buy_fuel\",\"marketing\",\"ac_maintenance\",\"depart\"]" yaml:"services"`
-	AllianceIDs             []string   `yaml:"alliance_ids"`
-	PrometheusAddress       string     `default:":9150" yaml:"prometheus_address"`
-	PromslogConfig          *promslog.Config
+	// Cron schedules for the bot's run trigger. Each entry is a standard
+	// 5-field cron expression (with the day-of-week field, this alone
+	// covers "different start time on weekdays vs. weekends" — e.g.
+	// ["0 8 * * 1-5", "0 10 * * 0,6"] — without any extra scheduling logic).
+	// All entries share the same job; overlapping trigger times never run
+	// concurrently — a run already in progress makes a newly triggered one
+	// skip with a warning instead of racing the same Chrome session.
+	CronSchedules []string `default:"[\"*/5 * * * *\"]" yaml:"cron_schedules"`
+	// Upper bound, in seconds, of a random delay applied after each cron
+	// trigger and before the run actually starts ("floating start"). Makes
+	// login/action timestamps less mechanically regular — a bot that always
+	// logs in at exactly 08:00:00 stands out in metrics far more than one
+	// that logs in somewhere in 08:00:00-08:04:59. 0 (default) disables it.
+	CronJitterSeconds int      `default:"0" yaml:"cron_jitter_seconds"`
+	TimeoutSeconds    int      `default:"180" yaml:"timeout_seconds"`
+	Services          []string `default:"[\"company_stats\",\"alliance_stats\",\"staff_morale\",\"hubs\",\"claim_rewards\",\"buy_fuel\",\"marketing\",\"ac_maintenance\",\"depart\"]" yaml:"services"`
+	AllianceIDs       []string `yaml:"alliance_ids"`
+	PrometheusAddress string   `default:":9150" yaml:"prometheus_address"`
+	PromslogConfig    *promslog.Config
 	// Parameters for Scanner configuration
 	ScanType           string   `default:"route_scanner" yaml:"scan_type"`
 	HubsList           []string `yaml:"hubs_list"`
@@ -134,7 +148,8 @@ func (c Config) String() string {
 		", AircraftWearPercent:", c.AircraftWearPercent,
 		", AircraftMaxHoursToCheck:", c.AircraftMaxHoursToCheck,
 		", AircraftModifyLimit:", c.AircraftModifyLimit,
-		", CronSchedule:", c.CronSchedule,
+		", CronSchedules:", c.CronSchedules,
+		", CronJitterSeconds:", c.CronJitterSeconds,
 		", Services:", c.Services,
 		", AllianceIDs:", c.AllianceIDs,
 		", TimeoutSeconds:", c.TimeoutSeconds,
@@ -271,6 +286,20 @@ func (c *Config) validate() error {
 	if c.CatalogAirportIDMax > 0 && c.CatalogAirportIDMin > c.CatalogAirportIDMax {
 		return fmt.Errorf("config: catalog_airport_id_min (%d) must be <= catalog_airport_id_max (%d)",
 			c.CatalogAirportIDMin, c.CatalogAirportIDMax)
+	}
+
+	if c.CronJitterSeconds < 0 {
+		return fmt.Errorf("config: cron_jitter_seconds must be >= 0")
+	}
+
+	if len(c.CronSchedules) == 0 {
+		return fmt.Errorf("config: cron_schedules must contain at least one entry")
+	}
+
+	for _, schedule := range c.CronSchedules {
+		if _, err := cron.ParseStandard(schedule); err != nil {
+			return fmt.Errorf("config: invalid cron_schedules entry %q: %w", schedule, err)
+		}
 	}
 
 	return nil
