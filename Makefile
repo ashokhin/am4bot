@@ -33,7 +33,7 @@ $(error OS is unsupported)
 endif
 
 .PHONY: all
-all: clean format vet test build
+all: clean format vet lint test build
 
 clean:
 	@echo ">> removing build artifacts"
@@ -46,6 +46,15 @@ format:
 vet:
 	@echo ">> vetting code"
 	@go vet ./...
+
+lint:
+	@echo ">> linting code"
+	@if ! command -v golangci-lint >/dev/null 2>&1; then \
+		echo "golangci-lint not found; install it with:"; \
+		echo "  go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest"; \
+		exit 1; \
+	fi
+	@golangci-lint run
 
 test:
 	@echo ">> testing code"

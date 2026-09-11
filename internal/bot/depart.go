@@ -7,6 +7,7 @@ import (
 
 	"github.com/ashokhin/am4bot/internal/model"
 	"github.com/ashokhin/am4bot/internal/utils"
+	"github.com/chromedp/cdproto/cdp"
 	"github.com/chromedp/chromedp"
 )
 
@@ -46,17 +47,22 @@ func (b *Bot) depart(ctx context.Context) error {
 	return nil
 }
 
-// getReadyForDepart retrieves the number of aircraft ready for departure from the fleet interface.
+// getReadyForDepart retrieves the number of aircraft ready for departure from
+// the fleet interface. It counts the rows in the "landed" list rather than
+// reading the number on the "Depart" button, because that number caps at 20
+// even when far more aircraft are ready — which previously made depart() stop
+// after only ~40 aircraft on large fleets.
 func (b *Bot) getReadyForDepart(ctx context.Context) int {
-	var readyForDepart int
+	var landedRows []*cdp.Node
 
 	if err := chromedp.Run(ctx,
-		utils.GetIntFromElement(model.TEXT_FI_DEPART_AMOUNT, &readyForDepart),
+		// AtLeast(0): an empty landed list is a valid state, not an error.
+		chromedp.Nodes(model.LIST_FI_LANDED, &landedRows, chromedp.ByQueryAll, chromedp.AtLeast(0)),
 	); err != nil {
-		slog.Debug("the 'Depart' amount element not found, assuming 0 ready for depart", "error", err)
+		slog.Debug("the landed aircraft list not found, assuming 0 ready for depart", "error", err)
 
 		return 0
 	}
 
-	return readyForDepart
+	return len(landedRows)
 }

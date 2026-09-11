@@ -38,11 +38,11 @@ const (
 
 	// "Flight info" elements (left side of main screen)
 
-	ICON_FI_LOUNGE_ALERT  string = "div#flightInfo span#loungeAlertIcon"                                                           // lounge "alert" icon (means that lounge needs repair)
-	BUTTON_ALLIANCE_INFO  string = `div#flightInfo span[onclick="popup('alliance.php','Alliance');"]`                              // "Alliance" info button
-	BUTTON_FI_OVERVIEW    string = `div#flightInfo div#flightInfoSecContainer button[onclick="popup('overview.php','Overview');"]` // "Overview" button
-	BUTTON_FI_DEPART_ALL  string = "div#flightInfo button.btn-xs:nth-child(2)"                                                     // "Depart All" button
-	TEXT_FI_DEPART_AMOUNT string = "div#flightInfo span#listDepartAmount"                                                          // text showing number of aircraft ready for departure
+	ICON_FI_LOUNGE_ALERT string = "div#flightInfo span#loungeAlertIcon"                                                           // lounge "alert" icon (means that lounge needs repair)
+	BUTTON_ALLIANCE_INFO string = `div#flightInfo span[onclick="popup('alliance.php','Alliance');"]`                              // "Alliance" info button
+	BUTTON_FI_OVERVIEW   string = `div#flightInfo div#flightInfoSecContainer button[onclick="popup('overview.php','Overview');"]` // "Overview" button
+	BUTTON_FI_DEPART_ALL string = "div#flightInfo button.btn-xs:nth-child(2)"                                                     // "Depart All" button
+	LIST_FI_LANDED       string = "div#flightInfo div#landedList div.flight-list-sorting"                                         // aircraft rows that have landed and are ready to depart (the "Depart" button counter caps at 20, this list does not)
 
 	// "Overview" pop-up
 

@@ -29,8 +29,10 @@ jobs:
       with:
         images: ${{ secrets.DOCKERHUB_REPO_ORG }}/${{ secrets.DOCKERHUB_REPO_NAME }}
     
+    # vet/lint/test already ran in ci.yaml on push/PR before this tag was
+    # created — just build the binary needed for the version check below.
     - name: Build application
-      run: make
+      run: make build
     
     - name: Check version
       run:

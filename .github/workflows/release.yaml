@@ -16,13 +16,40 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+      with:
+        # full history + tags: needed to diff against the previous tag below
+        fetch-depth: 0
+
     - name: Create release
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
+        TAG="${{ github.ref_name }}"
         DATE=$(date -u '+%Y-%m-%d')
-        gh release view ${{ github.ref_name }} 2>/dev/null || \
-          gh release create ${{ github.ref_name }} --title "${{ github.ref_name }} / ${DATE}" --generate-notes
+
+        if gh release view "$TAG" >/dev/null 2>&1; then
+          echo "release $TAG already exists, skipping"
+          exit 0
+        fi
+
+        # --generate-notes only lists merged pull requests, so a tag whose
+        # commits went straight to master (no PR) ends up with an almost
+        # empty body -- just the "Full Changelog" compare link. List every
+        # commit by subject instead, so nothing in the tag range is dropped.
+        PREV_TAG=$(git describe --tags --abbrev=0 "${TAG}^" 2>/dev/null || true)
+
+        {
+          if [ -n "$PREV_TAG" ]; then
+            git log --pretty=format:'- %s (%h)' "${PREV_TAG}..${TAG}"
+            echo
+            echo
+            echo "**Full Changelog**: https://github.com/${{ github.repository }}/compare/${PREV_TAG}...${TAG}"
+          else
+            git log --pretty=format:'- %s (%h)' "${TAG}"
+          fi
+        } > release-notes.md
+
+        gh release create "$TAG" --title "$TAG / ${DATE}" --notes-file release-notes.md
 
   upload-assets:
     needs: create-release
