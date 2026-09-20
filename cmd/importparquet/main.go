@@ -1,7 +1,7 @@
 // Command importparquet builds a full catalog SQLite database directly from
 // the "am4" project's (github.com/abc8747/am4) pre-scraped static game-data
 // release assets — airports.parquet, routes.parquet and aircraft.parquet —
-// instead of running full_catalog_scanner against the live game.
+// instead of scraping the live game directly.
 //
 // routes.parquet is not keyed by airport ID: it's a flattened strictly-upper-
 // triangular matrix over every airport pair (see abc8747/am4's
@@ -179,7 +179,7 @@ func readAirports(path string) ([]airportRow, error) {
 // importAirports writes every airport as an authoritative, already-scanned
 // row: this is a complete, trusted snapshot of the game's static data, not a
 // partial/opportunistic sighting, so scanned_at is set immediately (nothing
-// about these airports needs the live scanner to revisit them).
+// about these airports needs to be revisited).
 func importAirports(db *sqlx.DB, airports []airportRow) error {
 	tx, err := db.Begin()
 	if err != nil {

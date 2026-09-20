@@ -80,8 +80,7 @@ jobs:
         goarch: ${{ matrix.arch }}
         md5sum: false
         overwrite: true
-        multi_binaries: true
-        project_path: ./cmd/ambot ./cmd/scanner
+        project_path: ./cmd/ambot
         extra_files: LICENSE README.md
         pre_command: export CGO_ENABLED=0
         build_flags: -v

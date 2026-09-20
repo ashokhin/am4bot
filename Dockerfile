@@ -17,7 +17,6 @@ ARG REVISION=unknown
 ARG BUILD_USER=docker
 ARG BUILD_DATE=unknown
 
-# only ambot is shipped in the image; the scanner is a local-only tool
 RUN CGO_ENABLED=0 go build \
         -ldflags " \
           -X github.com/prometheus/common/version.Version=${VERSION} \
@@ -29,7 +28,13 @@ RUN CGO_ENABLED=0 go build \
 
 FROM alpine:3.21
 
-RUN apk add --no-cache tini chromium ca-certificates tzdata \
+# xvfb + xauth: only needed when chrome_stealth is enabled (see
+# internal/config.Config's ChromeStealth doc comment) -- chromedp-undetected's
+# headless mode runs Chrome inside a real Xvfb display instead of passing
+# Chrome's own --headless flag, and shells out to `Xvfb`/`xauth` to do it.
+# Harmless (unused) when chrome_stealth is off, so always installed rather
+# than split into a build arg.
+RUN apk add --no-cache tini chromium xvfb xauth ca-certificates tzdata \
     && addgroup -S ambot \
     && adduser -S -G ambot -h /home/ambot ambot \
     && mkdir -p /home/ambot/.cache \

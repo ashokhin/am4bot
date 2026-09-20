@@ -3,7 +3,12 @@
 /bin
 /config.yaml
 /config-shard*.yaml
+# Real compose files (may end up with real secrets/paths baked in via
+# --env-file); the committed *.yml.example templates aren't matched by
+# this glob since they don't end in .yml.
 /docker-compose*.yml
+/.env.dev
+/.env.multi-tenant
 /vpn/
 /*.csv
 # SQLite database files (e.g. from `--db.path ./am4.db`), including WAL mode siblings

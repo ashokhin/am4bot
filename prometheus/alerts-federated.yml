@@ -1,0 +1,77 @@
+# Alert rules for the pattern described in docs/multi-tenant-hosting.md's
+# Metrics section: federating this project's bundled, internal-only
+# Prometheus (see alerts.yml, prometheus.yml) INTO your own main/external
+# Prometheus instance, for long-term history/alerting on top of it. NOT
+# loaded by anything in this repo's own compose files -- the internal
+# Prometheus keeps using alerts.yml. Copy this file to wherever your
+# EXTERNAL Prometheus reads rule_files from once you've set up the
+# federation scrape job (see that doc section for the exact config,
+# reproduced in this file's own comments below).
+#
+# Why this isn't just alerts.yml copied verbatim: federation only
+# re-exposes whatever matches your `match[]` selector. The doc's own
+# example uses `match[]: ['{__name__=~"am4_.+"}']`, which happily carries
+# over every am4_* gauge (including am4_next_scheduled_run_timestamp_seconds
+# below) -- but NOT `up`, since "up" doesn't match that regex. That means
+# alerts.yml's AmbotExporterDown (`up{job="am4bot-nodes"} == 0`) has
+# NOTHING to evaluate against here unless you explicitly widen your
+# match[] list to also include `up{job="am4bot-nodes"}` -- see the
+# commented-out rule below for that case, and AmbotFederationLinkDown for
+# a federation-safe alternative that needs no such change.
+groups:
+  - name: am4bot-federated
+    rules:
+      # Identical to alerts.yml's own rule -- am4_next_scheduled_run_timestamp_seconds
+      # IS federated by the doc's default match[] selector, so this
+      # transfers unchanged. See that file's own doc comment for the full
+      # rationale (why this metric exists, why the expression is written
+      # `time() - next_run > 600` and not the other way around).
+      - alert: AmbotMissedSchedule
+        expr: time() - am4_next_scheduled_run_timestamp_seconds > 600
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: "ambot missed its scheduled run for {{ $labels.user_uuid }}/{{ $labels.node_id }}"
+          description: >-
+            This node's cron schedule says a run was due {{ $value | humanizeDuration }} ago,
+            but the exporter is still reporting that same stale next-run time -- it hasn't
+            advanced to a later trigger. The process may be stuck or have exited without
+            restarting.
+
+      # Federation-safe stand-in for alerts.yml's AmbotExporterDown: checks
+      # whether THIS Prometheus can even reach the internal one's /federate
+      # endpoint at all, using the scrape job's own `up` series -- which
+      # your OWN federation scrape config produces locally (see this
+      # file's header), no match[] widening needed. Catches "the whole
+      # am4bot stack/host is unreachable", not "one specific node's
+      # exporter is down" (that finer-grained signal needs the match[]
+      # change below if you want it federated too).
+      - alert: AmbotFederationLinkDown
+        expr: up{job="am4bot-federate"} == 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "can't federate metrics from the am4bot stack's internal Prometheus"
+          description: >-
+            This Prometheus hasn't been able to scrape the am4bot stack's internal Prometheus's
+            /federate endpoint for at least 5 minutes -- every node behind it is effectively
+            invisible here until this recovers (they may still be fine; check the internal
+            Prometheus's own /alerts directly, or the am4bot admin UI, to be sure).
+
+      # Per-node exporter-down detection DOES federate, but only if you
+      # add `up{job="am4bot-nodes"}` to your scrape job's match[] list
+      # (docs/multi-tenant-hosting.md's example only lists
+      # '{__name__=~"am4_.+"}', which excludes it) -- uncomment this once
+      # you've made that change on the federating scrape config itself.
+      # - alert: AmbotExporterDown
+      #   expr: up{job="am4bot-nodes"} == 0
+      #   for: 5m
+      #   labels:
+      #     severity: warning
+      #   annotations:
+      #     summary: "ambot exporter unreachable for {{ $labels.user_uuid }}/{{ $labels.node_id }}"
+      #     description: >-
+      #       Prometheus hasn't been able to scrape this node's ambot exporter for at least 5
+      #       minutes. The container may have crashed or never started.

@@ -90,14 +90,11 @@ func (b *Bot) Run(ctx context.Context) error {
 	timeoutCtx, cancelTimeout := context.WithTimeout(ctx, time.Duration(b.Conf.TimeoutSeconds)*time.Second)
 	defer cancelTimeout()
 
-	allocatorCtx, cancelAllocator := chromedp.NewExecAllocator(timeoutCtx, b.chromeOpts...)
-	defer cancelAllocator()
-
-	taskCtx, cancelTask := chromedp.NewContext(
-		allocatorCtx,
-		cdpLoggerOption(b.Conf.ChromeDebug),
-	)
-	defer cancelTask()
+	taskCtx, cancelChrome, err := newChromeContext(timeoutCtx, b.Conf, b.chromeOpts)
+	if err != nil {
+		return fmt.Errorf("starting chrome: %w", err)
+	}
+	defer cancelChrome()
 
 	slog.Debug("run bot", "start_time", timeStart.UTC())
 	slog.Info("start session")
@@ -185,6 +182,7 @@ func (b *Bot) Run(ctx context.Context) error {
 	slog.Info("run complete", "elapsed_time", fmt.Sprint(duration))
 
 	b.PrometheusMetrics.DurationSeconds.Set(duration.Seconds())
+	b.PrometheusMetrics.LastRunTimestampSeconds.SetToCurrentTime()
 
 	return nil
 }

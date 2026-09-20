@@ -16,22 +16,28 @@ import (
 // Config holds the configuration settings for the bot.
 type Config struct {
 	// user-configurable fields
-	Url      string `default:"https://www.airlinemanager.com/" yaml:"url"`
-	User     string `yaml:"username"`
-	Password string `yaml:"password"`
-	LogLevel string `default:"info" yaml:"log_level"`
+	//
+	// Every field below also carries a json tag mirroring its yaml tag.
+	// That's for internal/api's node-config endpoint and cmd/ambot's
+	// matching alternate config source (a hosted node fetches its config
+	// as JSON from apiserver instead of reading a local config.yaml) --
+	// plain YAML config files are unaffected either way.
+	Url      string `default:"https://www.airlinemanager.com/" yaml:"url" json:"url"`
+	User     string `yaml:"username" json:"username"`
+	Password string `yaml:"password" json:"password"`
+	LogLevel string `default:"info" yaml:"log_level" json:"log_level"`
 	// Parameters for Bot configuration
-	BudgetPercent           BudgetType `yaml:"budget_percent"`
-	FuelPrice               Price      `yaml:"good_price"`
-	RepairLounges           bool       `default:"true" yaml:"repair_lounges"`
-	BuyCateringIfMissing    bool       `default:"true" yaml:"buy_catering_if_missing"`
-	CateringDurationHours   string     `default:"168" yaml:"catering_duration_hours"`
-	CateringAmountOption    string     `default:"20000" yaml:"catering_amount_option"`
-	HubsMaintenanceLimit    int        `default:"5" yaml:"hubs_maintenance_limit"`
-	FuelCriticalPercent     float64    `default:"20" yaml:"fuel_critical_percent"`
-	AircraftWearPercent     string     `default:"80" yaml:"aircraft_wear_percent"`
-	AircraftMaxHoursToCheck int        `default:"24" yaml:"aircraft_max_hours_to_check"`
-	AircraftModifyLimit     int        `default:"3" yaml:"aircraft_modify_limit"`
+	BudgetPercent           BudgetType `yaml:"budget_percent" json:"budget_percent"`
+	FuelPrice               Price      `yaml:"good_price" json:"good_price"`
+	RepairLounges           bool       `default:"true" yaml:"repair_lounges" json:"repair_lounges"`
+	BuyCateringIfMissing    bool       `default:"true" yaml:"buy_catering_if_missing" json:"buy_catering_if_missing"`
+	CateringDurationHours   string     `default:"168" yaml:"catering_duration_hours" json:"catering_duration_hours"`
+	CateringAmountOption    string     `default:"20000" yaml:"catering_amount_option" json:"catering_amount_option"`
+	HubsMaintenanceLimit    int        `default:"5" yaml:"hubs_maintenance_limit" json:"hubs_maintenance_limit"`
+	FuelCriticalPercent     float64    `default:"20" yaml:"fuel_critical_percent" json:"fuel_critical_percent"`
+	AircraftWearPercent     string     `default:"80" yaml:"aircraft_wear_percent" json:"aircraft_wear_percent"`
+	AircraftMaxHoursToCheck int        `default:"24" yaml:"aircraft_max_hours_to_check" json:"aircraft_max_hours_to_check"`
+	AircraftModifyLimit     int        `default:"3" yaml:"aircraft_modify_limit" json:"aircraft_modify_limit"`
 	// Cron schedules for the bot's run trigger. Each entry is a standard
 	// 5-field cron expression (with the day-of-week field, this alone
 	// covers "different start time on weekdays vs. weekends" — e.g.
@@ -39,97 +45,54 @@ type Config struct {
 	// All entries share the same job; overlapping trigger times never run
 	// concurrently — a run already in progress makes a newly triggered one
 	// skip with a warning instead of racing the same Chrome session.
-	CronSchedules []string `default:"[\"*/5 * * * *\"]" yaml:"cron_schedules"`
+	CronSchedules []string `default:"[\"*/5 * * * *\"]" yaml:"cron_schedules" json:"cron_schedules"`
 	// Upper bound, in seconds, of a random delay applied after each cron
 	// trigger and before the run actually starts ("floating start"). Makes
 	// login/action timestamps less mechanically regular — a bot that always
 	// logs in at exactly 08:00:00 stands out in metrics far more than one
 	// that logs in somewhere in 08:00:00-08:04:59. 0 (default) disables it.
-	CronJitterSeconds int      `default:"0" yaml:"cron_jitter_seconds"`
-	TimeoutSeconds    int      `default:"180" yaml:"timeout_seconds"`
-	Services          []string `default:"[\"company_stats\",\"alliance_stats\",\"staff_morale\",\"hubs\",\"claim_rewards\",\"buy_fuel\",\"marketing\",\"ac_maintenance\",\"depart\"]" yaml:"services"`
-	AllianceIDs       []string `yaml:"alliance_ids"`
-	PrometheusAddress string   `default:":9150" yaml:"prometheus_address"`
-	PromslogConfig    *promslog.Config
-	// Parameters for Scanner configuration
-	ScanType           string   `default:"route_scanner" yaml:"scan_type"`
-	HubsList           []string `yaml:"hubs_list"`
-	MaxRouteDistanceKm int      `default:"14500" yaml:"max_route_range_km"`
-	MinRouteDistanceKm int      `default:"6500" yaml:"min_route_range_km"`
-	// Minimum runway length "route_scanner" requires when searching routes
-	// for the configured HubsList/aircraft.
-	HubMinRunwayLengthFt int `default:"9680" yaml:"hub_min_runway_length_ft"`
-	ScanStepKm           int `default:"100" yaml:"scan_step_km"`
-	// Parameters for "full_catalog_scanner" / "catalog_codes_scanner" scan types
-	CatalogDBPath   string `default:"am4_catalog.db" yaml:"catalog_db_path"`
-	CatalogCodeType string `default:"iata" yaml:"catalog_code_type"`
-	// Lowest "min. runway" value "full_catalog_scanner" queries with — both
-	// for its base (unfiltered) query and as the start of the runway sweep
-	// (see CatalogRunwayStepFt). Must be >= 1: the game's search form breaks
-	// with an empty/0 value. Raise this above 1 only once you've confirmed
-	// (e.g. via CatalogDisableRunwaySweep test runs) that no real airport in
-	// the game has a shorter runway than the value you pick — it skips real
-	// queries, not just empty ones.
-	CatalogMinRunwayLengthFt int `default:"1" yaml:"catalog_min_runway_length_ft"`
-	// Highest "min. runway" threshold "full_catalog_scanner" will try when a
-	// distance window comes back saturated (see CatalogRunwayStepFt).
-	CatalogMaxRunwayLengthFt int `default:"20000" yaml:"catalog_max_runway_length_ft"`
-	// Step between runway thresholds "full_catalog_scanner" sweeps through
-	// (CatalogMinRunwayLengthFt up to CatalogMaxRunwayLengthFt) when a
-	// distance window's unfiltered query returns exactly 50 results — the
-	// game's per-query cap — since that many results at one distance can
-	// itself hide routes behind the cap.
-	CatalogRunwayStepFt int `default:"500" yaml:"catalog_runway_step_ft"`
-	// Testing/debugging aid: if true, "full_catalog_scanner" never sweeps
-	// runway thresholds for a saturated window — useful for comparing route
-	// counts with vs. without the runway sweep.
-	CatalogDisableRunwaySweep bool `default:"false" yaml:"catalog_disable_runway_sweep"`
-	// Testing/debugging aid: if true, "full_catalog_scanner" ignores both
-	// early-exit optimizations (distance-level in scanCatalogAirport,
-	// runway-level in scanCatalogDistanceByRunway) and always sweeps the
-	// full configured range regardless of whether a window came back
-	// unsaturated. Used to validate that trusting "unsaturated at X means
-	// everything below X is known" doesn't actually lose routes — compare
-	// route counts with vs. without this flag on the same airport.
-	CatalogDisableEarlyExit bool `default:"false" yaml:"catalog_disable_early_exit"`
-	// Testing/debugging aid: if non-empty, "full_catalog_scanner" and
-	// "catalog_codes_scanner" only scan these airport IDs (the numeric game
-	// ID, e.g. from citySelect/dep/arr) instead of every airport in the game.
-	// Airports outside this list are left untouched — a later unrestricted
-	// run still covers them normally.
-	CatalogAirportIDs []int `yaml:"catalog_airport_ids"`
-	// Sharding for running multiple scanner instances in parallel against
-	// disjoint slices of the airport ID space, each with its own
-	// CatalogDBPath — merge the resulting files afterward. Airport IDs
-	// aren't assigned by geography, so a shard still walks every country to
-	// find which of its airports fall in [CatalogAirportIDMin,
-	// CatalogAirportIDMax], but only actually scans those. 0/0 (the
-	// zero-value default) means "no range restriction" — every airport ID
-	// is in range. Independent of CatalogAirportIDs; if both are set, an
-	// airport is scanned only when it satisfies both.
-	CatalogAirportIDMin int `default:"0" yaml:"catalog_airport_id_min"`
-	CatalogAirportIDMax int `default:"0" yaml:"catalog_airport_id_max"`
-	// Parameters for both Bot and Scanner configuration
-	ChromeHeadless bool `default:"true" yaml:"chrome_headless"`
-	ChromeDebug    bool `default:"false" yaml:"chrome_debug"`
+	CronJitterSeconds int      `default:"0" yaml:"cron_jitter_seconds" json:"cron_jitter_seconds"`
+	TimeoutSeconds    int      `default:"180" yaml:"timeout_seconds" json:"timeout_seconds"`
+	Services          []string `default:"[\"company_stats\",\"alliance_stats\",\"staff_morale\",\"hubs\",\"claim_rewards\",\"buy_fuel\",\"marketing\",\"ac_maintenance\",\"depart\"]" yaml:"services" json:"services"`
+	AllianceIDs       []string `yaml:"alliance_ids" json:"alliance_ids"`
+	PrometheusAddress string   `default:":9150" yaml:"prometheus_address" json:"prometheus_address"`
+	// PromslogConfig carries a *slog.LevelVar and other non-serializable
+	// runtime state -- excluded from JSON (json:"-"); it's already outside
+	// the YAML file too (no yaml tag), wired up separately in cmd/ambot.
+	PromslogConfig *promslog.Config `json:"-"`
+	// Parameters for Chrome/browser configuration
+	ChromeHeadless bool `default:"true" yaml:"chrome_headless" json:"chrome_headless"`
+	ChromeDebug    bool `default:"false" yaml:"chrome_debug" json:"chrome_debug"`
+	// ChromeStealth switches the browser launch path from the plain
+	// chromedp exec-allocator (visible flags, easy to attach a debugger to,
+	// good for "where did the bot get stuck" local troubleshooting) to
+	// chromedp-undetected (patches navigator.webdriver/CDP fingerprints,
+	// launches headless via a real Xvfb display instead of Chrome's own
+	// --headless flag). Off by default so a plain local/binary run behaves
+	// exactly as before; hosted nodes should set this true.
+	ChromeStealth bool `default:"false" yaml:"chrome_stealth" json:"chrome_stealth"`
 
 	// internal fields
 	passwordRunes []rune // most safe storage for password in memory
 	confFilePath  string
 	confModTime   time.Time
+	// apiSrc is non-nil only for a Config built by NewFromAPI (a hosted
+	// node fetching its config from apiserver instead of reading a local
+	// file) -- see api_source.go. nil for every file-based Config (New).
+	apiSrc *apiSource
 }
 
 // BudgetType holds budget percentage settings for various categories.
 type BudgetType struct {
-	Maintenance float64 `default:"30" yaml:"maintenance"`
-	Marketing   float64 `default:"70" yaml:"marketing"`
-	Fuel        float64 `default:"70" yaml:"fuel"`
+	Maintenance float64 `default:"30" yaml:"maintenance" json:"maintenance"`
+	Marketing   float64 `default:"70" yaml:"marketing" json:"marketing"`
+	Fuel        float64 `default:"70" yaml:"fuel" json:"fuel"`
 }
 
 // Price holds good price settings for fuel and CO2.
 type Price struct {
-	Fuel float64 `default:"500" yaml:"fuel"`
-	Co2  float64 `default:"120" yaml:"co2"`
+	Fuel float64 `default:"500" yaml:"fuel" json:"fuel"`
+	Co2  float64 `default:"120" yaml:"co2" json:"co2"`
 }
 
 // String returns a string representation of the Config struct.
@@ -155,23 +118,8 @@ func (c Config) String() string {
 		", TimeoutSeconds:", c.TimeoutSeconds,
 		", ChromeHeadless:", c.ChromeHeadless,
 		", ChromeDebug:", c.ChromeDebug,
+		", ChromeStealth:", c.ChromeStealth,
 		", PrometheusAddress:", c.PrometheusAddress,
-		", ScanType:", c.ScanType,
-		", HubsList:", c.HubsList,
-		", MaxRouteDistanceKm:", c.MaxRouteDistanceKm,
-		", MinRouteDistanceKm:", c.MinRouteDistanceKm,
-		", HubMinRunwayLengthFt:", c.HubMinRunwayLengthFt,
-		", ScanStepKm:", c.ScanStepKm,
-		", CatalogDBPath:", c.CatalogDBPath,
-		", CatalogCodeType:", c.CatalogCodeType,
-		", CatalogMinRunwayLengthFt:", c.CatalogMinRunwayLengthFt,
-		", CatalogMaxRunwayLengthFt:", c.CatalogMaxRunwayLengthFt,
-		", CatalogRunwayStepFt:", c.CatalogRunwayStepFt,
-		", CatalogDisableRunwaySweep:", c.CatalogDisableRunwaySweep,
-		", CatalogDisableEarlyExit:", c.CatalogDisableEarlyExit,
-		", CatalogAirportIDs:", c.CatalogAirportIDs,
-		", CatalogAirportIDMin:", c.CatalogAirportIDMin,
-		", CatalogAirportIDMax:", c.CatalogAirportIDMax,
 		"}")
 }
 
@@ -191,6 +139,22 @@ func (c *Config) GetPassword() string {
 // if it has changed since the last load.
 // It returns true if the configuration was reloaded, false otherwise.
 func (c *Config) ReloadConfigIfChanged() (bool, error) {
+	if c.apiSrc != nil {
+		changed, err := c.loadFromAPI()
+		if err != nil {
+			slog.Debug("error reloading config from API", "error", err)
+
+			return false, err
+		}
+
+		if changed {
+			c.PromslogConfig.Level.Set(c.LogLevel)
+			slog.Debug("config reloaded from API", "log_level", c.LogLevel)
+		}
+
+		return changed, nil
+	}
+
 	slog.Debug("reloading config file", "file", c.confFilePath)
 
 	info, err := os.Stat(c.confFilePath)
@@ -277,15 +241,6 @@ func (c *Config) validate() error {
 
 	if c.GetPassword() == "" {
 		return fmt.Errorf("config: password is required")
-	}
-
-	if c.CatalogMinRunwayLengthFt < 1 {
-		return fmt.Errorf("config: catalog_min_runway_length_ft must be >= 1 (0 breaks the game's search form)")
-	}
-
-	if c.CatalogAirportIDMax > 0 && c.CatalogAirportIDMin > c.CatalogAirportIDMax {
-		return fmt.Errorf("config: catalog_airport_id_min (%d) must be <= catalog_airport_id_max (%d)",
-			c.CatalogAirportIDMin, c.CatalogAirportIDMax)
 	}
 
 	if c.CronJitterSeconds < 0 {

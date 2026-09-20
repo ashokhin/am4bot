@@ -1,0 +1,47 @@
+# syntax=docker/dockerfile:1
+#
+# One image, both control-plane binaries (apiserver, orchestrator) --
+# used both by the local dev stack (docker-compose.dev.yml) and published
+# to Docker Hub as ashokhin/am4bot-controlplane for real deployments (see
+# docker-compose.multi-tenant.yml.example). Which binary actually runs is
+# just which entrypoint a given compose service overrides to; nothing
+# service-specific happens at image-build time.
+#
+# apiserver embeds the built React SPA (see internal/webui/embed.go) and
+# serves it itself -- there is no separate "web" image/container anymore.
+# This stage builds that SPA first so its dist/ output can be copied into
+# place before go build runs, overwriting internal/webui/dist's
+# placeholder (see that directory's own committed index.html for why the
+# placeholder exists at all).
+
+FROM node:22-alpine AS web-build
+
+WORKDIR /src/web
+
+COPY web/package.json web/package-lock.json ./
+RUN npm ci
+
+COPY web/ .
+RUN npm run build
+
+FROM golang:1.26-alpine AS build
+
+WORKDIR /src
+
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+COPY --from=web-build /src/web/dist internal/webui/dist
+
+RUN CGO_ENABLED=0 go build -o /out/apiserver ./cmd/apiserver \
+    && CGO_ENABLED=0 go build -o /out/orchestrator ./cmd/orchestrator
+
+FROM alpine:3.21
+
+# docker-cli-compose provides the `docker compose` subcommand orchestrator
+# shells out to (see cmd/orchestrator/reconciler.go); harmless for
+# apiserver, which never touches it.
+RUN apk add --no-cache ca-certificates tzdata docker-cli docker-cli-compose
+
+COPY --from=build /out/apiserver /out/orchestrator /usr/local/bin/

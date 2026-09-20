@@ -10,37 +10,39 @@ const (
 
 // Metrics holds all Prometheus metrics used in the application.
 type Metrics struct {
-	Up                              prometheus.Gauge
-	StartTimeSeconds                prometheus.Gauge
-	DurationSeconds                 prometheus.Gauge
-	CompanyRank                     prometheus.Gauge
-	CompanyTrainingPoints           prometheus.Gauge
-	CompanyFleetSize                prometheus.Gauge
-	AircraftRoutesNumber            prometheus.Gauge
-	HubsNumber                      prometheus.Gauge
-	HangarCapacity                  prometheus.Gauge
-	SharePrice                      prometheus.Gauge
-	FlightsOperatedTotal            prometheus.Gauge
-	AllianceContributedTotal        prometheus.Gauge
-	AllianceContributedPerDay       prometheus.Gauge
-	AllianceFlightsTotal            prometheus.Gauge
-	AllianceSeasonMoney             prometheus.Gauge
-	PassengersTransportedTotal      *prometheus.GaugeVec
-	CargoTransportedTotal           *prometheus.GaugeVec
-	AircraftStatus                  *prometheus.GaugeVec
-	CompanyReputation               *prometheus.GaugeVec
-	MarketingCompanyDurationSeconds *prometheus.GaugeVec
-	CompanyMoney                    *prometheus.GaugeVec
-	HubStatsTotal                   *prometheus.GaugeVec
-	StaffSalary                     *prometheus.GaugeVec
-	FuelHolding                     *prometheus.GaugeVec
-	FuelLimit                       *prometheus.GaugeVec
-	FuelPrice                       *prometheus.GaugeVec
-	AllianceMemberSharePrice        *prometheus.GaugeVec
-	AllianceMemberContributedTotal  *prometheus.GaugeVec
-	AllianceMemberContributedPerDay *prometheus.GaugeVec
-	AllianceMemberContributedSeason *prometheus.GaugeVec
-	AllianceMemberFlightsTotal      *prometheus.GaugeVec
+	Up                               prometheus.Gauge
+	StartTimeSeconds                 prometheus.Gauge
+	DurationSeconds                  prometheus.Gauge
+	LastRunTimestampSeconds          prometheus.Gauge
+	NextScheduledRunTimestampSeconds prometheus.Gauge
+	CompanyRank                      prometheus.Gauge
+	CompanyTrainingPoints            prometheus.Gauge
+	CompanyFleetSize                 prometheus.Gauge
+	AircraftRoutesNumber             prometheus.Gauge
+	HubsNumber                       prometheus.Gauge
+	HangarCapacity                   prometheus.Gauge
+	SharePrice                       prometheus.Gauge
+	FlightsOperatedTotal             prometheus.Gauge
+	AllianceContributedTotal         prometheus.Gauge
+	AllianceContributedPerDay        prometheus.Gauge
+	AllianceFlightsTotal             prometheus.Gauge
+	AllianceSeasonMoney              prometheus.Gauge
+	PassengersTransportedTotal       *prometheus.GaugeVec
+	CargoTransportedTotal            *prometheus.GaugeVec
+	AircraftStatus                   *prometheus.GaugeVec
+	CompanyReputation                *prometheus.GaugeVec
+	MarketingCompanyDurationSeconds  *prometheus.GaugeVec
+	CompanyMoney                     *prometheus.GaugeVec
+	HubStatsTotal                    *prometheus.GaugeVec
+	StaffSalary                      *prometheus.GaugeVec
+	FuelHolding                      *prometheus.GaugeVec
+	FuelLimit                        *prometheus.GaugeVec
+	FuelPrice                        *prometheus.GaugeVec
+	AllianceMemberSharePrice         *prometheus.GaugeVec
+	AllianceMemberContributedTotal   *prometheus.GaugeVec
+	AllianceMemberContributedPerDay  *prometheus.GaugeVec
+	AllianceMemberContributedSeason  *prometheus.GaugeVec
+	AllianceMemberFlightsTotal       *prometheus.GaugeVec
 }
 
 // New initializes and returns a new Metrics instance with all Prometheus metrics defined.
@@ -65,6 +67,38 @@ func New() *Metrics {
 				Namespace: namespace,
 				Name:      "duration_seconds",
 				Help:      "Duration of execution in seconds.",
+			},
+		),
+		// StartTimeSeconds is set once, when the process starts (see
+		// Bot.New) -- it answers "how long has this process been up",
+		// not "when did it last actually run a cycle" (ambot is a single
+		// long-lived process, its own cron re-triggers Bot.Run
+		// repeatedly -- see cmd/ambot/main.go). LastRunTimestampSeconds
+		// is set at the end of EVERY completed Run(), which is what
+		// answers that second question -- e.g. for a "stale/stuck node"
+		// alert: time() - am4_last_run_timestamp_seconds growing past the
+		// node's own schedule interval means it stopped actually running,
+		// not just that the metric is old.
+		LastRunTimestampSeconds: prometheus.NewGauge(
+			prometheus.GaugeOpts{
+				Namespace: namespace,
+				Name:      "last_run_timestamp_seconds",
+				Help:      "Unix timestamp of the last completed run.",
+			},
+		),
+		// Set by cmd/ambot itself (not internal/bot -- this is cron
+		// scheduling, not a bot run), computed via the same robfig/cron
+		// library that actually schedules runs, so it's correct for ANY
+		// schedule shape (multiple entries, weekly, whatever) without
+		// Prometheus needing to understand cron syntax at all. Backs
+		// prometheus/alerts.yml's AmbotMissedSchedule rule: time() >
+		// this + grace means the node was due to run by now and hasn't,
+		// regardless of how irregular its own schedule is.
+		NextScheduledRunTimestampSeconds: prometheus.NewGauge(
+			prometheus.GaugeOpts{
+				Namespace: namespace,
+				Name:      "next_scheduled_run_timestamp_seconds",
+				Help:      "Unix timestamp this node's cron schedule says the next run is due.",
 			},
 		),
 
@@ -289,6 +323,8 @@ func (m *Metrics) RegisterMetrics(registry *prometheus.Registry) {
 		m.Up,
 		m.StartTimeSeconds,
 		m.DurationSeconds,
+		m.LastRunTimestampSeconds,
+		m.NextScheduledRunTimestampSeconds,
 		m.CompanyRank,
 		m.CompanyTrainingPoints,
 		m.CompanyFleetSize,

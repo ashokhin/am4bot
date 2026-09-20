@@ -9,35 +9,35 @@ on:
 
 jobs:
 
-  build:
-    name: Create and publish docker image
+  build-ambot:
+    name: Create and publish ambot docker image
     runs-on: ubuntu-latest
 
     steps:
-    
+
     - uses: actions/checkout@v4
-    
+
     - name: Log in to Docker Hub
       uses: docker/login-action@v3
       with:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_TOKEN }}
-    
+
     - name: Extract metadata (tags, labels) for Docker
       id: meta
       uses: docker/metadata-action@v5
       with:
         images: ${{ secrets.DOCKERHUB_REPO_ORG }}/${{ secrets.DOCKERHUB_REPO_NAME }}
-    
+
     # vet/lint/test already ran in ci.yaml on push/PR before this tag was
     # created — just build the binary needed for the version check below.
     - name: Build application
       run: make build
-    
+
     - name: Check version
       run:
         ./bin/ambot --version
-    
+
     - name: Build and push Docker image
       uses: docker/build-push-action@v6
       with:
@@ -50,5 +50,39 @@ jobs:
           REVISION=${{ github.sha }}
           BUILD_USER=github-actions
           BUILD_DATE=${{ github.event.head_commit.timestamp }}
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+
+  build-controlplane:
+    name: Create and publish control-plane docker image
+    runs-on: ubuntu-latest
+
+    steps:
+
+    - uses: actions/checkout@v4
+
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    # Same repo/org as ambot's own image, just a "-controlplane" suffix --
+    # apiserver + orchestrator (see Dockerfile.controlplane's own doc
+    # comment on why they share one image), for the multi-tenant hosting
+    # deployment (docs/multi-tenant-hosting.md), not the single-tenant
+    # ambot tool ambot's own image ships.
+    - name: Extract metadata (tags, labels) for Docker
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ secrets.DOCKERHUB_REPO_ORG }}/${{ secrets.DOCKERHUB_REPO_NAME }}-controlplane
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v6
+      with:
+        context: .
+        file: ./Dockerfile.controlplane
+        push: true
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}

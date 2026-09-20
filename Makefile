@@ -6,8 +6,6 @@ BIN_DIR		?= $(shell pwd)/bin/
 EXEC_EXT	?= $(shell go env GOEXE)
 
 AMBOT_BIN		:= ambot$(EXEC_EXT)
-ROUTE_SCAN_BIN	:= scanner$(EXEC_EXT)
-MERGE_CATALOG_BIN	:= mergecatalog$(EXEC_EXT)
 
 export APP_BRANCH		?= $(shell git describe --all --contains --dirty HEAD)
 export APP_VERSION		?= $(shell basename ${APP_BRANCH})
@@ -71,16 +69,6 @@ build:
 			-X github.com/prometheus/common/version.BuildDate=${APP_BUILD_DATE} \
 		" \
 		-o $(BIN_DIR)$(AMBOT_BIN) ./cmd/ambot
-	@CGO_ENABLED=0 go build -v \
-		-ldflags "-X github.com/prometheus/common/version.Version=${APP_VERSION} \
-			-X github.com/prometheus/common/version.Branch=${APP_BRANCH} \
-			-X github.com/prometheus/common/version.Revision=${APP_REVISION} \
-			-X github.com/prometheus/common/version.BuildUser=${APP_USER}@${APP_HOST} \
-			-X github.com/prometheus/common/version.BuildDate=${APP_BUILD_DATE} \
-		" \
-		-o $(BIN_DIR)$(ROUTE_SCAN_BIN) ./cmd/scanner
-	@CGO_ENABLED=0 go build -v \
-		-o $(BIN_DIR)$(MERGE_CATALOG_BIN) ./cmd/mergecatalog
 
 
 release: all
@@ -91,7 +79,7 @@ release: all
 	fi
 	@rm -rf ./$(RELEASE_DIR)
 	@mkdir -p ./$(RELEASE_DIR)
-	@cp $(BIN_DIR)$(AMBOT_BIN) $(BIN_DIR)$(ROUTE_SCAN_BIN) $(BIN_DIR)$(MERGE_CATALOG_BIN) LICENSE README.md ./$(RELEASE_DIR)
+	@cp $(BIN_DIR)$(AMBOT_BIN) LICENSE README.md ./$(RELEASE_DIR)
 	@cd ./$(RELEASE_DIR) ; $(ARCHIVE_CMD)
 	@cd ./$(RELEASE_DIR) ; ls -alh
 	@rm -rf ./$(RELEASE_DIR)
