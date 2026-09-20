@@ -39,6 +39,19 @@ var (
 	configFile   = kingpin.Flag("app.config", "YAML file with configuration.").Short('c').Default("config.yaml").String()
 	webAddr      = kingpin.Flag("web.listen-address", "Addresses on which to expose metrics and web interface.").Default(":9150").String()
 	webTelemetry = kingpin.Flag("web.telemetry-path", "Path under which to expose metrics.").Default("/metrics").String()
+
+	// Alternate config source for nodes hosted through the multi-tenant
+	// control plane: fetch config from apiserver's internal endpoint
+	// instead of reading --app.config. Standalone/OSS users leave these
+	// unset and nothing changes. All three are required together when any
+	// one is set (checked in main, since kingpin has no "these three go
+	// together" constraint).
+	configAPIURL = kingpin.Flag("config-api-url", "Base URL of apiserver's internal config endpoint (e.g. http://apiserver:8080). If set, config is fetched from there (using --node-id and --node-token) instead of --app.config.").
+			Envar("CONFIG_API_URL").String()
+	nodeID = kingpin.Flag("node-id", "This node's id in the control plane, used with --config-api-url.").
+		Envar("NODE_ID").Int64()
+	nodeToken = kingpin.Flag("node-token", "Bearer token authenticating as --node-id. Prefer the NODE_TOKEN environment variable over this flag so it doesn't appear in `ps`.").
+			Envar("NODE_TOKEN").String()
 )
 
 func main() {
@@ -54,7 +67,7 @@ func main() {
 	// Log to stdout (promslog defaults to stderr). Under the journald log
 	// driver, stderr is recorded at PRIORITY=err, which makes journalctl
 	// render every ordinary "level=info" line as an error. stdout lands at
-	// PRIORITY=info instead. Matches the scanner, which already uses stdout.
+	// PRIORITY=info instead.
 	promslogConfig.Writer = os.Stdout
 
 	logger := promslog.New(promslogConfig)
@@ -63,10 +76,27 @@ func main() {
 	slog.Info(fmt.Sprintf("starting application %s", APP_NAME), "version", version.Info())
 	slog.Info("build context", "build_context", version.BuildContext())
 
-	// load configuration
-	confPath, _ := filepath.Abs(*configFile)
+	// load configuration: from apiserver if --config-api-url (and its
+	// companions) are set, otherwise the usual local YAML file.
+	switch {
+	case *configAPIURL != "":
+		if *nodeID == 0 || *nodeToken == "" {
+			slog.Error("config loading error", "error", "--node-id and --node-token are required together with --config-api-url")
 
-	if conf, err = config.New(confPath); err != nil {
+			return
+		}
+
+		conf, err = config.NewFromAPI(*configAPIURL, *nodeID, *nodeToken)
+	default:
+		var confPath string
+		confPath, err = filepath.Abs(*configFile)
+
+		if err == nil {
+			conf, err = config.New(confPath)
+		}
+	}
+
+	if err != nil {
 		slog.Error("config loading error", "error", err)
 
 		return
@@ -163,6 +193,7 @@ func main() {
 		slog.Info("start job", "start_time", time.Now().UTC())
 
 		nextRun := nextScheduledRun(c, entryIDs)
+		bot.PrometheusMetrics.NextScheduledRunTimestampSeconds.Set(float64(nextRun.Unix()))
 
 		if err := bot.Run(ctx); err != nil {
 			// failed run increases counter
@@ -202,8 +233,16 @@ func main() {
 	// start cron object, schedule jobs
 	c.Start()
 
+	// Set once here for the window before the FIRST trigger fires --
+	// runJob itself keeps it current on every trigger after that (see
+	// above). Without this, the metric would read 0 (an unset Gauge's
+	// zero value) until the first scheduled run, which a naive alert
+	// rule could misread as "already overdue".
+	initialNextRun := nextScheduledRun(c, entryIDs)
+	bot.PrometheusMetrics.NextScheduledRunTimestampSeconds.Set(float64(initialNextRun.Unix()))
+
 	slog.Info("job scheduled", "schedules", bot.Conf.CronSchedules, "jitter_seconds", bot.Conf.CronJitterSeconds,
-		"next_run", nextScheduledRun(c, entryIDs))
+		"next_run", initialNextRun)
 
 	// create and register handler for the webTelemetry page
 	handler := promhttp.HandlerFor(

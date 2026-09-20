@@ -1,0 +1,197 @@
+# Local-dev stack for the multi-tenant control plane: builds apiserver
+# (which embeds the built web frontend, see internal/webui/embed.go),
+# orchestrator, plus an ephemeral Postgres (tmpfs -- nothing persists
+# across `down`). NOT for production
+# -- see docker-compose.multi-tenant.yml.example and
+# docs/multi-tenant-hosting.md for the real deployment shape (a real
+# Postgres volume, a reverse proxy terminating TLS in front, secrets from
+# wherever you manage them).
+#
+# Quick start:
+#   1. cp docker-compose.multi-tenant.dev.yml.example docker-compose.dev.yml
+#      cp .env.dev.example .env.dev
+#      then fill in SECRETS_MASTER_KEY / JWT_SIGNING_KEY / ORCHESTRATOR_TOKEN
+#      (openssl rand -base64 32 for the first two) and COMPOSE_NODES_DIR
+#      (see below). Both copies are gitignored -- this file and
+#      .env.dev.example are the committed templates; docker-compose.dev.yml
+#      and .env.dev are your own local working copies.
+#   2. docker compose -f docker-compose.dev.yml --env-file .env.dev up --build
+#   3. open http://localhost:18080, log in at admin/admin -- apiserver
+#      auto-creates this bootstrap account the first time it starts
+#      against an empty database (there's no signup flow, ever) and
+#      forces you to change that password immediately.
+#   4. Set the bundled Prometheus's URL in the admin UI
+#      (/admin/prometheus): http://prometheus:9090.
+#   5. (only if you'll actually enable a node and want to see a real ambot
+#      container run) the `ambot` service below builds the am4bot-dev
+#      image on every `up --build` same as everything else -- just set
+#      AMBOT_IMAGE=am4bot-dev / AMBOT_PULL_POLICY=never in .env.dev once
+#      and restart orchestrator so it actually uses that image instead of
+#      the published ashokhin/am4bot:latest. This is the only reason a
+#      local ambot build is needed at all: the published tag works fine
+#      too, but only once it's actually built from a revision that
+#      supports --config-api-url (see cmd/ambot/main.go) -- check before
+#      relying on it while iterating on this branch.
+#
+# orchestrator and docker-outside-of-docker: orchestrator provisions real
+# ambot containers by running `docker compose` against the HOST's Docker
+# daemon (via the bind-mounted socket), not its own container's isolated
+# one. That means when orchestrator's own `docker compose -f
+# <COMPOSE_NODES_DIR>/node-<id>/docker-compose.yml` runs, the daemon
+# resolves that path (and every bind mount inside it) against the HOST
+# filesystem -- so COMPOSE_NODES_DIR must be an absolute path that means
+# the same thing to the host and to orchestrator's own container, which is
+# why it's bind-mounted at the identical path on both sides below rather
+# than some convenient short one.
+#
+# the first admin: apiserver creates one itself (login/password
+# admin/admin, forced to change it on first login) the first time it
+# starts against a database with no users at all yet -- see
+# cmd/apiserver/main.go's ensureBootstrapAdmin. Nothing to seed by hand.
+
+# Explicit project name -- without this, Compose defaults to the current
+# directory's basename ("am4bot"), the same default the repo's other
+# docker-compose.yml (the real single-tenant deployment) would also get,
+# so `docker compose ls`/`ps` would show both stacks merged under one
+# project and warn about the other's containers as "orphans" of this one.
+name: am4bot-dev
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: am4bot
+      POSTGRES_PASSWORD: am4bot
+      POSTGRES_DB: am4bot
+    # tmpfs, not a named volume: this stack is throwaway by design --
+    # `docker compose down` (no -v needed) wipes it every time.
+    tmpfs:
+      - /var/lib/postgresql/data
+    ports:
+      - "15432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U am4bot"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+
+  # apiserver and orchestrator are two binaries baked into the SAME image
+  # (Dockerfile.controlplane) -- each service here just overrides the
+  # entrypoint to pick which one actually runs; nothing about the image
+  # itself is service-specific. Only apiserver declares `build:` -- both
+  # share the explicit `image:` tag below, so Compose builds it ONCE and
+  # orchestrator just reuses that tag (its `depends_on: apiserver`
+  # guarantees apiserver -- and therefore the build -- runs first).
+  apiserver:
+    build:
+      context: .
+      dockerfile: Dockerfile.controlplane
+    image: am4bot-dev-controlplane
+    entrypoint: ["/usr/local/bin/apiserver"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://am4bot:am4bot@postgres:5432/am4bot?sslmode=disable
+      SECRETS_MASTER_KEY: ${SECRETS_MASTER_KEY:?set in .env.dev, see this file's header}
+      JWT_SIGNING_KEY: ${JWT_SIGNING_KEY:?set in .env.dev, see this file's header}
+      ORCHESTRATOR_TOKEN: ${ORCHESTRATOR_TOKEN:?set in .env.dev, see this file's header}
+      # NOT "localhost": this ends up as the host half of the scrape
+      # target Prometheus' file_sd_config gets for every node (see
+      # cmd/orchestrator/prometheus_sd.go) -- "localhost" from inside the
+      # prometheus container below means the prometheus container itself,
+      # not the docker host where a node's published metrics port
+      # actually lives. Same host.docker.internal trick as orchestrator's
+      # AMBOT_CONFIG_API_URL below.
+      TARGET_HOSTS: host.docker.internal
+      COOKIE_SECURE: "false" # plain HTTP locally -- never in production
+    command: ["--web.listen-address=:8080", "--internal.listen-address=:8081", "--no-cookie-secure"]
+    ports:
+      - "18080:8080"
+      # NOT 0.0.0.0 (the default), and NOT 127.0.0.1 either -- the latter
+      # would block host.docker.internal too, since a node's ambot
+      # container reaches this from its OWN separate compose project (see
+      # AMBOT_CONFIG_API_URL below), where "host.docker.internal" always
+      # resolves to the docker0 bridge gateway (172.17.0.1 by default,
+      # `ip addr show docker0` to confirm on your machine), not to
+      # 127.0.0.1. Binding here to that same address is reachable from any
+      # container via host.docker.internal, reachable from this host
+      # directly, but NOT reachable from another machine on the LAN.
+      - "172.17.0.1:18081:8081"
+
+  orchestrator:
+    image: am4bot-dev-controlplane
+    entrypoint: ["/usr/local/bin/orchestrator"]
+    depends_on:
+      - apiserver
+    environment:
+      DATABASE_URL: postgres://am4bot:am4bot@postgres:5432/am4bot?sslmode=disable
+      # apiserver's INTERNAL listener (see --internal.listen-address
+      # above) -- /internal/nodes/{id}/provision only lives there, never
+      # on the public listener. Same-network container-to-container, so
+      # the service name resolves fine (unlike AMBOT_CONFIG_API_URL
+      # below, which crosses into a separate compose project/network).
+      API_BASE_URL: http://apiserver:8081
+      ORCHESTRATOR_TOKEN: ${ORCHESTRATOR_TOKEN:?set in .env.dev, see this file's header}
+      # NOT http://apiserver:8081: this value goes into each node's OWN
+      # docker-compose.yml (a separate compose project/network from this
+      # one, see cmd/orchestrator/compose.go), so "apiserver" doesn't
+      # resolve there. host.docker.internal does (extra_hosts is added to
+      # every rendered node compose file for exactly this) -- reach
+      # apiserver's internal listener via its published host port
+      # instead. Also the internal listener, not the public one:
+      # /internal/nodes/{id}/config only lives there.
+      AMBOT_CONFIG_API_URL: http://host.docker.internal:18081
+      AMBOT_IMAGE: ${AMBOT_IMAGE:-ashokhin/am4bot:latest}
+      AMBOT_PULL_POLICY: ${AMBOT_PULL_POLICY:-always}
+      COMPOSE_DIR: ${COMPOSE_NODES_DIR:?set in .env.dev to an absolute host path, see this file's header}
+      # Regenerated after every processed job -- the bundled `prometheus`
+      # service below scrapes exactly this file. Shared with it via the
+      # prometheus-sd volume, not a bind mount, since (unlike
+      # COMPOSE_NODES_DIR) nothing outside these two containers ever
+      # needs to resolve this path against the host.
+      PROMETHEUS_SD_FILE: /var/lib/am4bot/prometheus-sd/targets.json
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Same absolute path on both sides -- see this file's header on why.
+      - ${COMPOSE_NODES_DIR:?set in .env.dev, see this file's header}:${COMPOSE_NODES_DIR:?set in .env.dev, see this file's header}
+      - prometheus-sd:/var/lib/am4bot/prometheus-sd
+
+  # Internal-only Prometheus, scraping every node via the file_sd targets
+  # file orchestrator maintains -- see prometheus/prometheus.yml's own
+  # header for why this exists as a separate instance instead of reusing
+  # your org's main one. Set its URL (http://localhost:9091 from the
+  # host, or http://prometheus:9090 from inside this compose network) in
+  # the admin UI's Prometheus settings page once the stack is up.
+  prometheus:
+    image: prom/prometheus:v3.0.1
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - prometheus-sd:/var/lib/am4bot/prometheus-sd:ro
+    command: ["--config.file=/etc/prometheus/prometheus.yml"]
+    # So its file_sd targets (host.docker.internal:<port>, see
+    # TARGET_HOSTS above) actually resolve.
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    ports:
+      - "9091:9090"
+
+  # Builds the SAME am4bot-dev image AMBOT_IMAGE/.env.dev points
+  # orchestrator at -- part of the normal `up --build` like every other
+  # service now, instead of a separate `docker compose build ambot` step
+  # that's easy to forget and silently goes stale (this bit orchestrator
+  # with "No such image: am4bot-dev:latest" after exactly that happened,
+  # repeatedly, during development). entrypoint just exits immediately
+  # (exit 0) -- there's nothing to run continuously, this container
+  # exists purely so its image gets built; expect to see it as
+  # "Exited (0)" in `docker compose ps`, that's normal.
+  ambot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: am4bot-dev
+    entrypoint: ["true"]
+
+volumes:
+  prometheus-sd:

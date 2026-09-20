@@ -21,6 +21,14 @@ continuous management of your airline without manual intervention.
 It uses a headless browser to interact with the Airline Manager web interface,
 simulating user actions to perform the necessary tasks.
 
+> [!NOTE]
+>
+> Want to host `ambot` for multiple people with a web UI instead of
+> hand-edited `config.yaml` files? See
+> [docs/multi-tenant-hosting.md](docs/multi-tenant-hosting.md) — a separate
+> system built on top of this same bot, not needed for a single-account
+> setup.
+
 ## How it works
 
 Under the hood, the bot uses [Chromedp](https://github.com/chromedp/chromedp) to control a headless Chrome/Chromium browser.
@@ -168,6 +176,7 @@ option whenever both are set to a non-default value:
 | `timeout_seconds` | int | `180` | Timeout for full round in seconds. |
 | `chrome_headless` | bool | `true` | Run browser in headless mode. |
 | `chrome_debug` | bool | `false` | Enable detailed Chrome/Chromium debugging logs. |
+| `chrome_stealth` | bool | `false` | Launch Chrome via [chromedp-undetected](https://github.com/Davincible/chromedp-undetected) instead of a plain exec-allocator — patches `navigator.webdriver`/CDP fingerprints, and (when `chrome_headless: true`) runs headless inside a real Xvfb display rather than passing Chrome's own `--headless` flag. Requires `Xvfb`/`xauth` on `PATH` (already in the shipped Docker image). Leave `false` for local troubleshooting with a plain, easy-to-attach-to Chrome. |
 | `prometheus_address` | string | `":9150"` | Address to expose Prometheus metrics. |
 
 #### Example of `config.yaml` with the non-default options
@@ -212,6 +221,7 @@ timeout_seconds: 240
 # on systems without GUI support
 chrome_headless: true
 chrome_debug: true
+chrome_stealth: false
 prometheus_address: ":9150"
 ```
 
@@ -358,6 +368,9 @@ am4_hub_stats_total{name="UNITED STATES, NEW YORK JFK",type="arrivals"} 16269
 am4_hub_stats_total{name="UNITED STATES, NEW YORK JFK",type="departures"} 16389
 am4_hub_stats_total{name="UNITED STATES, NEW YORK JFK",type="paxArrived"} 3.759363e+06
 am4_hub_stats_total{name="UNITED STATES, NEW YORK JFK",type="paxDeparted"} 3.825323e+06
+# HELP am4_last_run_timestamp_seconds Unix timestamp of the last completed run.
+# TYPE am4_last_run_timestamp_seconds gauge
+am4_last_run_timestamp_seconds 1.7304912e+09
 # HELP am4_market_fuel_price Fuel amount price by fuel type.
 # TYPE am4_market_fuel_price gauge
 am4_market_fuel_price{type="co2"} 151

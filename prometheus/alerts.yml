@@ -1,0 +1,68 @@
+# Alert rules for the bundled, internal-only Prometheus (see
+# prometheus.yml's own header) -- catches a hosted node that's silently
+# stopped actually running, which the admin/user otherwise only notices
+# by happening to look at the UI's "Next run" tile (see
+# web/src/components/NodeMetricTiles.tsx) and eyeballing that it's stuck
+# in the past.
+#
+# No Alertmanager is bundled here -- these rules just make a stuck node
+# show up as a firing alert on THIS Prometheus's own /alerts page. Wire up
+# Alertmanager yourself (or federate into your org's main Prometheus,
+# see docs/multi-tenant-hosting.md's Metrics section) for actual
+# notifications (email/Slack/whatever) -- out of scope for what this
+# project bundles by default.
+groups:
+  - name: am4bot
+    rules:
+      # Catches "the container/exporter isn't reachable at all" -- crashed,
+      # never started, network problem, etc. 5m (not `scrape_interval`
+      # itself) so one missed scrape doesn't immediately fire.
+      - alert: AmbotExporterDown
+        expr: up{job="am4bot-nodes"} == 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "ambot exporter unreachable for {{ $labels.user_uuid }}/{{ $labels.node_id }}"
+          description: >-
+            Prometheus hasn't been able to scrape this node's ambot exporter for at least 5
+            minutes. The container may have crashed or never started.
+
+      # Catches the OTHER failure mode: the exporter is still up and being
+      # scraped (so AmbotExporterDown above stays quiet), but the node's
+      # own cron scheduler hasn't advanced past a run it was due for --
+      # e.g. stuck after cmd/ambot's own MAX_RESTORE_ATTEMPTS exit, or
+      # wedged inside a single Bot.Run() call for far longer than its
+      # own --timeout-seconds should ever allow.
+      #
+      # am4_next_scheduled_run_timestamp_seconds is computed by cmd/ambot
+      # itself via the SAME robfig/cron library that does the actual
+      # scheduling (see internal/metrics/prometheus.go's doc comment on
+      # that metric) -- correct for any schedule shape (multiple entries,
+      # weekly, whatever) without this expression needing to understand
+      # cron syntax at all.
+      #
+      # 10m grace: generous enough to absorb a node's own
+      # cron_jitter_seconds ("floating start") plus a normal run's actual
+      # duration: tighten it if your nodes run on a much shorter cadence
+      # than every few minutes, or loosen it for infrequent (e.g. weekly)
+      # schedules where a false positive from ordinary run-time variance
+      # would be more annoying than a slightly later alert.
+      - alert: AmbotMissedSchedule
+        # NOT `time() > next_run + 600` -- with a plain (non-`bool`)
+        # comparison between two instant vectors, Prometheus alerting's
+        # $value in the annotation below is the LEFT side's value (here,
+        # time() itself, i.e. "now"), not anything about how overdue the
+        # node is. Subtracting first makes $value the actually-useful
+        # number: how many seconds overdue.
+        expr: time() - am4_next_scheduled_run_timestamp_seconds > 600
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: "ambot missed its scheduled run for {{ $labels.user_uuid }}/{{ $labels.node_id }}"
+          description: >-
+            This node's cron schedule says a run was due {{ $value | humanizeDuration }} ago,
+            but the exporter is still reporting that same stale next-run time -- it hasn't
+            advanced to a later trigger. The process may be stuck or have exited without
+            restarting.

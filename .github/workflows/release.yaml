@@ -80,14 +80,13 @@ jobs:
         goarch: ${{ matrix.arch }}
         md5sum: false
         overwrite: true
-        multi_binaries: true
-        project_path: ./cmd/ambot ./cmd/scanner
+        project_path: ./cmd/ambot
         extra_files: LICENSE README.md
         pre_command: export CGO_ENABLED=0
         build_flags: -v
-        ldflags: >
-          "-X github.com/prometheus/common/version.Version=${{ github.ref_name }}
+        ldflags: >-
+          -X github.com/prometheus/common/version.Version=${{ github.ref_name }}
           -X github.com/prometheus/common/version.Branch=${{ github.ref }}
           -X github.com/prometheus/common/version.Revision=${{ github.sha }}
           -X github.com/prometheus/common/version.BuildUser=${{env.BUILD_USER}}@${{env.BUILD_HOST}}
-          -X github.com/prometheus/common/version.BuildDate=${{env.BUILD_DATE}}"
+          -X github.com/prometheus/common/version.BuildDate=${{env.BUILD_DATE}}

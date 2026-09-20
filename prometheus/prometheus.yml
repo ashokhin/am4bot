@@ -1,0 +1,30 @@
+# Config for the bundled, internal-only Prometheus in
+# docker-compose.multi-tenant*.yml(.example) -- scrapes every hosted
+# node's ambot exporter via the file_sd targets file orchestrator
+# maintains (--prometheus-sd-file/PROMETHEUS_SD_FILE, see
+# cmd/orchestrator/prometheus_sd.go). user_uuid/node_id labels come from
+# that file itself, attached automatically by Prometheus at scrape time --
+# no relabel_configs needed here.
+#
+# This instance exists so apiserver's own metrics proxy
+# (GET /api/metrics, see internal/api/metrics_handlers.go) has something
+# to query without sharing your org's main/external Prometheus -- keeps
+# every hosted node's noisy, per-run series out of it. Federate from here
+# into that main instance later if you want the long-term history/alerting
+# story on top (see docs/multi-tenant-hosting.md's Metrics section).
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+# See alerts.yml's own header -- these just make a stuck node show up on
+# THIS Prometheus's own /alerts page (http://localhost:9091/alerts from
+# the dev stack); no Alertmanager is bundled to actually notify anyone.
+rule_files:
+  - /etc/prometheus/alerts.yml
+
+scrape_configs:
+  - job_name: am4bot-nodes
+    file_sd_configs:
+      - files:
+          - /var/lib/am4bot/prometheus-sd/targets.json
+        refresh_interval: 30s

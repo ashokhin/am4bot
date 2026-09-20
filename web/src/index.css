@@ -1,0 +1,101 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+/* Class-based dark mode (ThemeProvider toggles .dark on <html>) rather
+   than Tailwind v4's prefers-color-scheme default -- lets a user's
+   explicit light/dark choice win over the OS setting, same convention as
+   the rest of this project's dark-mode handling. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme inline {
+  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+/* Design tokens -- palette follows the same categorical blue used by the
+   dataviz skill's reference palette (see MetricsPage), so the accent
+   color reads consistently between charts/stat-tiles and the rest of the
+   UI. Both light and dark are selected explicitly, not just an automatic
+   OS-driven flip, per the project's own dark-mode convention. */
+:root {
+  --radius: 0.625rem;
+  --background: oklch(0.99 0.002 95);
+  --foreground: oklch(0.15 0.01 95);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.15 0.01 95);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.15 0.01 95);
+  --primary: oklch(0.53 0.16 258); /* #2a78d6 */
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.96 0.005 95);
+  --secondary-foreground: oklch(0.25 0.01 95);
+  --muted: oklch(0.96 0.005 95);
+  --muted-foreground: oklch(0.52 0.01 95);
+  --accent: oklch(0.96 0.005 95);
+  --accent-foreground: oklch(0.25 0.01 95);
+  --destructive: oklch(0.55 0.18 25); /* #d03b3b-ish */
+  --destructive-foreground: oklch(0.99 0 0);
+  --success: oklch(0.55 0.15 145);
+  --success-foreground: oklch(0.99 0 0);
+  --border: oklch(0.9 0.005 95);
+  --input: oklch(0.9 0.005 95);
+  --ring: oklch(0.53 0.16 258 / 0.5);
+}
+
+.dark {
+  --background: oklch(0.14 0.005 95);
+  --foreground: oklch(0.97 0.002 95);
+  --card: oklch(0.18 0.005 95);
+  --card-foreground: oklch(0.97 0.002 95);
+  --popover: oklch(0.18 0.005 95);
+  --popover-foreground: oklch(0.97 0.002 95);
+  --primary: oklch(0.63 0.15 258); /* #3987e5 */
+  --primary-foreground: oklch(0.14 0.005 95);
+  --secondary: oklch(0.24 0.005 95);
+  --secondary-foreground: oklch(0.97 0.002 95);
+  --muted: oklch(0.24 0.005 95);
+  --muted-foreground: oklch(0.7 0.01 95);
+  --accent: oklch(0.24 0.005 95);
+  --accent-foreground: oklch(0.97 0.002 95);
+  --destructive: oklch(0.62 0.17 25);
+  --destructive-foreground: oklch(0.97 0 0);
+  --success: oklch(0.6 0.14 145);
+  --success-foreground: oklch(0.14 0 0);
+  --border: oklch(1 0 0 / 0.1);
+  --input: oklch(1 0 0 / 0.15);
+  --ring: oklch(0.63 0.15 258 / 0.5);
+}
+
+body {
+  @apply bg-background text-foreground;
+}
+
+#root {
+  min-height: 100svh;
+}

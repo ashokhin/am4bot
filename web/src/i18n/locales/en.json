@@ -1,0 +1,357 @@
+{
+  "common": {
+    "loading": "Loading…",
+    "save": "Save",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "login": "Login",
+    "password": "Password",
+    "timezone": "Timezone",
+    "language": "Language",
+    "back": "Back"
+  },
+  "theme": {
+    "toggle": "Toggle theme",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  },
+  "login": {
+    "title": "Sign in",
+    "submit": "Sign in",
+    "error": "Invalid login or password"
+  },
+  "nav": {
+    "nodes": "Nodes",
+    "metrics": "Metrics",
+    "settings": "Settings",
+    "users": "Users",
+    "adminNodes": "All nodes",
+    "adminVpn": "VPN",
+    "adminPrometheus": "Prometheus",
+    "logout": "Log out",
+    "signedInAs": "Signed in as {{login}}",
+    "openMenu": "Open menu"
+  },
+  "users": {
+    "title": "Users",
+    "addUser": "Add user",
+    "created": "User \"{{login}}\" created.",
+    "you": "you",
+    "cannotDisableSelf": "You cannot disable your own account.",
+    "neverLoggedIn": "Never",
+    "table": {
+      "login": "Login",
+      "uuid": "UUID",
+      "lastLogin": "Last login",
+      "nodes": "Nodes (active/total)",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "status": {
+      "active": "Active",
+      "disabled": "Disabled"
+    },
+    "actions": {
+      "disable": "Disable",
+      "enable": "Enable"
+    },
+    "createDialog": {
+      "title": "Add a new user",
+      "submit": "Create",
+      "promoteToAdmin": "Promote to admin",
+      "promoteToAdminHint": "Admin accounts have no nodes of their own — only visibility into everyone else's, plus user/VPN/Prometheus management."
+    },
+    "errors": {
+      "loadFailed": "Failed to load users.",
+      "createFailed": "Failed to create user.",
+      "updateFailed": "Failed to update user."
+    }
+  },
+  "nodes": {
+    "title": "Nodes",
+    "addNode": "Add node",
+    "defaultBadge": "default",
+    "confirmDelete": "Delete node \"{{name}}\"? This cannot be undone.",
+    "deleted": "Node \"{{name}}\" deleted.",
+    "table": {
+      "name": "Name",
+      "services": "Services",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "status": {
+      "enabled": "Enabled",
+      "disabled": "Disabled"
+    },
+    "actions": {
+      "enable": "Enable",
+      "disable": "Disable",
+      "delete": "Delete"
+    },
+    "services": {
+      "catalogLabel": "Available services — turn on what this node should do",
+      "orderLabel": "Run order (drag to reorder; duplicate a service to run it more than once, e.g. buying fuel both before and after departing)",
+      "none": "No services enabled yet.",
+      "dragHandle": "Drag to reorder",
+      "duplicate": "Duplicate {{service}}",
+      "remove": "Remove {{service}}"
+    },
+    "schedules": {
+      "label": "Schedule",
+      "dayScope": "Days",
+      "dayScopeDaily": "Every day",
+      "dayScopeWeekdays": "Weekdays",
+      "dayScopeWeekends": "Weekends",
+      "dayAbbrev": {
+        "0": "Su",
+        "1": "Mo",
+        "2": "Tu",
+        "3": "We",
+        "4": "Th",
+        "5": "Fr",
+        "6": "Sa"
+      },
+      "mode": "When",
+      "modeInterval": "Every N minutes",
+      "modeSpecific": "Specific hours/minutes",
+      "everyMinutes": "Interval",
+      "everyMinutesValue": "Every {{count}} minutes",
+      "hours": "Hours",
+      "minutes": "Minutes",
+      "specificHint": "Runs at every picked minute of every picked hour — e.g. hours 6, 12 with minutes :00, :30 fires at 6:00, 6:30, 12:00, and 12:30.",
+      "entryLabel": "Schedule {{index}}",
+      "advancedHint": "Custom cron expression — doesn't match a simple \"every N minutes\" or \"specific hours/minutes\" pattern, so it's shown as-is.",
+      "remove": "Remove schedule {{index}}",
+      "add": "Add schedule",
+      "hint": "Multiple entries all trigger the same run — e.g. one for weekdays, one for weekends."
+    },
+    "created": "Node \"{{name}}\" created.",
+    "updated": "Node \"{{name}}\" updated.",
+    "form": {
+      "createTitle": "Add a new node",
+      "editTitle": "Edit node",
+      "sectionAccount": "Account",
+      "sectionServices": "Services",
+      "sectionSchedule": "Schedule",
+      "sectionAdvanced": "Advanced settings",
+      "name": "Name",
+      "gameUsername": "Game username",
+      "gamePassword": "Game password",
+      "gamePasswordEditPlaceholder": "Leave blank to keep the current password",
+      "jitterSeconds": "Floating start (seconds)",
+      "jitterHint": "Random delay added after each trigger, before the run actually starts — makes login timing less mechanically regular. 0 disables it.",
+      "timeoutSeconds": "Run timeout (seconds)",
+      "timezoneHint": "Interprets every schedule entry above — one timezone for the whole node.",
+      "notReadyHint": "This node needs a game login, password, and schedule before it can be enabled.",
+      "enabledHint": "Toggling this only takes effect once you save — finish configuring below, then turn it on and save in one step."
+    },
+    "advanced": {
+      "activeCount": "{{count}} active",
+      "intro": "These only matter for the services you've turned on above — a greyed-out group belongs to a service you haven't enabled yet. Leave a field blank to use its default.",
+      "fuelGroup": "Fuel purchasing",
+      "fuelGroupHint": "Used by the \"buy_fuel\" service.",
+      "goodPriceFuel": "Good fuel price",
+      "goodPriceFuelHint": "Fuel price (per 1,000 Lbs) considered cheap enough to buy even when not critically low. Used by \"buy_fuel\". Default: 500.",
+      "goodPriceCo2": "Good CO2 price",
+      "goodPriceCo2Hint": "CO2 price (per 1,000 Quotas) considered cheap enough to buy even when not critically low. Used by \"buy_fuel\". Default: 120.",
+      "fuelCriticalPercent": "Critical fuel level (%)",
+      "fuelCriticalPercentHint": "Below this remaining-fuel percentage, \"buy_fuel\" buys regardless of price. Default: 20.",
+      "budgetFuel": "Fuel budget (% of balance)",
+      "budgetFuelHint": "Percentage of your account balance \"buy_fuel\" is allowed to spend per run. Default: 70.",
+      "marketingGroup": "Marketing",
+      "marketingGroupHint": "Used by the \"marketing\" service.",
+      "budgetMarketing": "Marketing budget (% of balance)",
+      "budgetMarketingHint": "Percentage of your account balance the \"marketing\" service is allowed to spend on campaigns per run. Default: 70.",
+      "maintenanceGroup": "Aircraft maintenance",
+      "maintenanceGroupHint": "Used by the \"ac_maintenance\" service.",
+      "aircraftWearPercent": "Wear threshold to trigger repair",
+      "aircraftWearPercentHint": "Aircraft wear percentage that triggers a bulk repair. Used by \"ac_maintenance\". Default: 80%.",
+      "aircraftMaxHoursToCheck": "Max hours to next A-Check",
+      "aircraftMaxHoursToCheckHint": "Triggers a bulk A-Check for any aircraft within this many hours of its next one. Used by \"ac_maintenance\". Default: 24.",
+      "aircraftModifyLimit": "Max aircraft per modification run",
+      "aircraftModifyLimitHint": "Caps how many aircraft \"ac_maintenance\" modifies in a single run (sorted by registration number). Default: 3.",
+      "hubsGroup": "Hubs",
+      "hubsGroupHint": "Used by the \"hubs\" service.",
+      "hubsMaintenanceLimit": "Max hubs per run",
+      "hubsMaintenanceLimitHint": "Caps how many hubs \"hubs\" repairs lounges in / buys catering for, per run. Default: 5.",
+      "budgetMaintenance": "Maintenance budget (% of balance)",
+      "budgetMaintenanceHint": "Percentage of your account balance available for lounge repairs and catering (\"hubs\") AND aircraft repairs/A-Checks/modifications (\"ac_maintenance\") — both services draw from this same budget. Default: 30.",
+      "repairLounges": "Repair lounges automatically",
+      "repairLoungesHint": "Whether \"hubs\" repairs a hub's lounge when it needs it. Default: on.",
+      "buyCateringIfMissing": "Buy catering automatically when missing",
+      "buyCateringIfMissingHint": "Whether \"hubs\" buys catering for a hub that has none. Turning this off also disables the two fields below. Default: on.",
+      "cateringDurationHours": "Catering duration",
+      "cateringDurationHoursHint": "How many hours of catering \"hubs\" buys at a time, when buying catering is on. Default: 168h (one week).",
+      "cateringAmountOption": "Catering amount",
+      "cateringAmountOptionHint": "How much catering \"hubs\" buys at a time, when buying catering is on. Default: 20000.",
+      "allianceGroup": "Alliance statistics",
+      "allianceGroupHint": "Used by the \"alliance_stats\" service.",
+      "allianceIds": "Alliance IDs to scan",
+      "allianceIdsHint": "Comma-separated list of numeric alliance IDs \"alliance_stats\" collects and exposes as Prometheus metrics for. Empty means none.",
+      "allianceIdsInvalidChar": "Only digits, commas, and spaces are allowed."
+    },
+    "errors": {
+      "loadFailed": "Failed to load nodes.",
+      "createFailed": "Failed to create node.",
+      "updateFailed": "Failed to update node.",
+      "deleteFailed": "Failed to delete node.",
+      "defaultNotDeletable": "The default node can't be deleted, only disabled."
+    }
+  },
+  "forceChangePassword": {
+    "title": "Change your password",
+    "intro": "Your current password was set for you and needs to be changed before you can continue.",
+    "submit": "Change password and continue",
+    "errors": {
+      "failed": "Couldn't change your password — please try again.",
+      "mismatch": "Passwords don't match."
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "account": "Account",
+    "displayName": "Display name",
+    "displayNameHint": "Shown instead of your login throughout the app. Leave blank to just show your login.",
+    "changePassword": "Change password",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm new password",
+    "passwordChanged": "Password changed.",
+    "vpnRegion": "VPN exit region",
+    "vpnRegionNone": "None (no VPN)",
+    "vpnRegionHint": "Applies to ALL of your nodes — there's one shared VPN exit per user, not a separate choice per node.",
+    "saved": "Saved.",
+    "errors": {
+      "loadFailed": "Failed to load VPN regions.",
+      "saveFailed": "Failed to save.",
+      "passwordChangeFailed": "Failed to change password.",
+      "passwordMismatch": "Passwords don't match."
+    }
+  },
+  "vpnAdmin": {
+    "title": "VPN",
+    "providerSection": "Provider account",
+    "providerConfigured": "Configured (provider: {{provider}}).",
+    "providerNotConfigured": "Not configured yet — nodes with a region selected won't get a working VPN container until this is set.",
+    "regionsSection": "Exit regions",
+    "addRegion": "Add region",
+    "confirmDeleteRegion": "Delete VPN region \"{{name}}\"? Any user currently using it falls back to no VPN.",
+    "regionCreated": "VPN region \"{{name}}\" created.",
+    "regionDeleted": "VPN region \"{{name}}\" deleted.",
+    "providerSaved": "Provider credentials saved.",
+    "table": {
+      "name": "Name",
+      "actions": "Actions"
+    },
+    "actions": {
+      "delete": "Delete"
+    },
+    "form": {
+      "provider": "Provider",
+      "vpnUsername": "VPN username",
+      "vpnPassword": "VPN password",
+      "regionName": "Region name",
+      "ovpnConfig": "OpenVPN config file contents"
+    },
+    "errors": {
+      "loadFailed": "Failed to load VPN settings.",
+      "createRegionFailed": "Failed to create VPN region.",
+      "deleteRegionFailed": "Failed to delete VPN region.",
+      "setProviderFailed": "Failed to save VPN provider credentials."
+    }
+  },
+  "metrics": {
+    "title": "Metrics",
+    "updatedAt": "Updated {{time}}",
+    "notConfigured": "Metrics aren't available yet — the admin hasn't configured a Prometheus instance.",
+    "noNodes": "No nodes to show metrics for.",
+    "status": {
+      "up": "Up",
+      "down": "Down"
+    },
+    "tiles": {
+      "rank": "Company rank",
+      "fleetSize": "Fleet size",
+      "sharePrice": "Share price",
+      "flightsOperated": "Flights operated",
+      "lastRunSeconds": "Last run duration (s)",
+      "lastRunAt": "Last run",
+      "nextRunAt": "Next run due"
+    },
+    "errors": {
+      "loadFailed": "Failed to load metrics."
+    }
+  },
+  "adminNodes": {
+    "title": "All nodes",
+    "table": {
+      "owner": "Owner",
+      "name": "Name",
+      "services": "Services",
+      "status": "Status"
+    },
+    "diagnostics": {
+      "title": "Diagnostics",
+      "logLevel": "Log level",
+      "default": "Default (info)",
+      "hint": "Overrides this node's logging verbosity — e.g. \"debug\" while investigating an issue, or \"error\" to quiet down a noisy node. Only you can see or change this; the node's owner never does.",
+      "saved": "Log level updated.",
+      "errors": {
+        "saveFailed": "Failed to update log level."
+      }
+    },
+    "errors": {
+      "loadFailed": "Failed to load nodes."
+    }
+  },
+  "adminUserDetail": {
+    "deleted": "User \"{{login}}\" deleted.",
+    "resetPassword": "Reset password",
+    "deleteUser": "Delete user",
+    "cannotDeleteSelf": "You cannot delete your own account.",
+    "cannotResetOwnPassword": "Use Settings to change your own password instead.",
+    "nodesSection": "Nodes",
+    "passwordReset": "Password reset.",
+    "confirmDelete": "Delete user \"{{login}}\"? Their nodes will be deleted too. This cannot be undone.",
+    "newPassword": "New password",
+    "locked": "Locked",
+    "lockedSince": "Locked since",
+    "lockedUntil": "Locked until",
+    "lockReason": "Reason",
+    "unlock": "Unlock",
+    "unlocked": "User unlocked.",
+    "lastFailedLogin": "Last failed login",
+    "errors": {
+      "loadFailed": "Failed to load user.",
+      "deleteFailed": "Failed to delete user.",
+      "resetPasswordFailed": "Failed to reset password.",
+      "unlockFailed": "Failed to unlock user."
+    }
+  },
+  "loginActivity": {
+    "title": "Recent login activity",
+    "empty": "No login attempts recorded yet.",
+    "time": "Time",
+    "result": "Result",
+    "ip": "IP address",
+    "userAgent": "User agent",
+    "success": "Success",
+    "failure": "Failed"
+  },
+  "adminMetrics": {
+    "selectUser": "Select a user"
+  },
+  "metricsAdmin": {
+    "title": "Metrics",
+    "configured": "Prometheus is configured.",
+    "saved": "Saved.",
+    "notConfigured": "Not configured yet — users won't see any metrics until this is set.",
+    "form": {
+      "url": "Prometheus URL"
+    },
+    "errors": {
+      "loadFailed": "Failed to load Prometheus settings.",
+      "saveFailed": "Failed to save the Prometheus URL."
+    }
+  }
+}
