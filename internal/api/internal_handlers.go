@@ -203,7 +203,18 @@ func (s *Server) handleInternalGetNodeProvision(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	targetHost := s.opts.TargetHosts[int(id)%len(s.opts.TargetHosts)]
+	if len(s.opts.TargetHosts) == 0 {
+		slog.Error("no target hosts configured")
+		writeError(w, http.StatusInternalServerError, "failed to assign node placement")
+
+		return
+	}
+
+	targetIdx := int(id % int64(len(s.opts.TargetHosts)))
+	if targetIdx < 0 {
+		targetIdx += len(s.opts.TargetHosts)
+	}
+	targetHost := s.opts.TargetHosts[targetIdx]
 
 	containerName, prometheusPort, err := s.store.EnsureNodeProvisioned(
 		r.Context(), id, targetHost, s.opts.PrometheusPortRangeStart, s.opts.PrometheusPortRangeEnd,
