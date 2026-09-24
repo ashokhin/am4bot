@@ -58,7 +58,7 @@ func TestVerifyRejectsWrongKey(t *testing.T) {
 		t.Fatalf("NewTokenManager() error = %v", err)
 	}
 
-	token, err := a.Issue(uuid.New(), "friend1", false)
+	token, err := a.Issue(uuid.New(), "user1", false)
 	if err != nil {
 		t.Fatalf("Issue() error = %v", err)
 	}
@@ -94,7 +94,7 @@ func TestVerifyRejectsExpiredToken(t *testing.T) {
 func TestVerifyRejectsTamperedToken(t *testing.T) {
 	m := testTokenManager(t)
 
-	token, err := m.Issue(uuid.New(), "friend1", false)
+	token, err := m.Issue(uuid.New(), "user1", false)
 	if err != nil {
 		t.Fatalf("Issue() error = %v", err)
 	}

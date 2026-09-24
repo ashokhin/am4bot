@@ -28,7 +28,7 @@
 --     reorders them (e.g. "SELECT unnest(services) ... ORDER BY ..." for
 --     anything other than display) -- always read/write the array as a
 --     whole, in the order the UI's drag-and-drop last left it in.
---   * users.uuid is what appears in HAProxy-routed UI URLs and the
+--   * users.uuid is what appears in UI URLs and the
 --     Prometheus user_uuid label -- never users.id, which is a guessable
 --     sequential integer. The label gets attached without touching ambot
 --     itself: the orchestrator maintains a Prometheus file_sd targets
@@ -101,7 +101,7 @@ CREATE TABLE prometheus_settings (
 
 CREATE TABLE users (
     id            BIGSERIAL PRIMARY KEY, -- internal FK target only; never expose in URLs or labels
-    -- external-facing identity: HAProxy-routed UI URLs (/u/<uuid>/...) and
+    -- external-facing identity: UI URLs (/u/<uuid>/...) and
     -- the user_uuid Prometheus label (see above) both use this, not id --
     -- an incrementing integer would let one user enumerate/guess others'.
     uuid          UUID NOT NULL UNIQUE DEFAULT gen_random_uuid(),

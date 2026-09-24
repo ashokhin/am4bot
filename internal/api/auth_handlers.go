@@ -41,7 +41,7 @@ func toUserResponse(u *store.User) userResponse {
 }
 
 func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
-	ip := clientIP(r)
+	ip := s.clientIP(r)
 	ua := r.UserAgent()
 
 	var req loginRequest

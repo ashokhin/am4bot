@@ -24,7 +24,7 @@ func mustCreateNodeWithToken(t *testing.T, st *store.Store, enc *secrets.Encrypt
 
 	ctx := context.Background()
 
-	u, err := st.CreateUser(ctx, "friend@example.com", "hash", false)
+	u, err := st.CreateUser(ctx, "user@example.com", "hash", false)
 	if err != nil {
 		t.Fatalf("CreateUser() error = %v", err)
 	}
@@ -142,7 +142,7 @@ func TestInternalConfigEndpointRejectsNodeWithNoToken(t *testing.T) {
 	srv, _, st, _ := testServerWithDeps(t)
 
 	ctx := context.Background()
-	u, err := st.CreateUser(ctx, "friend@example.com", "hash", false)
+	u, err := st.CreateUser(ctx, "user@example.com", "hash", false)
 	if err != nil {
 		t.Fatalf("CreateUser() error = %v", err)
 	}

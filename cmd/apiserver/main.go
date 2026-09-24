@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"io/fs"
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -38,6 +39,8 @@ var (
 				Envar("INTERNAL_LISTEN_ADDRESS").Default(":8081").String()
 	webRoutePrefix = kingpin.Flag("web.route-prefix", "Mount the PUBLIC listener (UI + /api/*) under this path instead of \"/\", e.g. \"/app\" -- same idea as Prometheus'/Grafana's own route-prefix: lets a reverse proxy serve this UI and other services on the same port/domain with no path-rewriting rules. Never affects the INTERNAL listener. Must start with \"/\" and not end with one.").
 			Envar("WEB_ROUTE_PREFIX").Default("").String()
+	trustedProxies = kingpin.Flag("web.trusted-proxies", "Comma-separated IPs/CIDRs of reverse proxies allowed to tell apiserver a request's real client address via X-Forwarded-For. Only a connection whose direct peer is in this list has that header honored (otherwise it is ignored, since anyone can forge it); empty (the default) trusts nothing. Without this, behind a reverse proxy every request appears to come from the proxy's own address, so login activity shows that address and the per-IP login ban applies to all users at once.").
+			Envar("TRUSTED_PROXIES").Default("").String()
 	databaseURL = kingpin.Flag("database-url", "Postgres connection string.").
 			Envar("DATABASE_URL").Required().String()
 	secretsMasterKey = kingpin.Flag("secrets-master-key", "Base64 AES-256 key for encrypting node/VPN credentials at rest (generate with internal/secrets.GenerateKey).").
@@ -110,6 +113,11 @@ func run() error {
 		return fmt.Errorf("--web.route-prefix: %w", err)
 	}
 
+	trustedProxyNets, err := parseTrustedProxies(*trustedProxies)
+	if err != nil {
+		return fmt.Errorf("--web.trusted-proxies: %w", err)
+	}
+
 	// The DistFS root has one extra "dist" path segment (see
 	// internal/webui.embed.go's own doc comment on why go:embed can't
 	// embed web/dist directly) -- fs.Sub strips it so the SPA file server
@@ -127,6 +135,7 @@ func run() error {
 		PrometheusPortRangeStart: *prometheusPortRangeStart,
 		PrometheusPortRangeEnd:   *prometheusPortRangeEnd,
 		RoutePrefix:              *webRoutePrefix,
+		TrustedProxies:           trustedProxyNets,
 	})
 	if err != nil {
 		return fmt.Errorf("building server: %w", err)
@@ -252,6 +261,45 @@ func validateRoutePrefix(prefix string) error {
 	}
 
 	return nil
+}
+
+// parseTrustedProxies parses --web.trusted-proxies: a comma-separated list
+// of IPs and/or CIDRs. A bare IP becomes a single-address network. "" is
+// fine and means "trust no proxy".
+func parseTrustedProxies(raw string) ([]*net.IPNet, error) {
+	var nets []*net.IPNet
+
+	for _, entry := range strings.Split(raw, ",") {
+		entry = strings.TrimSpace(entry)
+		if entry == "" {
+			continue
+		}
+
+		if !strings.Contains(entry, "/") {
+			ip := net.ParseIP(entry)
+			if ip == nil {
+				return nil, fmt.Errorf("%q is not an IP address or CIDR", entry)
+			}
+
+			bits := 128
+			if ip.To4() != nil {
+				bits = 32
+			}
+
+			nets = append(nets, &net.IPNet{IP: ip, Mask: net.CIDRMask(bits, bits)})
+
+			continue
+		}
+
+		_, n, err := net.ParseCIDR(entry)
+		if err != nil {
+			return nil, fmt.Errorf("%q is not an IP address or CIDR: %w", entry, err)
+		}
+
+		nets = append(nets, n)
+	}
+
+	return nets, nil
 }
 
 // ensureBootstrapAdmin creates the first-run admin account (login/password

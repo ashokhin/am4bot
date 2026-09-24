@@ -43,7 +43,7 @@ func TestWritePrometheusSDFile(t *testing.T) {
 	st := openTestStoreForSD(t)
 	ctx := context.Background()
 
-	u, err := st.CreateUser(ctx, "friend@example.com", "hash", false)
+	u, err := st.CreateUser(ctx, "user@example.com", "hash", false)
 	if err != nil {
 		t.Fatalf("CreateUser() error = %v", err)
 	}

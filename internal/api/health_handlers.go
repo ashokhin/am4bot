@@ -10,10 +10,13 @@ import (
 // other dependency, only confirms the process is up and serving requests
 // at all. Registered on the PUBLIC listener (see cmd/apiserver's
 // --web.listen-address) -- not the internal one -- because that's the
-// port both HAProxy's own backend healthcheck and `docker compose`'s own
-// `healthcheck:` already reach the apiserver container on. "Internal" here
-// means "for infrastructure, not for browsers or the public HAProxy
-// frontend's routed paths", not "the /internal/* listener".
+// port both a reverse proxy's own backend healthcheck and `docker
+// compose`'s own `healthcheck:` already reach the apiserver container on.
+// "Internal" here means "for infrastructure, not for browsers or the
+// paths a public reverse proxy routes", not "the /internal/* listener".
+// Registered on
+// server.go's rootMux, at a fixed path regardless of RoutePrefix -- see
+// that registration's own doc comment for why.
 func (s *Server) handleHealthz(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }

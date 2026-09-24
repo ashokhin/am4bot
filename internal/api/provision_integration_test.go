@@ -35,7 +35,7 @@ func TestProvisionEndpointAssignsPlacementAndMintsToken(t *testing.T) {
 	srv, _, st, _ := testServerWithDeps(t)
 
 	ctx := context.Background()
-	u, err := st.CreateUser(ctx, "friend@example.com", "hash", false)
+	u, err := st.CreateUser(ctx, "user@example.com", "hash", false)
 	if err != nil {
 		t.Fatalf("CreateUser() error = %v", err)
 	}
@@ -100,7 +100,7 @@ func TestProvisionEndpointIncludesDecryptedVPNBundle(t *testing.T) {
 	srv, _, st, enc := testServerWithDeps(t)
 
 	ctx := context.Background()
-	u, err := st.CreateUser(ctx, "friend@example.com", "hash", false)
+	u, err := st.CreateUser(ctx, "user@example.com", "hash", false)
 	if err != nil {
 		t.Fatalf("CreateUser() error = %v", err)
 	}
@@ -156,7 +156,7 @@ func TestProvisionEndpointRejectsWrongOrchestratorToken(t *testing.T) {
 	srv, _, st, _ := testServerWithDeps(t)
 
 	ctx := context.Background()
-	u, err := st.CreateUser(ctx, "friend@example.com", "hash", false)
+	u, err := st.CreateUser(ctx, "user@example.com", "hash", false)
 	if err != nil {
 		t.Fatalf("CreateUser() error = %v", err)
 	}

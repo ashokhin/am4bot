@@ -133,6 +133,19 @@ every later restart, and the account is forced through the same
 
 ### Login hardening
 
+The IP-based mechanisms below key on the client's address, so `apiserver` must
+see the *real* one. Behind a reverse proxy it doesn't by default: every
+connection arrives from the proxy (or, with Docker's published ports, from the
+Docker network's gateway address), so login activity would show that one
+address for everyone, and a single client tripping an IP ban would lock **all**
+users out for its duration. Set `--web.trusted-proxies`/`TRUSTED_PROXIES` to
+the address your proxy connects from (for a proxy on the Docker host that is
+typically the compose network's gateway — `docker network inspect
+<project>_default`; pin the network's `subnet` in compose so it doesn't change
+on recreation) and make sure the proxy sets `X-Forwarded-For`. Only then is that
+header honored, and only the entries your own proxies wrote are believed, so a
+client can't choose its own address by sending the header itself.
+
 `POST /api/auth/login` is rate-limited by THREE deliberately separate
 mechanisms (see `internal/api/login_guard.go`), each catching a different
 attack shape and never triggering the other two on its own:
@@ -280,6 +293,33 @@ update is a near no-op for this reason (nothing in the container's own
 environment changes on an update); it exists mainly to actually create the
 container the first time a node is enabled, or restart it after a stop.
 
+### Updating the ambot image
+
+Publishing a new `ambot` image does **not** update nodes that are already
+running: each node keeps the container it was started with, and nothing
+about a new image on the registry prompts `orchestrator` to do anything.
+A node only picks up a newer image the next time it is reconciled (any
+edit, enable or disable of that node), because its compose file uses
+`pull_policy: always` by default (`--ambot-pull-policy`/`AMBOT_PULL_POLICY`).
+
+To roll a new image out to every node at once, an admin uses **Update all
+nodes** on the *All nodes* page (`POST /api/admin/nodes/update-all`). It
+queues one reconcile per **enabled** node; `orchestrator` then runs
+`docker compose up -d` on each, which re-pulls the image and recreates the
+container only if the image actually changed, so pressing it when nothing
+is new leaves the nodes running untouched. Notes:
+
+- A node that is mid-run when its container is recreated has that run
+  interrupted; it starts again at its next scheduled trigger.
+- Disabled nodes are skipped (their containers are stopped). They pick up
+  the new image the next time they are enabled.
+- `orchestrator` claims queued operations in batches (`--batch-size`), so
+  a large fleet is updated gradually rather than all at once.
+- If `AMBOT_PULL_POLICY` is `never` or `missing`, nothing is re-pulled and
+  this does not update anything.
+- The action is recorded in the audit log as `update_all_nodes`, with the
+  number of nodes queued.
+
 ## VPN model
 
 Exactly **one** VPN provider account exists, admin-configured once
@@ -426,22 +466,23 @@ listener (not `/internal/*` — see [Architecture](#architecture)):
   otherwise.
 
 "Unauthenticated on its public listener" doesn't mean "meant for the
-public internet" — nothing in either compose example's HAProxy/reverse
-proxy example routes these paths through the public frontend, so in
-practice they're only ever reached by infrastructure on the same
+public internet" — you shouldn't route these paths through your public
+reverse proxy, so in practice they're only ever reached by
+infrastructure on the same
 host/network: a reverse proxy's own backend healthcheck, or `docker
 compose`'s own `healthcheck:` on the `apiserver` service (see the
 production compose example). They reveal nothing sensitive either way
 (a boolean-ish "database reachable or not"), but treat them as
 operator-facing, not user-facing.
 
-If `WEB_ROUTE_PREFIX` is set (see [Configuration reference](#configuration-reference)
-below), both paths are reachable two ways: unprefixed (`/healthz`) for
-anything checking the container directly on its own network, and
-prefixed (e.g. `/ambot/healthz`) for anything going through a reverse
-proxy that forwards the prefixed path as-is — `apiserver` only strips
-`WEB_ROUTE_PREFIX` from a request path that actually starts with it, so
-both forms reach the same handler.
+Always at `/healthz`/`/readyz`, never under `WEB_ROUTE_PREFIX` (see
+[Configuration reference](#configuration-reference) below) even when
+that's set — they're registered ahead of the route-prefix stripping, on
+purpose: infrastructure expects a fixed, well-known health path that
+doesn't move depending on whatever path the UI happens to be mounted
+under. If your `healthcheck:`/reverse-proxy backend check was written
+before you set `WEB_ROUTE_PREFIX`, it doesn't need to change — it should
+still point at bare `/healthz`/`/readyz`, not the prefixed path.
 
 ## Configuration reference
 
@@ -452,6 +493,7 @@ both forms reach the same handler.
 | `--web.listen-address` | | | `:8080` | Address the PUBLIC listener (UI + `/api/*`) listens on — what your reverse proxy points at. |
 | `--internal.listen-address` | `INTERNAL_LISTEN_ADDRESS` | | `:8081` | Address the INTERNAL listener (`/internal/*`, used by ambot containers and orchestrator) listens on. A deliberately separate port from `--web.listen-address` — never point a public reverse proxy at it, see [Architecture](#architecture). |
 | `--web.route-prefix` | `WEB_ROUTE_PREFIX` | | (none) | Mounts the PUBLIC listener (UI + `/api/*`) under this path instead of `/` — e.g. `/app`, so a reverse proxy can serve this UI and something else (Prometheus at `/prometheus`, say) on the same port/domain with no path-rewriting rules, the same route-prefix idea Prometheus/Grafana themselves offer. Must start with `/` and not end with one. Never affects the INTERNAL listener. |
+| `--web.trusted-proxies` | `TRUSTED_PROXIES` | | (none) | Comma-separated IPs/CIDRs of the reverse proxies allowed to report a request's real client address via `X-Forwarded-For`. Only a connection whose direct peer is in this list has that header honored; for anyone else it is ignored (it is trivially forgeable), and empty trusts nothing. Without it, behind a reverse proxy every request appears to come from the proxy's own address — see [Login hardening](#login-hardening). |
 | `--database-url` | `DATABASE_URL` | yes | | Postgres connection string. |
 | `--secrets-master-key` | `SECRETS_MASTER_KEY` | yes | | Base64 AES-256 key encrypting node/VPN secrets at rest. **Losing it is unrecoverable data loss — see [Secrets and key management](#secrets-and-key-management) before generating one.** |
 | `--jwt-signing-key` | `JWT_SIGNING_KEY` | yes | | Base64 key (≥32 bytes) signing session tokens. `openssl rand -base64 64` recommended. |

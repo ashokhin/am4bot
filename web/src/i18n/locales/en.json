@@ -317,6 +317,13 @@
     },
     "errors": {
       "loadFailed": "Failed to load nodes."
+    },
+    "updateAll": {
+      "button": "Update all nodes",
+      "confirm": "Re-pull the ambot image and restart every enabled node that has a newer one. A node that's mid-run will have that run interrupted. Nodes already on the latest image are left alone.",
+      "queued": "Update queued for {{count}} node(s).",
+      "partial": "Queued {{queued}} node(s); {{failed}} failed to queue.",
+      "failed": "Failed to queue the update."
     }
   },
   "adminUserDetail": {

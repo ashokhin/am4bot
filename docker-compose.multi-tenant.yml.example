@@ -134,7 +134,7 @@ services:
       # multi-host provisioning exists and this needs to mean an actual
       # different machine.
       TARGET_HOSTS: ${TARGET_HOSTS:-host.docker.internal}
-      # Serve the UI/API under a path prefix (e.g. "/ambot") instead of
+      # Serve the UI/API under a path prefix (e.g. "/app") instead of
       # "/" -- for a reverse proxy that fronts several apps on one host.
       # Empty by default (no prefix). Must start with "/", not end with
       # one. Purely a runtime setting -- no image rebuild needed; see
@@ -142,6 +142,14 @@ services:
       # reverse proxy must forward the prefixed path AS-IS (no stripping)
       # to this container's port 8080.
       WEB_ROUTE_PREFIX: ${WEB_ROUTE_PREFIX:-}
+      # Address(es) of the reverse proxy in front of apiserver, so login
+      # activity and the per-IP login ban see each client's real address
+      # (from the proxy's X-Forwarded-For) instead of the proxy's own.
+      # Comma-separated IPs/CIDRs; empty (the default) trusts no proxy, so
+      # the header is ignored. Behind a proxy on the Docker host this is
+      # usually the compose network's gateway address. See
+      # docs/multi-tenant-hosting.md's "Login hardening" section.
+      TRUSTED_PROXIES: ${TRUSTED_PROXIES:-}
       # No COOKIE_SECURE override here -- apiserver's own default is
       # Secure=true (HTTPS-only cookies), which is what you want once
       # there's a real reverse proxy terminating TLS in front of
@@ -243,6 +251,20 @@ services:
       - host.docker.internal:host-gateway
     # ports:
     #   - "127.0.0.1:9091:9090"
+
+# Optional: pin this project's network so its gateway address stays the
+# same across recreations. Only needed if you set TRUSTED_PROXIES to that
+# gateway (a reverse proxy on the Docker host reaches published ports
+# through it) -- otherwise Docker may hand the network a different subnet
+# next time it is recreated and TRUSTED_PROXIES would silently stop
+# matching. Pick a subnet that no other Docker network on this host uses
+# (see `docker network ls` / `docker network inspect`).
+# networks:
+#   default:
+#     ipam:
+#       config:
+#         - subnet: 172.30.0.0/16
+#           gateway: 172.30.0.1
 
 volumes:
   am4bot-postgres-data:

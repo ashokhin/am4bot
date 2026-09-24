@@ -35,7 +35,7 @@ func (s *Server) requireAuth(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		cookie, err := r.Cookie(sessionCookieName)
 		if err != nil {
-			slog.Debug("rejected request: no session cookie", "path", r.URL.Path, "ip", clientIP(r), "user_agent", r.UserAgent())
+			slog.Debug("rejected request: no session cookie", "path", r.URL.Path, "ip", s.clientIP(r), "user_agent", r.UserAgent())
 			writeError(w, http.StatusUnauthorized, "not authenticated")
 
 			return
@@ -43,7 +43,7 @@ func (s *Server) requireAuth(next http.HandlerFunc) http.HandlerFunc {
 
 		claims, err := s.tokens.Verify(cookie.Value)
 		if err != nil {
-			slog.Warn("rejected request: invalid or expired session token", "path", r.URL.Path, "ip", clientIP(r), "user_agent", r.UserAgent(), "error", err)
+			slog.Warn("rejected request: invalid or expired session token", "path", r.URL.Path, "ip", s.clientIP(r), "user_agent", r.UserAgent(), "error", err)
 			writeError(w, http.StatusUnauthorized, "not authenticated")
 
 			return

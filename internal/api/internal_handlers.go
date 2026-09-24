@@ -29,7 +29,7 @@ import (
 // everything else; a bearer-token-only route living under a path prefix a
 // reverse proxy can route/firewall differently (e.g. only reachable from
 // the Docker network the node containers run in, never from the public
-// internet HAProxy exposes /api/ on) is the point.
+// internet the reverse proxy exposes /api/ on) is the point.
 func (s *Server) handleInternalGetNodeConfig(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil {

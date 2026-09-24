@@ -8,6 +8,7 @@ package api
 
 import (
 	"io/fs"
+	"net"
 	"net/http"
 	"time"
 
@@ -33,7 +34,7 @@ type Server struct {
 // beyond its store/tokens/encryptor dependencies.
 type ServerOptions struct {
 	// CookieSecure controls the Secure flag on the session cookie. True in
-	// production (served over HTTPS via HAProxy); false only for local
+	// production (served over HTTPS via a reverse proxy); false only for local
 	// plain-HTTP development, where a Secure cookie would never be sent
 	// back at all.
 	CookieSecure bool
@@ -63,6 +64,12 @@ type ServerOptions struct {
 	// Validated/normalized (must start with "/", must not end with "/")
 	// by cmd/apiserver before it ever reaches here.
 	RoutePrefix string
+	// TrustedProxies are the reverse proxies whose X-Forwarded-For header
+	// clientIP is willing to believe. Empty (the default) trusts none, so
+	// the header is ignored and a client can't forge its own address --
+	// which matters because login activity and the per-IP login ban both
+	// key on it. Set by cmd/apiserver's --web.trusted-proxies.
+	TrustedProxies []*net.IPNet
 }
 
 // NewServer builds a Server and its two http.Handlers -- see
@@ -92,17 +99,6 @@ func NewServer(st *store.Store, tokens *auth.TokenManager, enc *secrets.Encrypto
 	}
 
 	publicMux := http.NewServeMux()
-
-	// Unauthenticated on purpose -- these exist for infrastructure
-	// (HAProxy's own backend healthcheck, `docker compose`'s own
-	// `healthcheck:`), which have no session cookie to send. Not
-	// dangerous to leave world-reachable in principle (handleHealthz
-	// reveals nothing, handleReadyz only a boolean-ish "database
-	// reachable or not"), but nothing here routes them through the
-	// public HAProxy frontend either -- see docker-compose.multi-tenant.yml
-	// and this file's own doc comments on handleHealthz/handleReadyz.
-	publicMux.HandleFunc("GET /healthz", s.handleHealthz)
-	publicMux.HandleFunc("GET /readyz", s.handleReadyz)
 
 	publicMux.HandleFunc("POST /api/auth/login", s.handleLogin)
 	publicMux.HandleFunc("POST /api/auth/logout", s.handleLogout)
@@ -138,6 +134,9 @@ func NewServer(st *store.Store, tokens *auth.TokenManager, enc *secrets.Encrypto
 	// individual users' nodes).
 	publicMux.HandleFunc("GET /api/admin/nodes", s.requireAdmin(s.handleListAllNodes))
 	publicMux.HandleFunc("GET /api/admin/nodes/{id}", s.requireAdmin(s.handleAdminGetNode))
+	// Re-pull the ambot image and recreate every enabled node whose image
+	// changed -- see handleUpdateAllNodes' doc comment.
+	publicMux.HandleFunc("POST /api/admin/nodes/update-all", s.requireAdmin(s.handleUpdateAllNodes))
 	publicMux.HandleFunc("PUT /api/admin/nodes/{id}/log-level", s.requireAdmin(s.handleSetNodeLogLevel))
 
 	// Region catalog: readable by any signed-in user (everyone needs to see
@@ -204,9 +203,30 @@ func NewServer(st *store.Store, tokens *auth.TokenManager, enc *secrets.Encrypto
 	// none of the route registrations above (or in the /internal/* block
 	// below, which is deliberately NEVER prefixed, see RoutePrefix's doc
 	// comment) needed to change to support this.
-	publicHandler := http.StripPrefix(opts.RoutePrefix, publicMux)
+	prefixedHandler := http.StripPrefix(opts.RoutePrefix, publicMux)
 
-	return wrap(publicHandler), wrap(internalMux), nil
+	rootMux := http.NewServeMux()
+
+	// Deliberately registered OUTSIDE prefixedHandler/RoutePrefix, at a
+	// fixed path regardless of it -- infrastructure (a reverse proxy's own
+	// backend healthcheck, `docker compose`'s own `healthcheck:`) expects
+	// a well-known health endpoint that doesn't move depending on
+	// whatever path prefix the UI happens to be mounted under.
+	// http.StripPrefix returns 404 for any path that doesn't literally
+	// start with its prefix (not a passthrough for the unprefixed case),
+	// so these would 404 once RoutePrefix is set if they were registered
+	// on publicMux like every other route instead. Unauthenticated on
+	// purpose -- these callers have no session cookie to send. Not
+	// dangerous to leave world-reachable in principle (handleHealthz
+	// reveals nothing, handleReadyz only a boolean-ish "database
+	// reachable or not"), but nothing routes them through a public
+	// reverse proxy frontend either -- see docker-compose.multi-tenant.yml
+	// and this file's own doc comments on handleHealthz/handleReadyz.
+	rootMux.HandleFunc("GET /healthz", s.handleHealthz)
+	rootMux.HandleFunc("GET /readyz", s.handleReadyz)
+	rootMux.Handle("/", prefixedHandler)
+
+	return wrap(rootMux), wrap(internalMux), nil
 }
 
 // sessionCookieName is the httpOnly cookie the session token travels in.

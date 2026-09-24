@@ -286,6 +286,20 @@ func (s *Store) ListAllNodesWithOwner(ctx context.Context) ([]NodeWithOwner, err
 	return nodes, nil
 }
 
+// ListEnabledNodeIDs returns the id of every enabled node across every
+// user. Disabled nodes are deliberately left out: their containers are
+// stopped, and reconciling one only re-runs `stop`, so there's nothing for
+// a newly published image to update.
+func (s *Store) ListEnabledNodeIDs(ctx context.Context) ([]int64, error) {
+	var ids []int64
+
+	if err := s.db.SelectContext(ctx, &ids, `SELECT id FROM nodes WHERE enabled ORDER BY id`); err != nil {
+		return nil, fmt.Errorf("listing enabled nodes: %w", err)
+	}
+
+	return ids, nil
+}
+
 // GetNodeWithOwner is the single-row form of ListAllNodesWithOwner -- for
 // the admin's read-only node detail screen. Admin-only, same caveat as
 // ListAllNodesWithOwner: never scope a regular user's request through

@@ -15,7 +15,7 @@ func mustCreateNodeForOps(t *testing.T, s *Store) *Node {
 
 	ctx := context.Background()
 
-	u, err := s.CreateUser(ctx, "friend@example.com", "hash", false)
+	u, err := s.CreateUser(ctx, "user@example.com", "hash", false)
 	if err != nil {
 		t.Fatalf("CreateUser() error = %v", err)
 	}

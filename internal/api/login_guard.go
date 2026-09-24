@@ -5,8 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"net"
-	"net/http"
 	"sync"
 	"time"
 
@@ -23,7 +21,7 @@ const (
 	// count (any login, repeats included) crosses this, even if it never
 	// grew past a couple of distinct logins. 2x maxFailedLoginAttempts,
 	// not an arbitrary round number: an attacker alternating between just
-	// two known accounts (e.g. "admin" and one known friend's login) hits
+	// two known accounts (e.g. "admin" and one known user's login) hits
 	// each one's own 5-failure cap at very nearly the same time, for 10
 	// total failures right as both individual logins ban themselves --
 	// this threshold trips at that same moment, so the IP itself is ALSO
@@ -59,7 +57,7 @@ const (
 //     wrong password locked themselves out of the admin UI too, with no
 //     other way back in).
 //   - Sustained hammering of a SMALL, FIXED set of known logins (e.g.
-//     alternating "admin" and one known friend's login back and forth,
+//     alternating "admin" and one known user's login back and forth,
 //     never touching a 3rd, 4th, 5th...): the distinct-login case above
 //     never fires (never more than a couple of distinct logins), and each
 //     individual login only self-throttles at maxFailedLoginAttempts.
@@ -120,17 +118,6 @@ func NewLoginGuard(st *store.Store) *LoginGuard {
 		ipFailedLogins:  make(map[string]map[string]struct{}),
 		ipTotalFailures: make(map[string]int),
 	}
-}
-
-// clientIP extracts the caller's address from r.RemoteAddr (host:port),
-// falling back to the raw value if it isn't in that form.
-func clientIP(r *http.Request) string {
-	host, _, err := net.SplitHostPort(r.RemoteAddr)
-	if err != nil {
-		return r.RemoteAddr
-	}
-
-	return host
 }
 
 // Check returns the active ban blocking this attempt, if any. Called

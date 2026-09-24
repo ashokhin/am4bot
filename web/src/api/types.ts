@@ -209,6 +209,12 @@ export interface UpdateNodeRequest {
 // Admin-only, read-only view -- see internal/api/admin_handlers.go's
 // adminNodeResponse. An admin never creates/edits a node, only sees whose
 // it is -- with the one exception of log_level, see SetNodeLogLevelRequest.
+// Mirrors internal/api/admin_handlers.go's updateAllNodesResponse.
+export interface UpdateAllNodesResponse {
+  queued: number
+  failed: number
+}
+
 export interface AdminNodeView extends Node {
   owner_login: string
   owner_uuid: string

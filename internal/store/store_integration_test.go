@@ -51,7 +51,7 @@ func TestUserCreateAndLookup(t *testing.T) {
 	s := openTestStore(t)
 	ctx := context.Background()
 
-	u, err := s.CreateUser(ctx, "friend1", "hashed-password", false)
+	u, err := s.CreateUser(ctx, "user1", "hashed-password", false)
 	if err != nil {
 		t.Fatalf("CreateUser() error = %v", err)
 	}
@@ -60,7 +60,7 @@ func TestUserCreateAndLookup(t *testing.T) {
 		t.Fatalf("CreateUser() returned zero-value id/uuid: %+v", u)
 	}
 
-	byLogin, err := s.GetUserByLogin(ctx, "friend1")
+	byLogin, err := s.GetUserByLogin(ctx, "user1")
 	if err != nil {
 		t.Fatalf("GetUserByLogin() error = %v", err)
 	}
@@ -76,7 +76,7 @@ func TestUserCreateAndLookup(t *testing.T) {
 		t.Fatalf("GetUserByUUID() Login = %q, want %q", byUUID.Login, u.Login)
 	}
 
-	if _, err := s.CreateUser(ctx, "friend1", "x", false); err == nil {
+	if _, err := s.CreateUser(ctx, "user1", "x", false); err == nil {
 		t.Fatal("CreateUser() with a duplicate login succeeded, want ErrConflict")
 	}
 }
@@ -85,7 +85,7 @@ func TestNodeServicesAndSchedulesPreserveOrder(t *testing.T) {
 	s := openTestStore(t)
 	ctx := context.Background()
 
-	u, err := s.CreateUser(ctx, "friend@example.com", "hashed-password", false)
+	u, err := s.CreateUser(ctx, "user@example.com", "hashed-password", false)
 	if err != nil {
 		t.Fatalf("CreateUser() error = %v", err)
 	}
@@ -128,7 +128,7 @@ func TestDeleteDefaultNodeRefused(t *testing.T) {
 	s := openTestStore(t)
 	ctx := context.Background()
 
-	u, err := s.CreateUser(ctx, "friend1", "hashed-password", false)
+	u, err := s.CreateUser(ctx, "user1", "hashed-password", false)
 	if err != nil {
 		t.Fatalf("CreateUser() error = %v", err)
 	}
@@ -171,7 +171,7 @@ func TestVPNRegionCatalogAndUserSelection(t *testing.T) {
 	s := openTestStore(t)
 	ctx := context.Background()
 
-	u, err := s.CreateUser(ctx, "friend@example.com", "hashed-password", false)
+	u, err := s.CreateUser(ctx, "user@example.com", "hashed-password", false)
 	if err != nil {
 		t.Fatalf("CreateUser() error = %v", err)
 	}
@@ -295,7 +295,7 @@ func TestListProvisionedNodesForScraping(t *testing.T) {
 	s := openTestStore(t)
 	ctx := context.Background()
 
-	u, err := s.CreateUser(ctx, "friend@example.com", "hashed-password", false)
+	u, err := s.CreateUser(ctx, "user@example.com", "hashed-password", false)
 	if err != nil {
 		t.Fatalf("CreateUser() error = %v", err)
 	}

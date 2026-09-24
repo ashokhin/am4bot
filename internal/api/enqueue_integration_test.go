@@ -13,9 +13,9 @@ import (
 	"github.com/ashokhin/am4bot/internal/store"
 )
 
-// mustCreateFriend is mustCreateAdmin's non-admin counterpart, for tests
+// mustCreateUser is mustCreateAdmin's non-admin counterpart, for tests
 // that only need a logged-in regular user, not the admin endpoints.
-func mustCreateFriend(t *testing.T, st *store.Store, email, password string) *store.User {
+func mustCreateUser(t *testing.T, st *store.Store, email, password string) *store.User {
 	t.Helper()
 
 	hash, err := auth.HashPassword(password)
@@ -35,10 +35,10 @@ func TestCreateNodeEnqueuesReconcile(t *testing.T) {
 	srv, _, st, _ := testServerWithDeps(t)
 	ctx := context.Background()
 
-	mustCreateFriend(t, st, "friend@example.com", "friendpass123")
+	mustCreateUser(t, st, "user@example.com", "userpass123")
 
 	c := &client{base: srv.URL, jar: map[string]string{}}
-	resp, _ := c.do(t, "POST", "/api/auth/login", loginRequest{Login: "friend@example.com", Password: "friendpass123"})
+	resp, _ := c.do(t, "POST", "/api/auth/login", loginRequest{Login: "user@example.com", Password: "userpass123"})
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("login status = %d, want 200", resp.StatusCode)
 	}
@@ -78,7 +78,7 @@ func TestDeleteNodeEnqueuesDeleteWithSnapshot(t *testing.T) {
 	srv, _, st, _ := testServerWithDeps(t)
 	ctx := context.Background()
 
-	u := mustCreateFriend(t, st, "friend@example.com", "friendpass123")
+	u := mustCreateUser(t, st, "user@example.com", "userpass123")
 
 	n, err := st.CreateNode(ctx, store.NewNodeParams{
 		UserID: u.ID, Name: "departure", GameURL: "https://www.airlinemanager.com/", GameUsername: "player1",
@@ -102,7 +102,7 @@ func TestDeleteNodeEnqueuesDeleteWithSnapshot(t *testing.T) {
 	}
 
 	c := &client{base: srv.URL, jar: map[string]string{}}
-	resp, _ := c.do(t, "POST", "/api/auth/login", loginRequest{Login: "friend@example.com", Password: "friendpass123"})
+	resp, _ := c.do(t, "POST", "/api/auth/login", loginRequest{Login: "user@example.com", Password: "userpass123"})
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("login status = %d, want 200", resp.StatusCode)
 	}

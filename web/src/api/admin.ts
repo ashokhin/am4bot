@@ -6,6 +6,7 @@ import type {
   CreateUserRequest,
   ResetUserPasswordRequest,
   SetNodeLogLevelRequest,
+  UpdateAllNodesResponse,
   User,
 } from './types'
 
@@ -20,6 +21,9 @@ export const adminApi = {
   unlockUser: (uuid: string) => api.post<void>(`/api/admin/users/${uuid}/unlock`),
   deleteUser: (uuid: string) => api.delete<void>(`/api/admin/users/${uuid}`),
   listAllNodes: () => api.get<AdminNodeView[]>('/api/admin/nodes'),
+  // Queues a reconcile for every enabled node so each re-pulls its image --
+  // see internal/api/admin_handlers.go's handleUpdateAllNodes.
+  updateAllNodes: () => api.post<UpdateAllNodesResponse>('/api/admin/nodes/update-all'),
   getNode: (id: number) => api.get<AdminNodeView>(`/api/admin/nodes/${id}`),
   setNodeLogLevel: (id: number, req: SetNodeLogLevelRequest) => api.put<void>(`/api/admin/nodes/${id}/log-level`, req),
 }

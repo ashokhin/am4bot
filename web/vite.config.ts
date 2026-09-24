@@ -19,7 +19,7 @@ export default defineConfig({
       // dev-only convenience: forwards to apiserver so the browser sees
       // same-origin requests (simplest, cookie-safe way to talk to the
       // API without CORS config) instead of hardcoding a backend URL.
-      // Production instead has a reverse proxy (HAProxy) route /api and
+      // Production instead has a reverse proxy route /api and
       // /internal appropriately in front of the built static files.
       '/api': {
         target: process.env.VITE_API_PROXY_TARGET ?? 'http://localhost:8080',

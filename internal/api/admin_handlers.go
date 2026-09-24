@@ -572,6 +572,49 @@ func (s *Server) handleListAllNodes(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, resp)
 }
 
+type updateAllNodesResponse struct {
+	Queued int `json:"queued"`
+	Failed int `json:"failed"`
+}
+
+// handleUpdateAllNodes queues a reconcile for every enabled node, so the
+// orchestrator re-runs `docker compose up -d` on each. That re-pulls the
+// node's image (its compose file's pull_policy, see the orchestrator's
+// --ambot-pull-policy) and recreates the container only if the image
+// actually changed -- this is how already-running nodes pick up a newly
+// published ambot image, which nothing else triggers on its own: a
+// reconcile is otherwise only ever enqueued by a change to the node
+// itself. Safe to run when nothing changed (nodes whose image is
+// unchanged are left running as-is). Unlike enqueueReconcile, failures are
+// counted and reported back instead of only logged, because the admin
+// asked for exactly this and needs to know if some nodes were skipped.
+func (s *Server) handleUpdateAllNodes(w http.ResponseWriter, r *http.Request) {
+	ids, err := s.store.ListEnabledNodeIDs(r.Context())
+	if err != nil {
+		slog.Error("listing enabled nodes to update", "error", err)
+		writeError(w, http.StatusInternalServerError, "failed to update nodes")
+
+		return
+	}
+
+	resp := updateAllNodesResponse{}
+
+	for _, id := range ids {
+		if _, err := s.store.EnqueueOperation(r.Context(), id, store.OpReconcile, nil); err != nil {
+			slog.Error("enqueueing reconcile operation", "node_id", id, "error", err)
+
+			resp.Failed++
+
+			continue
+		}
+
+		resp.Queued++
+	}
+
+	s.audit(r, "update_all_nodes", strconv.Itoa(resp.Queued))
+	writeJSON(w, http.StatusAccepted, resp)
+}
+
 // handleAdminGetNode is the single-node counterpart of handleListAllNodes
 // -- the admin's read-only node detail screen, reachable for any user's
 // node (unlike handleGetNode, which is scoped to the caller's own).

@@ -252,15 +252,15 @@ func TestNonAdminCannotAccessAdminRoutes(t *testing.T) {
 	mustCreateAdmin(t, st, "admin@example.com", "adminpass123")
 
 	admin.do(t, "POST", "/api/auth/login", loginRequest{Login: "admin@example.com", Password: "adminpass123"})
-	resp, _ := admin.do(t, "POST", "/api/admin/users", createUserRequest{Login: "friend@example.com", Password: "friendpass123"})
+	resp, _ := admin.do(t, "POST", "/api/admin/users", createUserRequest{Login: "user@example.com", Password: "userpass123"})
 	if resp.StatusCode != http.StatusCreated {
 		t.Fatalf("creating user status = %d, want 201", resp.StatusCode)
 	}
 
-	friend := &client{base: admin.base, jar: map[string]string{}}
-	friend.do(t, "POST", "/api/auth/login", loginRequest{Login: "friend@example.com", Password: "friendpass123"})
+	user := &client{base: admin.base, jar: map[string]string{}}
+	user.do(t, "POST", "/api/auth/login", loginRequest{Login: "user@example.com", Password: "userpass123"})
 
-	resp, _ = friend.do(t, "GET", "/api/admin/users", nil)
+	resp, _ = user.do(t, "GET", "/api/admin/users", nil)
 	if resp.StatusCode != http.StatusForbidden {
 		t.Fatalf("non-admin GET /api/admin/users status = %d, want 403", resp.StatusCode)
 	}
@@ -282,12 +282,12 @@ func TestCreatingUserAutoCreatesDefaultNode(t *testing.T) {
 	mustCreateAdmin(t, st, "admin@example.com", "adminpass123")
 	admin.do(t, "POST", "/api/auth/login", loginRequest{Login: "admin@example.com", Password: "adminpass123"})
 
-	admin.do(t, "POST", "/api/admin/users", createUserRequest{Login: "friend@example.com", Password: "friendpass123"})
+	admin.do(t, "POST", "/api/admin/users", createUserRequest{Login: "user@example.com", Password: "userpass123"})
 
-	friend := &client{base: admin.base, jar: map[string]string{}}
-	friend.do(t, "POST", "/api/auth/login", loginRequest{Login: "friend@example.com", Password: "friendpass123"})
+	user := &client{base: admin.base, jar: map[string]string{}}
+	user.do(t, "POST", "/api/auth/login", loginRequest{Login: "user@example.com", Password: "userpass123"})
 
-	nodes := friend.doList(t, "GET", "/api/nodes")
+	nodes := user.doList(t, "GET", "/api/nodes")
 
 	if len(nodes) != 2 {
 		t.Fatalf("new user has %d nodes, want exactly 2 (the auto-created \"player\" and \"maintenance\" defaults)", len(nodes))
@@ -314,12 +314,12 @@ func TestDefaultNodeCannotBeDeleted(t *testing.T) {
 	defer st.Close()
 	mustCreateAdmin(t, st, "admin@example.com", "adminpass123")
 	admin.do(t, "POST", "/api/auth/login", loginRequest{Login: "admin@example.com", Password: "adminpass123"})
-	admin.do(t, "POST", "/api/admin/users", createUserRequest{Login: "friend@example.com", Password: "friendpass123"})
+	admin.do(t, "POST", "/api/admin/users", createUserRequest{Login: "user@example.com", Password: "userpass123"})
 
-	friend := &client{base: admin.base, jar: map[string]string{}}
-	friend.do(t, "POST", "/api/auth/login", loginRequest{Login: "friend@example.com", Password: "friendpass123"})
+	user := &client{base: admin.base, jar: map[string]string{}}
+	user.do(t, "POST", "/api/auth/login", loginRequest{Login: "user@example.com", Password: "userpass123"})
 
-	resp, _ := friend.do(t, "DELETE", "/api/nodes/1", nil)
+	resp, _ := user.do(t, "DELETE", "/api/nodes/1", nil)
 	if resp.StatusCode != http.StatusConflict {
 		t.Fatalf("deleting default node status = %d, want 409", resp.StatusCode)
 	}
@@ -331,14 +331,14 @@ func TestNodeServiceOrderSurvivesCreateAndUpdate(t *testing.T) {
 	defer st.Close()
 	mustCreateAdmin(t, st, "admin@example.com", "adminpass123")
 	admin.do(t, "POST", "/api/auth/login", loginRequest{Login: "admin@example.com", Password: "adminpass123"})
-	admin.do(t, "POST", "/api/admin/users", createUserRequest{Login: "friend@example.com", Password: "friendpass123"})
+	admin.do(t, "POST", "/api/admin/users", createUserRequest{Login: "user@example.com", Password: "userpass123"})
 
-	friend := &client{base: admin.base, jar: map[string]string{}}
-	friend.do(t, "POST", "/api/auth/login", loginRequest{Login: "friend@example.com", Password: "friendpass123"})
+	user := &client{base: admin.base, jar: map[string]string{}}
+	user.do(t, "POST", "/api/auth/login", loginRequest{Login: "user@example.com", Password: "userpass123"})
 
 	services := []string{"buy_fuel", "marketing", "depart"}
 
-	resp, body := friend.do(t, "POST", "/api/nodes", createNodeRequest{
+	resp, body := user.do(t, "POST", "/api/nodes", createNodeRequest{
 		Name:         "departure",
 		GameUsername: "player1",
 		GamePassword: "gamepass1",
@@ -354,7 +354,7 @@ func TestNodeServiceOrderSurvivesCreateAndUpdate(t *testing.T) {
 	nodeID := fmt.Sprintf("%.0f", body["id"].(float64))
 
 	reordered := []string{"marketing", "buy_fuel", "depart"}
-	resp, body = friend.do(t, "PATCH", "/api/nodes/"+nodeID, updateNodeRequest{Services: &reordered})
+	resp, body = user.do(t, "PATCH", "/api/nodes/"+nodeID, updateNodeRequest{Services: &reordered})
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("updating node status = %d, want 200", resp.StatusCode)
 	}
@@ -374,12 +374,12 @@ func TestNodeExtraConfigRejectsNonNumericAllianceIDs(t *testing.T) {
 	defer st.Close()
 	mustCreateAdmin(t, st, "admin@example.com", "adminpass123")
 	admin.do(t, "POST", "/api/auth/login", loginRequest{Login: "admin@example.com", Password: "adminpass123"})
-	admin.do(t, "POST", "/api/admin/users", createUserRequest{Login: "friend@example.com", Password: "friendpass123"})
+	admin.do(t, "POST", "/api/admin/users", createUserRequest{Login: "user@example.com", Password: "userpass123"})
 
-	friend := &client{base: admin.base, jar: map[string]string{}}
-	friend.do(t, "POST", "/api/auth/login", loginRequest{Login: "friend@example.com", Password: "friendpass123"})
+	user := &client{base: admin.base, jar: map[string]string{}}
+	user.do(t, "POST", "/api/auth/login", loginRequest{Login: "user@example.com", Password: "userpass123"})
 
-	resp, _ := friend.do(t, "POST", "/api/nodes", createNodeRequest{
+	resp, _ := user.do(t, "POST", "/api/nodes", createNodeRequest{
 		Name:         "departure",
 		GameUsername: "player1",
 		GamePassword: "gamepass1",
@@ -389,7 +389,7 @@ func TestNodeExtraConfigRejectsNonNumericAllianceIDs(t *testing.T) {
 		t.Fatalf("creating a node with a non-numeric alliance id status = %d, want 400", resp.StatusCode)
 	}
 
-	resp, body := friend.do(t, "POST", "/api/nodes", createNodeRequest{
+	resp, body := user.do(t, "POST", "/api/nodes", createNodeRequest{
 		Name:         "departure",
 		GameUsername: "player1",
 		GamePassword: "gamepass1",
@@ -402,7 +402,7 @@ func TestNodeExtraConfigRejectsNonNumericAllianceIDs(t *testing.T) {
 	nodeID := fmt.Sprintf("%.0f", body["id"].(float64))
 
 	bad := json.RawMessage(`{"alliance_ids":["55.55"]}`)
-	resp, _ = friend.do(t, "PATCH", "/api/nodes/"+nodeID, updateNodeRequest{ExtraConfig: &bad})
+	resp, _ = user.do(t, "PATCH", "/api/nodes/"+nodeID, updateNodeRequest{ExtraConfig: &bad})
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Fatalf("updating a node with a non-numeric alliance id status = %d, want 400", resp.StatusCode)
 	}
@@ -414,12 +414,12 @@ func TestNodeResponseNeverIncludesGamePassword(t *testing.T) {
 	defer st.Close()
 	mustCreateAdmin(t, st, "admin@example.com", "adminpass123")
 	admin.do(t, "POST", "/api/auth/login", loginRequest{Login: "admin@example.com", Password: "adminpass123"})
-	admin.do(t, "POST", "/api/admin/users", createUserRequest{Login: "friend@example.com", Password: "friendpass123"})
+	admin.do(t, "POST", "/api/admin/users", createUserRequest{Login: "user@example.com", Password: "userpass123"})
 
-	friend := &client{base: admin.base, jar: map[string]string{}}
-	friend.do(t, "POST", "/api/auth/login", loginRequest{Login: "friend@example.com", Password: "friendpass123"})
+	user := &client{base: admin.base, jar: map[string]string{}}
+	user.do(t, "POST", "/api/auth/login", loginRequest{Login: "user@example.com", Password: "userpass123"})
 
-	_, body := friend.do(t, "POST", "/api/nodes", createNodeRequest{
+	_, body := user.do(t, "POST", "/api/nodes", createNodeRequest{
 		Name: "departure", GameUsername: "player1", GamePassword: "supersecret",
 	})
 
@@ -436,13 +436,13 @@ func TestVPNRegionCatalogIsAdminManagedButUserReadable(t *testing.T) {
 	defer st.Close()
 	mustCreateAdmin(t, st, "admin@example.com", "adminpass123")
 	admin.do(t, "POST", "/api/auth/login", loginRequest{Login: "admin@example.com", Password: "adminpass123"})
-	admin.do(t, "POST", "/api/admin/users", createUserRequest{Login: "friend@example.com", Password: "friendpass123"})
+	admin.do(t, "POST", "/api/admin/users", createUserRequest{Login: "user@example.com", Password: "userpass123"})
 
-	friend := &client{base: admin.base, jar: map[string]string{}}
-	friend.do(t, "POST", "/api/auth/login", loginRequest{Login: "friend@example.com", Password: "friendpass123"})
+	user := &client{base: admin.base, jar: map[string]string{}}
+	user.do(t, "POST", "/api/auth/login", loginRequest{Login: "user@example.com", Password: "userpass123"})
 
 	// a non-admin cannot curate the catalog.
-	resp, _ := friend.do(t, "POST", "/api/admin/vpn-regions", createVPNRegionRequest{Name: "us-east", OVPNConfig: "ovpn-contents"})
+	resp, _ := user.do(t, "POST", "/api/admin/vpn-regions", createVPNRegionRequest{Name: "us-east", OVPNConfig: "ovpn-contents"})
 	if resp.StatusCode != http.StatusForbidden {
 		t.Fatalf("non-admin creating a vpn region status = %d, want 403", resp.StatusCode)
 	}
@@ -458,12 +458,12 @@ func TestVPNRegionCatalogIsAdminManagedButUserReadable(t *testing.T) {
 	regionID := fmt.Sprintf("%.0f", body["id"].(float64))
 
 	// but any signed-in user can list it, to pick their own region from it.
-	list := friend.doList(t, "GET", "/api/vpn-regions")
+	list := user.doList(t, "GET", "/api/vpn-regions")
 	if len(list) != 1 || list[0]["name"] != "us-east" {
-		t.Fatalf("friend listing vpn regions = %v, want a single \"us-east\" entry", list)
+		t.Fatalf("user listing vpn regions = %v, want a single \"us-east\" entry", list)
 	}
 
-	resp, _ = friend.do(t, "DELETE", "/api/admin/vpn-regions/"+regionID, nil)
+	resp, _ = user.do(t, "DELETE", "/api/admin/vpn-regions/"+regionID, nil)
 	if resp.StatusCode != http.StatusForbidden {
 		t.Fatalf("non-admin deleting a vpn region status = %d, want 403", resp.StatusCode)
 	}
@@ -480,17 +480,17 @@ func TestVPNProviderCredentialsAdminOnly(t *testing.T) {
 	defer st.Close()
 	mustCreateAdmin(t, st, "admin@example.com", "adminpass123")
 	admin.do(t, "POST", "/api/auth/login", loginRequest{Login: "admin@example.com", Password: "adminpass123"})
-	admin.do(t, "POST", "/api/admin/users", createUserRequest{Login: "friend@example.com", Password: "friendpass123"})
+	admin.do(t, "POST", "/api/admin/users", createUserRequest{Login: "user@example.com", Password: "userpass123"})
 
-	friend := &client{base: admin.base, jar: map[string]string{}}
-	friend.do(t, "POST", "/api/auth/login", loginRequest{Login: "friend@example.com", Password: "friendpass123"})
+	user := &client{base: admin.base, jar: map[string]string{}}
+	user.do(t, "POST", "/api/auth/login", loginRequest{Login: "user@example.com", Password: "userpass123"})
 
 	resp, body := admin.do(t, "GET", "/api/admin/vpn-provider", nil)
 	if resp.StatusCode != http.StatusOK || body["configured"] != false {
 		t.Fatalf("vpn provider status before configuring = %d %v, want 200 configured:false", resp.StatusCode, body)
 	}
 
-	resp, _ = friend.do(t, "PUT", "/api/admin/vpn-provider", setVPNProviderRequest{VPNUsername: "u", VPNPassword: "p"})
+	resp, _ = user.do(t, "PUT", "/api/admin/vpn-provider", setVPNProviderRequest{VPNUsername: "u", VPNPassword: "p"})
 	if resp.StatusCode != http.StatusForbidden {
 		t.Fatalf("non-admin setting vpn provider credentials status = %d, want 403", resp.StatusCode)
 	}
@@ -517,38 +517,38 @@ func TestUserSelectsOwnVPNRegionForAllNodes(t *testing.T) {
 	defer st.Close()
 	mustCreateAdmin(t, st, "admin@example.com", "adminpass123")
 	admin.do(t, "POST", "/api/auth/login", loginRequest{Login: "admin@example.com", Password: "adminpass123"})
-	admin.do(t, "POST", "/api/admin/users", createUserRequest{Login: "friend@example.com", Password: "friendpass123"})
+	admin.do(t, "POST", "/api/admin/users", createUserRequest{Login: "user@example.com", Password: "userpass123"})
 
 	_, region := admin.do(t, "POST", "/api/admin/vpn-regions", createVPNRegionRequest{Name: "us-east", OVPNConfig: "ovpn-contents"})
 	regionID := int64(region["id"].(float64))
 
-	friend := &client{base: admin.base, jar: map[string]string{}}
-	friend.do(t, "POST", "/api/auth/login", loginRequest{Login: "friend@example.com", Password: "friendpass123"})
+	user := &client{base: admin.base, jar: map[string]string{}}
+	user.do(t, "POST", "/api/auth/login", loginRequest{Login: "user@example.com", Password: "userpass123"})
 
 	// rejecting a nonexistent region id is a 400, not a 500 (FK violation).
 	bogusID := regionID + 999
-	resp, _ := friend.do(t, "PUT", "/api/me/vpn-region", setUserVPNRegionRequest{VPNRegionID: &bogusID})
+	resp, _ := user.do(t, "PUT", "/api/me/vpn-region", setUserVPNRegionRequest{VPNRegionID: &bogusID})
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Fatalf("setting a nonexistent vpn region status = %d, want 400", resp.StatusCode)
 	}
 
-	resp, _ = friend.do(t, "PUT", "/api/me/vpn-region", setUserVPNRegionRequest{VPNRegionID: &regionID})
+	resp, _ = user.do(t, "PUT", "/api/me/vpn-region", setUserVPNRegionRequest{VPNRegionID: &regionID})
 	if resp.StatusCode != http.StatusNoContent {
 		t.Fatalf("setting own vpn region status = %d, want 204", resp.StatusCode)
 	}
 
-	_, me := friend.do(t, "GET", "/api/me", nil)
+	_, me := user.do(t, "GET", "/api/me", nil)
 	if me["vpn_region_id"] == nil || int64(me["vpn_region_id"].(float64)) != regionID {
 		t.Fatalf("/api/me vpn_region_id = %v, want %d", me["vpn_region_id"], regionID)
 	}
 
 	// clearing it back to no VPN.
-	resp, _ = friend.do(t, "PUT", "/api/me/vpn-region", setUserVPNRegionRequest{VPNRegionID: nil})
+	resp, _ = user.do(t, "PUT", "/api/me/vpn-region", setUserVPNRegionRequest{VPNRegionID: nil})
 	if resp.StatusCode != http.StatusNoContent {
 		t.Fatalf("clearing own vpn region status = %d, want 204", resp.StatusCode)
 	}
 
-	_, me = friend.do(t, "GET", "/api/me", nil)
+	_, me = user.do(t, "GET", "/api/me", nil)
 	if me["vpn_region_id"] != nil {
 		t.Fatalf("/api/me vpn_region_id after clearing = %v, want nil", me["vpn_region_id"])
 	}
@@ -560,19 +560,19 @@ func TestPrometheusSettingsAdminOnlyAndMetricsEndpoint(t *testing.T) {
 	defer st.Close()
 	mustCreateAdmin(t, st, "admin@example.com", "adminpass123")
 	admin.do(t, "POST", "/api/auth/login", loginRequest{Login: "admin@example.com", Password: "adminpass123"})
-	admin.do(t, "POST", "/api/admin/users", createUserRequest{Login: "friend@example.com", Password: "friendpass123"})
+	admin.do(t, "POST", "/api/admin/users", createUserRequest{Login: "user@example.com", Password: "userpass123"})
 
-	friend := &client{base: admin.base, jar: map[string]string{}}
-	friend.do(t, "POST", "/api/auth/login", loginRequest{Login: "friend@example.com", Password: "friendpass123"})
+	user := &client{base: admin.base, jar: map[string]string{}}
+	user.do(t, "POST", "/api/auth/login", loginRequest{Login: "user@example.com", Password: "userpass123"})
 
 	// unconfigured: /api/metrics reports so, not an error.
-	resp, body := friend.do(t, "GET", "/api/metrics", nil)
+	resp, body := user.do(t, "GET", "/api/metrics", nil)
 	if resp.StatusCode != http.StatusOK || body["configured"] != false {
 		t.Fatalf("metrics before configuring prometheus = %d %v, want 200 configured:false", resp.StatusCode, body)
 	}
 
 	// a non-admin cannot configure it.
-	resp, _ = friend.do(t, "PUT", "/api/admin/prometheus", setPrometheusSettingsRequest{URL: "http://prometheus:9090"})
+	resp, _ = user.do(t, "PUT", "/api/admin/prometheus", setPrometheusSettingsRequest{URL: "http://prometheus:9090"})
 	if resp.StatusCode != http.StatusForbidden {
 		t.Fatalf("non-admin setting prometheus url status = %d, want 403", resp.StatusCode)
 	}
@@ -595,7 +595,7 @@ func TestPrometheusSettingsAdminOnlyAndMetricsEndpoint(t *testing.T) {
 
 	// configured but unreachable: /api/metrics fails safely (500, no leaked
 	// internals), rather than hanging or crashing the process.
-	resp, _ = friend.do(t, "GET", "/api/metrics", nil)
+	resp, _ = user.do(t, "GET", "/api/metrics", nil)
 	if resp.StatusCode != http.StatusInternalServerError {
 		t.Fatalf("metrics with an unreachable prometheus status = %d, want 500", resp.StatusCode)
 	}
@@ -607,18 +607,18 @@ func TestNodeCannotBeEnabledUntilConfigured(t *testing.T) {
 	defer st.Close()
 	mustCreateAdmin(t, st, "admin@example.com", "adminpass123")
 	admin.do(t, "POST", "/api/auth/login", loginRequest{Login: "admin@example.com", Password: "adminpass123"})
-	admin.do(t, "POST", "/api/admin/users", createUserRequest{Login: "friend1", Password: "friendpass123"})
+	admin.do(t, "POST", "/api/admin/users", createUserRequest{Login: "user1", Password: "userpass123"})
 
-	friend := &client{base: admin.base, jar: map[string]string{}}
-	friend.do(t, "POST", "/api/auth/login", loginRequest{Login: "friend1", Password: "friendpass123"})
+	user := &client{base: admin.base, jar: map[string]string{}}
+	user.do(t, "POST", "/api/auth/login", loginRequest{Login: "user1", Password: "userpass123"})
 
-	nodes := friend.doList(t, "GET", "/api/nodes")
+	nodes := user.doList(t, "GET", "/api/nodes")
 	nodeID := fmt.Sprintf("%.0f", nodes[0]["id"].(float64))
 
 	// the auto-created default has no game credentials yet -- enabling it
 	// must be refused, not silently accepted and left to crash-loop.
 	enabledTrue := true
-	resp, body := friend.do(t, "PATCH", "/api/nodes/"+nodeID, updateNodeRequest{Enabled: &enabledTrue})
+	resp, body := user.do(t, "PATCH", "/api/nodes/"+nodeID, updateNodeRequest{Enabled: &enabledTrue})
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Fatalf("enabling an unconfigured node status = %d %v, want 400", resp.StatusCode, body)
 	}
@@ -627,7 +627,7 @@ func TestNodeCannotBeEnabledUntilConfigured(t *testing.T) {
 	// defaults from CreateNode) lets it be enabled.
 	username := "player1"
 	password := "gamepass123"
-	resp, body = friend.do(t, "PATCH", "/api/nodes/"+nodeID, updateNodeRequest{
+	resp, body = user.do(t, "PATCH", "/api/nodes/"+nodeID, updateNodeRequest{
 		GameUsername: &username, GamePassword: &password, Enabled: &enabledTrue,
 	})
 	if resp.StatusCode != http.StatusOK || body["enabled"] != true {
@@ -655,7 +655,7 @@ func TestAdminHasNoNodesOfItsOwnButSeesEveryUsersNodes(t *testing.T) {
 	defer st.Close()
 	mustCreateAdmin(t, st, "admin@example.com", "adminpass123")
 	admin.do(t, "POST", "/api/auth/login", loginRequest{Login: "admin@example.com", Password: "adminpass123"})
-	admin.do(t, "POST", "/api/admin/users", createUserRequest{Login: "friend1", Password: "friendpass123"})
+	admin.do(t, "POST", "/api/admin/users", createUserRequest{Login: "user1", Password: "userpass123"})
 
 	// requireNonAdminUser rejects the admin's own session on every
 	// node/VPN-self-service/metrics route.
@@ -674,10 +674,10 @@ func TestAdminHasNoNodesOfItsOwnButSeesEveryUsersNodes(t *testing.T) {
 	// but the read-only admin view sees every user's nodes.
 	all := admin.doList(t, "GET", "/api/admin/nodes")
 	if len(all) != 2 {
-		t.Fatalf("GET /api/admin/nodes = %d nodes, want 2 (friend1's two auto-created defaults)", len(all))
+		t.Fatalf("GET /api/admin/nodes = %d nodes, want 2 (user1's two auto-created defaults)", len(all))
 	}
-	if all[0]["owner_login"] != "friend1" {
-		t.Fatalf("admin node view owner_login = %v, want friend1", all[0]["owner_login"])
+	if all[0]["owner_login"] != "user1" {
+		t.Fatalf("admin node view owner_login = %v, want user1", all[0]["owner_login"])
 	}
 }
 
@@ -687,30 +687,30 @@ func TestUserDetailAndListIncludeNodeStatsAndLastLogin(t *testing.T) {
 	defer st.Close()
 	mustCreateAdmin(t, st, "admin", "adminpass123")
 	admin.do(t, "POST", "/api/auth/login", loginRequest{Login: "admin", Password: "adminpass123"})
-	admin.do(t, "POST", "/api/admin/users", createUserRequest{Login: "friend1", Password: "friendpass123"})
+	admin.do(t, "POST", "/api/admin/users", createUserRequest{Login: "user1", Password: "userpass123"})
 
-	// list: node stats present, last_login_at nil before friend1 ever logs in.
+	// list: node stats present, last_login_at nil before user1 ever logs in.
 	list := admin.doList(t, "GET", "/api/admin/users")
-	var friendEntry map[string]any
+	var userEntry map[string]any
 	for _, u := range list {
-		if u["login"] == "friend1" {
-			friendEntry = u
+		if u["login"] == "user1" {
+			userEntry = u
 		}
 	}
-	if friendEntry == nil {
-		t.Fatal("friend1 missing from GET /api/admin/users")
+	if userEntry == nil {
+		t.Fatal("user1 missing from GET /api/admin/users")
 	}
-	if friendEntry["total_nodes"] != float64(2) || friendEntry["active_nodes"] != float64(0) {
-		t.Fatalf("friend1 list entry node stats = %+v, want total_nodes:2 active_nodes:0", friendEntry)
+	if userEntry["total_nodes"] != float64(2) || userEntry["active_nodes"] != float64(0) {
+		t.Fatalf("user1 list entry node stats = %+v, want total_nodes:2 active_nodes:0", userEntry)
 	}
-	if friendEntry["last_login_at"] != nil {
-		t.Fatalf("friend1 last_login_at = %v, want nil before first login", friendEntry["last_login_at"])
+	if userEntry["last_login_at"] != nil {
+		t.Fatalf("user1 last_login_at = %v, want nil before first login", userEntry["last_login_at"])
 	}
 
-	friendUUID := friendEntry["uuid"].(string)
+	userUUID := userEntry["uuid"].(string)
 
 	// detail: nodes list present, no vpn region yet.
-	resp, detail := admin.do(t, "GET", "/api/admin/users/"+friendUUID, nil)
+	resp, detail := admin.do(t, "GET", "/api/admin/users/"+userUUID, nil)
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("GET user detail status = %d, want 200", resp.StatusCode)
 	}
@@ -722,13 +722,13 @@ func TestUserDetailAndListIncludeNodeStatsAndLastLogin(t *testing.T) {
 		t.Fatalf("detail nodes = %v, want 2 entries", detail["nodes"])
 	}
 
-	// friend1 logs in -- last_login_at now set.
-	friend := &client{base: admin.base, jar: map[string]string{}}
-	friend.do(t, "POST", "/api/auth/login", loginRequest{Login: "friend1", Password: "friendpass123"})
+	// user1 logs in -- last_login_at now set.
+	user := &client{base: admin.base, jar: map[string]string{}}
+	user.do(t, "POST", "/api/auth/login", loginRequest{Login: "user1", Password: "userpass123"})
 
-	_, detail = admin.do(t, "GET", "/api/admin/users/"+friendUUID, nil)
+	_, detail = admin.do(t, "GET", "/api/admin/users/"+userUUID, nil)
 	if detail["last_login_at"] == nil {
-		t.Fatal("detail last_login_at still nil after friend1 logged in")
+		t.Fatal("detail last_login_at still nil after user1 logged in")
 	}
 }
 
@@ -738,8 +738,8 @@ func TestAdminResetsUserPassword(t *testing.T) {
 	defer st.Close()
 	mustCreateAdmin(t, st, "admin", "adminpass123")
 	admin.do(t, "POST", "/api/auth/login", loginRequest{Login: "admin", Password: "adminpass123"})
-	_, created := admin.do(t, "POST", "/api/admin/users", createUserRequest{Login: "friend1", Password: "friendpass123"})
-	friendUUID := created["uuid"].(string)
+	_, created := admin.do(t, "POST", "/api/admin/users", createUserRequest{Login: "user1", Password: "userpass123"})
+	userUUID := created["uuid"].(string)
 
 	_, adminSelf := admin.do(t, "GET", "/api/me", nil)
 	adminUUID := adminSelf["uuid"].(string)
@@ -748,18 +748,18 @@ func TestAdminResetsUserPassword(t *testing.T) {
 		t.Fatalf("admin resetting their OWN password via this endpoint status = %d, want 403", resp.StatusCode)
 	}
 
-	resp, _ = admin.do(t, "POST", "/api/admin/users/"+friendUUID+"/reset-password", resetUserPasswordRequest{Password: "newpass456"})
+	resp, _ = admin.do(t, "POST", "/api/admin/users/"+userUUID+"/reset-password", resetUserPasswordRequest{Password: "newpass456"})
 	if resp.StatusCode != http.StatusNoContent {
 		t.Fatalf("admin reset-password status = %d, want 204", resp.StatusCode)
 	}
 
-	friend := &client{base: admin.base, jar: map[string]string{}}
-	resp, _ = friend.do(t, "POST", "/api/auth/login", loginRequest{Login: "friend1", Password: "friendpass123"})
+	user := &client{base: admin.base, jar: map[string]string{}}
+	resp, _ = user.do(t, "POST", "/api/auth/login", loginRequest{Login: "user1", Password: "userpass123"})
 	if resp.StatusCode != http.StatusUnauthorized {
 		t.Fatalf("login with the OLD password after reset status = %d, want 401", resp.StatusCode)
 	}
 
-	resp, _ = friend.do(t, "POST", "/api/auth/login", loginRequest{Login: "friend1", Password: "newpass456"})
+	resp, _ = user.do(t, "POST", "/api/auth/login", loginRequest{Login: "user1", Password: "newpass456"})
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("login with the NEW password after reset status = %d, want 200", resp.StatusCode)
 	}
@@ -771,28 +771,28 @@ func TestDisablingUserStopsTheirEnabledNodes(t *testing.T) {
 	defer st.Close()
 	mustCreateAdmin(t, st, "admin", "adminpass123")
 	admin.do(t, "POST", "/api/auth/login", loginRequest{Login: "admin", Password: "adminpass123"})
-	_, created := admin.do(t, "POST", "/api/admin/users", createUserRequest{Login: "friend1", Password: "friendpass123"})
-	friendUUID := created["uuid"].(string)
+	_, created := admin.do(t, "POST", "/api/admin/users", createUserRequest{Login: "user1", Password: "userpass123"})
+	userUUID := created["uuid"].(string)
 
-	friend := &client{base: admin.base, jar: map[string]string{}}
-	friend.do(t, "POST", "/api/auth/login", loginRequest{Login: "friend1", Password: "friendpass123"})
+	user := &client{base: admin.base, jar: map[string]string{}}
+	user.do(t, "POST", "/api/auth/login", loginRequest{Login: "user1", Password: "userpass123"})
 
-	nodes := friend.doList(t, "GET", "/api/nodes")
+	nodes := user.doList(t, "GET", "/api/nodes")
 	nodeID := fmt.Sprintf("%.0f", nodes[0]["id"].(float64))
 	username, password, enabledTrue := "player1", "gamepass123", true
-	resp, body := friend.do(t, "PATCH", "/api/nodes/"+nodeID, updateNodeRequest{
+	resp, body := user.do(t, "PATCH", "/api/nodes/"+nodeID, updateNodeRequest{
 		GameUsername: &username, GamePassword: &password, Enabled: &enabledTrue,
 	})
 	if resp.StatusCode != http.StatusOK || body["enabled"] != true {
-		t.Fatalf("enabling friend1's node status = %d %v, want 200 enabled:true", resp.StatusCode, body)
+		t.Fatalf("enabling user1's node status = %d %v, want 200 enabled:true", resp.StatusCode, body)
 	}
 
-	resp, _ = admin.do(t, "POST", "/api/admin/users/"+friendUUID+"/disable", nil)
+	resp, _ = admin.do(t, "POST", "/api/admin/users/"+userUUID+"/disable", nil)
 	if resp.StatusCode != http.StatusNoContent {
-		t.Fatalf("admin disabling friend1 status = %d, want 204", resp.StatusCode)
+		t.Fatalf("admin disabling user1 status = %d, want 204", resp.StatusCode)
 	}
 
-	_, body = friend.do(t, "GET", "/api/nodes/"+nodeID, nil)
+	_, body = user.do(t, "GET", "/api/nodes/"+nodeID, nil)
 	if body["enabled"] != false {
 		t.Fatalf("node enabled after owner disabled = %v, want false (disabling a user must stop their nodes)", body["enabled"])
 	}
@@ -809,17 +809,17 @@ func TestAuditLogRecordsAdminAction(t *testing.T) {
 	defer st.Close()
 	mustCreateAdmin(t, st, "admin", "adminpass123")
 	admin.do(t, "POST", "/api/auth/login", loginRequest{Login: "admin", Password: "adminpass123"})
-	_, created := admin.do(t, "POST", "/api/admin/users", createUserRequest{Login: "friend1", Password: "friendpass123"})
-	friendUUID := created["uuid"].(string)
+	_, created := admin.do(t, "POST", "/api/admin/users", createUserRequest{Login: "user1", Password: "userpass123"})
+	userUUID := created["uuid"].(string)
 
 	var logBuf bytes.Buffer
 	prevLogger := slog.Default()
 	slog.SetDefault(slog.New(slog.NewJSONHandler(&logBuf, nil)))
 	defer slog.SetDefault(prevLogger)
 
-	resp, _ := admin.do(t, "POST", "/api/admin/users/"+friendUUID+"/disable", nil)
+	resp, _ := admin.do(t, "POST", "/api/admin/users/"+userUUID+"/disable", nil)
 	if resp.StatusCode != http.StatusNoContent {
-		t.Fatalf("admin disabling friend1 status = %d, want 204", resp.StatusCode)
+		t.Fatalf("admin disabling user1 status = %d, want 204", resp.StatusCode)
 	}
 
 	var line map[string]any
@@ -849,8 +849,8 @@ func TestAuditLogRecordsAdminAction(t *testing.T) {
 	if line["actor_login"] != "admin" {
 		t.Fatalf("audit actor_login = %v, want %q", line["actor_login"], "admin")
 	}
-	if line["target"] != friendUUID {
-		t.Fatalf("audit target = %v, want %q", line["target"], friendUUID)
+	if line["target"] != userUUID {
+		t.Fatalf("audit target = %v, want %q", line["target"], userUUID)
 	}
 }
 
@@ -868,27 +868,27 @@ func TestDisabledAccountRejectedOnNextWriteNotRead(t *testing.T) {
 	defer st.Close()
 	mustCreateAdmin(t, st, "admin", "adminpass123")
 	admin.do(t, "POST", "/api/auth/login", loginRequest{Login: "admin", Password: "adminpass123"})
-	_, created := admin.do(t, "POST", "/api/admin/users", createUserRequest{Login: "friend1", Password: "friendpass123"})
-	friendUUID := created["uuid"].(string)
+	_, created := admin.do(t, "POST", "/api/admin/users", createUserRequest{Login: "user1", Password: "userpass123"})
+	userUUID := created["uuid"].(string)
 
-	friend := &client{base: admin.base, jar: map[string]string{}}
-	friend.do(t, "POST", "/api/auth/login", loginRequest{Login: "friend1", Password: "friendpass123"})
+	user := &client{base: admin.base, jar: map[string]string{}}
+	user.do(t, "POST", "/api/auth/login", loginRequest{Login: "user1", Password: "userpass123"})
 
-	resp, _ := admin.do(t, "POST", "/api/admin/users/"+friendUUID+"/disable", nil)
+	resp, _ := admin.do(t, "POST", "/api/admin/users/"+userUUID+"/disable", nil)
 	if resp.StatusCode != http.StatusNoContent {
-		t.Fatalf("admin disabling friend1 status = %d, want 204", resp.StatusCode)
+		t.Fatalf("admin disabling user1 status = %d, want 204", resp.StatusCode)
 	}
 
 	// The read still works -- the disabled check only runs on mutating
 	// methods, see requireAuth's doc comment.
-	resp, _ = friend.do(t, "GET", "/api/nodes", nil)
+	resp, _ = user.do(t, "GET", "/api/nodes", nil)
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("GET with a pre-disable session status = %d, want 200 (reads aren't re-checked)", resp.StatusCode)
 	}
 
 	// The next WRITE is refused and force-clears the session cookie.
 	name := "won't stick"
-	resp, _ = friend.do(t, "PUT", "/api/me/display-name", struct {
+	resp, _ = user.do(t, "PUT", "/api/me/display-name", struct {
 		DisplayName *string `json:"display_name"`
 	}{DisplayName: &name})
 	if resp.StatusCode != http.StatusUnauthorized {
@@ -898,7 +898,7 @@ func TestDisabledAccountRejectedOnNextWriteNotRead(t *testing.T) {
 	// The cookie was cleared client-side by that 401 -- a subsequent
 	// request (even a GET) now fails too, proving it wasn't just that one
 	// response that was refused.
-	resp, _ = friend.do(t, "GET", "/api/nodes", nil)
+	resp, _ = user.do(t, "GET", "/api/nodes", nil)
 	if resp.StatusCode != http.StatusUnauthorized {
 		t.Fatalf("GET after the force-logout status = %d, want 401 (session cookie should be gone)", resp.StatusCode)
 	}
@@ -927,35 +927,35 @@ func TestDeletedAccountRejectedOnNextWrite(t *testing.T) {
 	defer st.Close()
 	mustCreateAdmin(t, st, "admin", "adminpass123")
 	admin.do(t, "POST", "/api/auth/login", loginRequest{Login: "admin", Password: "adminpass123"})
-	_, created := admin.do(t, "POST", "/api/admin/users", createUserRequest{Login: "friend1", Password: "friendpass123"})
-	friendUUID := created["uuid"].(string)
+	_, created := admin.do(t, "POST", "/api/admin/users", createUserRequest{Login: "user1", Password: "userpass123"})
+	userUUID := created["uuid"].(string)
 
-	friend := &client{base: admin.base, jar: map[string]string{}}
-	friend.do(t, "POST", "/api/auth/login", loginRequest{Login: "friend1", Password: "friendpass123"})
+	user := &client{base: admin.base, jar: map[string]string{}}
+	user.do(t, "POST", "/api/auth/login", loginRequest{Login: "user1", Password: "userpass123"})
 
 	// Sanity: the session is good before deletion.
-	resp, _ := friend.do(t, "GET", "/api/nodes", nil)
+	resp, _ := user.do(t, "GET", "/api/nodes", nil)
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("GET with a pre-delete session status = %d, want 200", resp.StatusCode)
 	}
 
-	resp, _ = admin.do(t, "DELETE", "/api/admin/users/"+friendUUID, nil)
+	resp, _ = admin.do(t, "DELETE", "/api/admin/users/"+userUUID, nil)
 	if resp.StatusCode != http.StatusNoContent {
-		t.Fatalf("admin deleting friend1 status = %d, want 204", resp.StatusCode)
+		t.Fatalf("admin deleting user1 status = %d, want 204", resp.StatusCode)
 	}
 
 	// The very next WRITE gets a clean 401 (not the 500 the handler's own
 	// currentUserID lookup would otherwise produce) and force-clears the
 	// cookie -- requireAuth catches it before the handler even runs.
 	name := "won't stick"
-	resp, _ = friend.do(t, "PUT", "/api/me/display-name", struct {
+	resp, _ = user.do(t, "PUT", "/api/me/display-name", struct {
 		DisplayName *string `json:"display_name"`
 	}{DisplayName: &name})
 	if resp.StatusCode != http.StatusUnauthorized {
 		t.Fatalf("PUT with a deleted account's session status = %d, want 401", resp.StatusCode)
 	}
 
-	resp, _ = friend.do(t, "GET", "/api/nodes", nil)
+	resp, _ = user.do(t, "GET", "/api/nodes", nil)
 	if resp.StatusCode != http.StatusUnauthorized {
 		t.Fatalf("GET after the force-logout status = %d, want 401 (session cookie should be gone)", resp.StatusCode)
 	}
@@ -971,8 +971,8 @@ func TestAdminDeletesUserAndTheirNodes(t *testing.T) {
 		_, meBody := admin.do(t, "POST", "/api/auth/login", loginRequest{Login: "admin", Password: "adminpass123"})
 		adminUUID = meBody["uuid"].(string)
 	}
-	_, created := admin.do(t, "POST", "/api/admin/users", createUserRequest{Login: "friend1", Password: "friendpass123"})
-	friendUUID := created["uuid"].(string)
+	_, created := admin.do(t, "POST", "/api/admin/users", createUserRequest{Login: "user1", Password: "userpass123"})
+	userUUID := created["uuid"].(string)
 
 	// an admin cannot delete their own account.
 	resp, _ := admin.do(t, "DELETE", "/api/admin/users/"+adminUUID, nil)
@@ -980,19 +980,19 @@ func TestAdminDeletesUserAndTheirNodes(t *testing.T) {
 		t.Fatalf("admin deleting themselves status = %d, want 403", resp.StatusCode)
 	}
 
-	resp, _ = admin.do(t, "DELETE", "/api/admin/users/"+friendUUID, nil)
+	resp, _ = admin.do(t, "DELETE", "/api/admin/users/"+userUUID, nil)
 	if resp.StatusCode != http.StatusNoContent {
-		t.Fatalf("admin deleting friend1 status = %d, want 204", resp.StatusCode)
+		t.Fatalf("admin deleting user1 status = %d, want 204", resp.StatusCode)
 	}
 
 	all := admin.doList(t, "GET", "/api/admin/nodes")
 	for _, n := range all {
-		if n["owner_login"] == "friend1" {
-			t.Fatalf("friend1's node %v still present after their account was deleted", n)
+		if n["owner_login"] == "user1" {
+			t.Fatalf("user1's node %v still present after their account was deleted", n)
 		}
 	}
 
-	resp, _ = admin.do(t, "GET", "/api/admin/users/"+friendUUID, nil)
+	resp, _ = admin.do(t, "GET", "/api/admin/users/"+userUUID, nil)
 	if resp.StatusCode != http.StatusNotFound {
 		t.Fatalf("GET deleted user status = %d, want 404", resp.StatusCode)
 	}
@@ -1004,29 +1004,29 @@ func TestSelfServicePasswordAndDisplayName(t *testing.T) {
 	defer st.Close()
 	mustCreateAdmin(t, st, "admin", "adminpass123")
 	admin.do(t, "POST", "/api/auth/login", loginRequest{Login: "admin", Password: "adminpass123"})
-	admin.do(t, "POST", "/api/admin/users", createUserRequest{Login: "friend1", Password: "friendpass123"})
+	admin.do(t, "POST", "/api/admin/users", createUserRequest{Login: "user1", Password: "userpass123"})
 
-	friend := &client{base: admin.base, jar: map[string]string{}}
-	friend.do(t, "POST", "/api/auth/login", loginRequest{Login: "friend1", Password: "friendpass123"})
+	user := &client{base: admin.base, jar: map[string]string{}}
+	user.do(t, "POST", "/api/auth/login", loginRequest{Login: "user1", Password: "userpass123"})
 
-	resp, _ := friend.do(t, "PUT", "/api/me/password", setPasswordRequest{NewPassword: "newpass456"})
+	resp, _ := user.do(t, "PUT", "/api/me/password", setPasswordRequest{NewPassword: "newpass456"})
 	if resp.StatusCode != http.StatusNoContent {
 		t.Fatalf("changing own password status = %d, want 204", resp.StatusCode)
 	}
 
 	fresh := &client{base: admin.base, jar: map[string]string{}}
-	resp, _ = fresh.do(t, "POST", "/api/auth/login", loginRequest{Login: "friend1", Password: "newpass456"})
+	resp, _ = fresh.do(t, "POST", "/api/auth/login", loginRequest{Login: "user1", Password: "newpass456"})
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("login with the new self-set password status = %d, want 200", resp.StatusCode)
 	}
 
-	name := "Friendly One"
-	resp, _ = friend.do(t, "PUT", "/api/me/display-name", setDisplayNameRequest{DisplayName: &name})
+	name := "Test User"
+	resp, _ = user.do(t, "PUT", "/api/me/display-name", setDisplayNameRequest{DisplayName: &name})
 	if resp.StatusCode != http.StatusNoContent {
 		t.Fatalf("setting display name status = %d, want 204", resp.StatusCode)
 	}
 
-	_, me := friend.do(t, "GET", "/api/me", nil)
+	_, me := user.do(t, "GET", "/api/me", nil)
 	if me["display_name"] != name {
 		t.Fatalf("/api/me display_name = %v, want %q", me["display_name"], name)
 	}
@@ -1038,8 +1038,8 @@ func TestAdminMetricsRequiresUserUUIDAndValidatesIt(t *testing.T) {
 	defer st.Close()
 	mustCreateAdmin(t, st, "admin", "adminpass123")
 	admin.do(t, "POST", "/api/auth/login", loginRequest{Login: "admin", Password: "adminpass123"})
-	_, created := admin.do(t, "POST", "/api/admin/users", createUserRequest{Login: "friend1", Password: "friendpass123"})
-	friendUUID := created["uuid"].(string)
+	_, created := admin.do(t, "POST", "/api/admin/users", createUserRequest{Login: "user1", Password: "userpass123"})
+	userUUID := created["uuid"].(string)
 
 	resp, _ := admin.do(t, "GET", "/api/admin/metrics", nil)
 	if resp.StatusCode != http.StatusBadRequest {
@@ -1052,7 +1052,7 @@ func TestAdminMetricsRequiresUserUUIDAndValidatesIt(t *testing.T) {
 	}
 
 	// unconfigured Prometheus -- reports so, not an error.
-	resp, body := admin.do(t, "GET", "/api/admin/metrics?user_uuid="+friendUUID, nil)
+	resp, body := admin.do(t, "GET", "/api/admin/metrics?user_uuid="+userUUID, nil)
 	if resp.StatusCode != http.StatusOK || body["configured"] != false {
 		t.Fatalf("admin metrics before configuring prometheus = %d %v, want 200 configured:false", resp.StatusCode, body)
 	}
@@ -1064,10 +1064,10 @@ func TestAdminSetsNodeLogLevel(t *testing.T) {
 	defer st.Close()
 	mustCreateAdmin(t, st, "admin", "adminpass123")
 	admin.do(t, "POST", "/api/auth/login", loginRequest{Login: "admin", Password: "adminpass123"})
-	_, userBody := admin.do(t, "POST", "/api/admin/users", createUserRequest{Login: "friend1", Password: "friendpass123"})
-	friendUUID := userBody["uuid"].(string)
+	_, userBody := admin.do(t, "POST", "/api/admin/users", createUserRequest{Login: "user1", Password: "userpass123"})
+	userUUID := userBody["uuid"].(string)
 
-	_, detail := admin.do(t, "GET", "/api/admin/users/"+friendUUID, nil)
+	_, detail := admin.do(t, "GET", "/api/admin/users/"+userUUID, nil)
 	nodes := detail["nodes"].([]any)
 	nodeID := fmt.Sprintf("%.0f", nodes[0].(map[string]any)["id"].(float64))
 
@@ -1115,14 +1115,14 @@ func TestLoginBruteForceBanAndUnlock(t *testing.T) {
 	defer st.Close()
 	mustCreateAdmin(t, st, "admin", "adminpass123")
 	admin.do(t, "POST", "/api/auth/login", loginRequest{Login: "admin", Password: "adminpass123"})
-	_, created := admin.do(t, "POST", "/api/admin/users", createUserRequest{Login: "friend1", Password: "friendpass123"})
-	friendUUID := created["uuid"].(string)
+	_, created := admin.do(t, "POST", "/api/admin/users", createUserRequest{Login: "user1", Password: "userpass123"})
+	userUUID := created["uuid"].(string)
 
-	friend := &client{base: admin.base, jar: map[string]string{}}
+	user := &client{base: admin.base, jar: map[string]string{}}
 
 	// maxFailedLoginAttempts (5) wrong-password attempts in a row.
 	for i := 0; i < 5; i++ {
-		resp, _ := friend.do(t, "POST", "/api/auth/login", loginRequest{Login: "friend1", Password: "wrong-password"})
+		resp, _ := user.do(t, "POST", "/api/auth/login", loginRequest{Login: "user1", Password: "wrong-password"})
 		if resp.StatusCode != http.StatusUnauthorized {
 			t.Fatalf("attempt %d: status = %d, want 401", i+1, resp.StatusCode)
 		}
@@ -1131,12 +1131,12 @@ func TestLoginBruteForceBanAndUnlock(t *testing.T) {
 	// The 6th attempt, even with the CORRECT password, must be refused by
 	// the ban itself -- proves Check() runs before credentials are ever
 	// verified.
-	resp, _ := friend.do(t, "POST", "/api/auth/login", loginRequest{Login: "friend1", Password: "friendpass123"})
+	resp, _ := user.do(t, "POST", "/api/auth/login", loginRequest{Login: "user1", Password: "userpass123"})
 	if resp.StatusCode != http.StatusTooManyRequests {
 		t.Fatalf("login while banned status = %d, want 429", resp.StatusCode)
 	}
 
-	_, detail := admin.do(t, "GET", "/api/admin/users/"+friendUUID, nil)
+	_, detail := admin.do(t, "GET", "/api/admin/users/"+userUUID, nil)
 	ban, ok := detail["ban"].(map[string]any)
 	if !ok {
 		t.Fatalf("user detail ban = %v, want a non-nil ban object", detail["ban"])
@@ -1150,17 +1150,17 @@ func TestLoginBruteForceBanAndUnlock(t *testing.T) {
 		t.Fatalf("login_activity = %v, want 5 recorded failed attempts", detail["login_activity"])
 	}
 
-	resp, _ = admin.do(t, "POST", "/api/admin/users/"+friendUUID+"/unlock", nil)
+	resp, _ = admin.do(t, "POST", "/api/admin/users/"+userUUID+"/unlock", nil)
 	if resp.StatusCode != http.StatusNoContent {
 		t.Fatalf("admin unlock status = %d, want 204", resp.StatusCode)
 	}
 
-	_, detail = admin.do(t, "GET", "/api/admin/users/"+friendUUID, nil)
+	_, detail = admin.do(t, "GET", "/api/admin/users/"+userUUID, nil)
 	if detail["ban"] != nil {
 		t.Fatalf("ban still present after unlock: %v", detail["ban"])
 	}
 
-	resp, _ = friend.do(t, "POST", "/api/auth/login", loginRequest{Login: "friend1", Password: "friendpass123"})
+	resp, _ = user.do(t, "POST", "/api/auth/login", loginRequest{Login: "user1", Password: "userpass123"})
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("login with correct password right after unlock status = %d, want 200", resp.StatusCode)
 	}
@@ -1179,16 +1179,16 @@ func TestLoginGuardSeparatesPasswordGuessingFromLoginGuessing(t *testing.T) {
 	defer st.Close()
 	mustCreateAdmin(t, st, "admin", "adminpass123")
 	admin.do(t, "POST", "/api/auth/login", loginRequest{Login: "admin", Password: "adminpass123"})
-	admin.do(t, "POST", "/api/admin/users", createUserRequest{Login: "friend1", Password: "friendpass123"})
+	admin.do(t, "POST", "/api/admin/users", createUserRequest{Login: "user1", Password: "userpass123"})
 
 	// Case 1: maxFailedLoginAttempts wrong passwords against the SAME
 	// login, from one IP -- must ban the login, must NOT ban the IP.
 	c1 := &client{base: admin.base, jar: map[string]string{}}
 	for range maxFailedLoginAttempts {
-		c1.do(t, "POST", "/api/auth/login", loginRequest{Login: "friend1", Password: "wrong"})
+		c1.do(t, "POST", "/api/auth/login", loginRequest{Login: "user1", Password: "wrong"})
 	}
 
-	if _, err := st.GetActiveLoginBan(context.Background(), banKeyTypeLogin, "friend1"); err != nil {
+	if _, err := st.GetActiveLoginBan(context.Background(), banKeyTypeLogin, "user1"); err != nil {
 		t.Fatalf("login ban not created after %d same-login failures: %v", maxFailedLoginAttempts, err)
 	}
 
@@ -1196,7 +1196,7 @@ func TestLoginGuardSeparatesPasswordGuessingFromLoginGuessing(t *testing.T) {
 		t.Fatal("IP got banned from repeated failures against ONE login -- password guessing must not ban the IP")
 	}
 
-	if err := st.DeleteLoginBan(context.Background(), banKeyTypeLogin, "friend1"); err != nil {
+	if err := st.DeleteLoginBan(context.Background(), banKeyTypeLogin, "user1"); err != nil {
 		t.Fatalf("cleaning up login ban before case 2: %v", err)
 	}
 
