@@ -131,7 +131,14 @@ func (r *reconciler) pollOnce(ctx context.Context, limit int) int {
 // nothing below panics on bad input, only returns errors, but worth
 // calling out as the reason op_type handlers must keep it that way.
 func (r *reconciler) processOperation(ctx context.Context, op store.NodeOperation) {
-	slog.Info("processing operation", "op_id", op.ID, "op_type", op.OpType, "node_id", op.NodeID)
+	// NodeID is a *int64 (NULL once a node row is deleted); slog would
+	// print the pointer's address, so log the id itself, or nothing.
+	attrs := []any{"op_id", op.ID, "op_type", op.OpType}
+	if op.NodeID != nil {
+		attrs = append(attrs, "node_id", *op.NodeID)
+	}
+
+	slog.Info("processing operation", attrs...)
 
 	var runErr error
 

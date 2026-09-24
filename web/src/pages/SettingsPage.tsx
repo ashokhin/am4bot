@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { authApi } from '../api/auth'
+import { ApiError } from '../api/client'
 import { useAuth } from '../auth/AuthContext'
 import { vpnRegionsApi } from '../api/vpnRegions'
 import type { LoginActivityEntry, VPNRegion } from '../api/types'
@@ -201,8 +202,10 @@ function VPNRegionSection() {
       await vpnRegionsApi.setMyRegion({ vpn_region_id: value === NONE ? null : Number(value) })
       await refreshUser()
       toast.success(t('settings.saved'))
-    } catch {
-      toast.error(t('settings.errors.saveFailed'))
+    } catch (err) {
+      // 409: the admin hasn't configured the shared VPN provider account
+      // yet (see handleSetMyVPNRegion) -- nothing the user can fix.
+      toast.error(err instanceof ApiError && err.status === 409 ? t('settings.errors.vpnNotConfigured') : t('settings.errors.saveFailed'))
     } finally {
       setSaving(false)
     }

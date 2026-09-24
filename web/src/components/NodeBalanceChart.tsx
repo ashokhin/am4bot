@@ -137,7 +137,7 @@ export function NodeBalanceChart({
 
   return (
     <Card className="node-balance-card">
-      <CardHeader className="flex flex-row items-center justify-between gap-2">
+      <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2">
         <CardTitle className="text-base">{t('metrics.balance.title')}</CardTitle>
         <Tabs value={period} onValueChange={(v) => onPeriodChange(v as DeltaPeriod)}>
           <TabsList>

@@ -262,6 +262,10 @@ export interface MetricSeries {
   node_id?: number
   value: number
   timestamp: number
+  // Set only on a delta computed from less history than the requested
+  // period: unix time the value counts from (see internal/api/
+  // metrics_handlers.go's queryOneMetricDelta).
+  since?: number
 }
 
 export interface MetricsResponse {

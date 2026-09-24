@@ -330,6 +330,14 @@ account**, applied to every one of their nodes uniformly — never a per-node
 choice. Deleting a region a user has picked silently falls them back to no
 VPN (`ON DELETE SET NULL`), it never blocks the delete or errors.
 
+A user can only pick a region once the provider account is configured
+(`PUT /api/me/vpn-region` answers `409` until then); clearing the region is
+always allowed. This matters because a node whose user has a region can't be
+provisioned without those credentials: every reconcile of it fails with a
+`500` until an admin sets them, so edits to the node stop being applied. If
+that happens, configure the provider account and then run **Update all
+nodes** to re-queue the failed reconciles.
+
 ## Metrics
 
 `ambot` already exposes Prometheus metrics on its own (see the main
@@ -353,7 +361,7 @@ VPN (`ON DELETE SET NULL`), it never blocks the delete or errors.
 Beyond the scalar stat tiles above (each gauge's current, all-time value —
 e.g. `am4_stats_flights_operated_total` is a since-account-creation total,
 not "how active recently"), the dashboard has two more widgets, both
-period-selectable (`24h`/`3d`/`7d`/`14d`/`30d`):
+period-selectable (`1h`/`6h`/`12h`/`24h`/`3d`/`7d`/`14d`/`30d`):
 
 - **`GET /api/metrics/delta?period=<period>`** — "how much changed over
   this window", currently just `am4_flights_departed_total`: a real
@@ -374,8 +382,13 @@ period-selectable (`24h`/`3d`/`7d`/`14d`/`30d`):
   window gets stretched across the full 7 days and can report a number
   bigger than the metric's own current value). The `offset` form has no
   such failure mode — if the metric didn't exist that far back, the two
-  sides simply don't match and the series is just absent from the
-  response, not a fabricated number.
+  sides simply don't match. For such a node (a new metric, or a node
+  younger than the selected period) the response falls back to "current
+  value minus the smallest value seen in the window" — what the counter
+  gained over the history that does exist, never extrapolated — and
+  marks it with a `since` timestamp, which the UI shows as "since
+  <time>", so it isn't mistaken for the whole period. That figure
+  undercounts by whatever happened before the first scrape.
 - **`GET /api/metrics/balance?period=<period>`** — a line chart of the
   company's `am4_company_money{type="Airline account"}` balance over the
   window, via `/api/v1/query_range` at a period-appropriate step (5m for

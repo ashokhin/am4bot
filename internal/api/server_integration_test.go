@@ -532,6 +532,21 @@ func TestUserSelectsOwnVPNRegionForAllNodes(t *testing.T) {
 		t.Fatalf("setting a nonexistent vpn region status = %d, want 400", resp.StatusCode)
 	}
 
+	// picking a real region is refused until the admin has configured the
+	// shared VPN provider account -- see handleSetMyVPNRegion.
+	resp, body := user.do(t, "PUT", "/api/me/vpn-region", setUserVPNRegionRequest{VPNRegionID: &regionID})
+	if resp.StatusCode != http.StatusConflict {
+		t.Fatalf("setting a vpn region with no provider configured status = %d %v, want 409", resp.StatusCode, body)
+	}
+
+	// clearing (nil) is always allowed, even with no provider configured.
+	resp, _ = user.do(t, "PUT", "/api/me/vpn-region", setUserVPNRegionRequest{VPNRegionID: nil})
+	if resp.StatusCode != http.StatusNoContent {
+		t.Fatalf("clearing vpn region with no provider configured status = %d, want 204", resp.StatusCode)
+	}
+
+	admin.do(t, "PUT", "/api/admin/vpn-provider", setVPNProviderRequest{VPNUsername: "u", VPNPassword: "p"})
+
 	resp, _ = user.do(t, "PUT", "/api/me/vpn-region", setUserVPNRegionRequest{VPNRegionID: &regionID})
 	if resp.StatusCode != http.StatusNoContent {
 		t.Fatalf("setting own vpn region status = %d, want 204", resp.StatusCode)

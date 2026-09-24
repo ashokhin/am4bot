@@ -19,6 +19,15 @@ const DELTA_TILE_METRICS: { metric: string; labelKey: string; format: (v: number
   { metric: 'am4_flights_departed_total', labelKey: 'metrics.delta.flightsOperated', format: (v) => Math.round(v).toLocaleString() },
 ]
 
+function formatSince(unixSeconds: number): string {
+  return new Date(unixSeconds * 1000).toLocaleString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
 interface NodeForDeltaTiles {
   id: number
   name: string
@@ -37,8 +46,8 @@ export function NodeMetricDeltaTiles({
 }) {
   const { t } = useTranslation()
 
-  function valueFor(nodeId: number, metric: string): number | undefined {
-    return series.find((s) => s.node_id === nodeId && s.metric === metric)?.value
+  function pointFor(nodeId: number, metric: string): MetricSeries | undefined {
+    return series.find((s) => s.node_id === nodeId && s.metric === metric)
   }
 
   if (nodes.length === 0) {
@@ -47,7 +56,7 @@ export function NodeMetricDeltaTiles({
 
   return (
     <Card className="node-delta-card">
-      <CardHeader className="flex flex-row items-center justify-between gap-2">
+      <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2">
         <CardTitle className="text-base">{t('metrics.delta.title')}</CardTitle>
         <Tabs value={period} onValueChange={(v) => onPeriodChange(v as DeltaPeriod)}>
           <TabsList>
@@ -63,7 +72,8 @@ export function NodeMetricDeltaTiles({
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
           {nodes.map((node) =>
             DELTA_TILE_METRICS.map(({ metric, labelKey, format }) => {
-              const value = valueFor(node.id, metric)
+              const point = pointFor(node.id, metric)
+              const value = point?.value
 
               return (
                 <div key={`${node.id}-${metric}`}>
@@ -71,6 +81,12 @@ export function NodeMetricDeltaTiles({
                     {node.name} — {t(labelKey)}
                   </div>
                   <div className="text-xl font-semibold">{value === undefined ? '—' : `+${format(value)}`}</div>
+                  {/* Shown only when the node has less history than the
+                      selected period, so this counts from when tracking
+                      began rather than spanning the whole period. */}
+                  {point?.since !== undefined && (
+                    <div className="text-xs text-muted-foreground">{t('metrics.delta.since', { time: formatSince(point.since) })}</div>
+                  )}
                 </div>
               )
             }),

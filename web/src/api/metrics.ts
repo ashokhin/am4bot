@@ -4,7 +4,7 @@ import type { MetricsResponse, PrometheusSettingsStatus, SetPrometheusSettingsRe
 // The delta widget's period buttons -- must match deltaPeriods in
 // internal/api/metrics_handlers.go exactly, the server rejects anything
 // else.
-export const DELTA_PERIODS = ['24h', '3d', '7d', '14d', '30d'] as const
+export const DELTA_PERIODS = ['1h', '6h', '12h', '24h', '3d', '7d', '14d', '30d'] as const
 export type DeltaPeriod = (typeof DELTA_PERIODS)[number]
 
 export const metricsApi = {

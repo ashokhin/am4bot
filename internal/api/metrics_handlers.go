@@ -82,6 +82,9 @@ var deltaMetrics = []string{
 // this list authoritative also means the UI can't ask for a window the
 // backend didn't intend to support.
 var deltaPeriods = map[string]bool{
+	"1h":  true,
+	"6h":  true,
+	"12h": true,
 	"24h": true,
 	"3d":  true,
 	"7d":  true,
@@ -94,6 +97,9 @@ var deltaPeriods = map[string]bool{
 // for a line chart without asking Prometheus (or the browser) to push
 // thousands of points for a 30-day window.
 var rangeStepFor = map[string]string{
+	"1h":  "30s",
+	"6h":  "2m",
+	"12h": "5m",
 	"24h": "5m",
 	"3d":  "20m",
 	"7d":  "1h",
@@ -120,6 +126,11 @@ type metricSeries struct {
 	NodeID    *int64  `json:"node_id,omitempty"`
 	Value     float64 `json:"value"`
 	Timestamp float64 `json:"timestamp"`
+	// Since is set only on a delta value computed from less history than
+	// the requested period (see queryOneMetricDelta): the unix time that
+	// value counts from, so the UI can say "since 15:59" instead of
+	// implying it spans the whole period.
+	Since *float64 `json:"since,omitempty"`
 }
 
 func (s *Server) handleGetMetrics(w http.ResponseWriter, r *http.Request) {
@@ -156,7 +167,7 @@ func (s *Server) handleGetMetrics(w http.ResponseWriter, r *http.Request) {
 func parseDeltaPeriod(r *http.Request) (string, error) {
 	period := r.URL.Query().Get("period")
 	if !deltaPeriods[period] {
-		return "", fmt.Errorf("period must be one of 24h, 3d, 7d, 14d, 30d")
+		return "", fmt.Errorf("period must be one of 1h, 6h, 12h, 24h, 3d, 7d, 14d, 30d")
 	}
 
 	return period, nil
@@ -570,19 +581,70 @@ func (s *Server) queryOneMetric(ctx context.Context, prometheusURL, metric, user
 // 7 days and reports a number bigger than the metric's own current
 // value. The offset form has no such failure mode: if the metric didn't
 // exist `period` ago, the two sides simply don't match and Prometheus
-// returns no data for that series (rendered as "--" by the widget)
-// instead of a fabricated number -- verified against this project's own
-// live Prometheus instance while building this feature.
+// returns no data for that series instead of a fabricated number -- what
+// happens to such a node next is the fallback below.
 func (s *Server) queryOneMetricDelta(ctx context.Context, prometheusURL, metric, userUUID, period string) ([]metricSeries, error) {
 	selector := fmt.Sprintf(`%s{user_uuid=%q}`, metric, userUUID)
-	query := fmt.Sprintf(`%s - %s offset %s`, selector, selector, period)
 
-	parsed, err := s.runInstantQuery(ctx, prometheusURL, query)
+	parsed, err := s.runInstantQuery(ctx, prometheusURL, fmt.Sprintf(`%s - %s offset %s`, selector, selector, period))
 	if err != nil {
 		return nil, err
 	}
 
-	return toMetricSeries(parsed, metric), nil
+	series := toMetricSeries(parsed, metric)
+
+	// A node with less history than `period` has no sample to subtract, so
+	// the query above returns nothing for it -- correct, but it would show
+	// up as a bare dash until the metric is `period` old (a full day for
+	// the shortest long window). For exactly those nodes, fall back to
+	// "current minus the smallest value seen in the window", i.e. what
+	// the counter gained over the history that does exist, plus when that
+	// history starts (Since) so the UI can label it honestly. min_over_time
+	// is read as "the earliest value" because these are counters that only
+	// grow; unlike delta()/increase() it never extrapolates past the data.
+	have := make(map[int64]struct{}, len(series))
+
+	for _, p := range series {
+		if p.NodeID != nil {
+			have[*p.NodeID] = struct{}{}
+		}
+	}
+
+	partialParsed, err := s.runInstantQuery(ctx, prometheusURL, fmt.Sprintf(`%s - min_over_time(%s[%s])`, selector, selector, period))
+	if err != nil {
+		return nil, err
+	}
+
+	sinceParsed, err := s.runInstantQuery(ctx, prometheusURL, fmt.Sprintf(`min_over_time(timestamp(%s)[%s:1m])`, selector, period))
+	if err != nil {
+		return nil, err
+	}
+
+	sinceByNode := make(map[int64]float64)
+
+	for _, p := range toMetricSeries(sinceParsed, metric) {
+		if p.NodeID != nil {
+			sinceByNode[*p.NodeID] = p.Value
+		}
+	}
+
+	for _, p := range toMetricSeries(partialParsed, metric) {
+		if p.NodeID == nil {
+			continue
+		}
+
+		if _, ok := have[*p.NodeID]; ok {
+			continue
+		}
+
+		if since, ok := sinceByNode[*p.NodeID]; ok {
+			p.Since = &since
+		}
+
+		series = append(series, p)
+	}
+
+	return series, nil
 }
 
 // runInstantQuery is the shared HTTP/JSON plumbing behind an instant

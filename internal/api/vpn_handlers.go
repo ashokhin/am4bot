@@ -231,6 +231,25 @@ func (s *Server) handleSetMyVPNRegion(w http.ResponseWriter, r *http.Request) {
 
 			return
 		}
+
+		// A region can only be used once the admin has configured the shared
+		// VPN provider account: without it every reconcile of this user's
+		// nodes fails (the provisioning bundle needs those credentials), so
+		// their nodes silently stop applying any change. Refuse up front
+		// instead. Clearing the region (nil) is always allowed, so this
+		// never traps a user in a state they can't leave.
+		if _, err := s.store.GetVPNProviderCredentials(r.Context()); err != nil {
+			if errors.Is(err, store.ErrNotFound) {
+				writeError(w, http.StatusConflict, "the VPN provider account isn't configured yet; ask an admin to set it up")
+
+				return
+			}
+
+			slog.Error("looking up vpn provider credentials", "error", err)
+			writeError(w, http.StatusInternalServerError, "failed to set vpn region")
+
+			return
+		}
 	}
 
 	if err := s.store.SetUserVPNRegion(r.Context(), userID, req.VPNRegionID); err != nil {
