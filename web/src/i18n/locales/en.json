@@ -278,6 +278,21 @@
       "lastRunAt": "Last run",
       "nextRunAt": "Next run due"
     },
+    "delta": {
+      "title": "Activity",
+      "period": {
+        "24h": "24h",
+        "3d": "3d",
+        "7d": "7d",
+        "14d": "14d",
+        "30d": "30d"
+      },
+      "flightsOperated": "Flights dispatched"
+    },
+    "balance": {
+      "title": "Company balance",
+      "noData": "Not enough data yet for this period."
+    },
     "errors": {
       "loadFailed": "Failed to load metrics."
     }

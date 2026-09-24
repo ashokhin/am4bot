@@ -66,6 +66,18 @@
   --border: oklch(0.9 0.005 95);
   --input: oklch(0.9 0.005 95);
   --ring: oklch(0.53 0.16 258 / 0.5);
+
+  /* Categorical chart series (dataviz skill's reference palette,
+     slot-ordered for CVD safety -- see the skill's palette.md). Slot 1
+     is --primary itself, already this same blue; slots 2-8 are new. */
+  --chart-series-1: var(--primary);
+  --chart-series-2: #eb6834;
+  --chart-series-3: #1baf7a;
+  --chart-series-4: #eda100;
+  --chart-series-5: #e87ba4;
+  --chart-series-6: #008300;
+  --chart-series-7: #4a3aa7;
+  --chart-series-8: #e34948;
 }
 
 .dark {
@@ -90,6 +102,17 @@
   --border: oklch(1 0 0 / 0.1);
   --input: oklch(1 0 0 / 0.15);
   --ring: oklch(0.63 0.15 258 / 0.5);
+
+  /* Same eight hues, dark-surface steps -- see the light block's own
+     comment. */
+  --chart-series-1: var(--primary);
+  --chart-series-2: #d95926;
+  --chart-series-3: #199e70;
+  --chart-series-4: #c98500;
+  --chart-series-5: #d55181;
+  --chart-series-6: #008300;
+  --chart-series-7: #9085e9;
+  --chart-series-8: #e66767;
 }
 
 body {

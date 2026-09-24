@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { adminApi } from '../api/admin'
-import { metricsApi } from '../api/metrics'
+import { type DeltaPeriod, metricsApi } from '../api/metrics'
 import type { AdminUserListEntry, MetricSeries, Node } from '../api/types'
 import { LastUpdated } from '../components/LastUpdated'
+import { NodeBalanceChart } from '../components/NodeBalanceChart'
+import { NodeMetricDeltaTiles } from '../components/NodeMetricDeltaTiles'
 import { NodeMetricTiles } from '../components/NodeMetricTiles'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
 import { usePolling } from '../hooks/usePolling'
@@ -21,6 +23,10 @@ export function AdminMetricsPage() {
 
   const [nodes, setNodes] = useState<Node[]>([])
   const [series, setSeries] = useState<MetricSeries[]>([])
+  const [deltaSeries, setDeltaSeries] = useState<MetricSeries[]>([])
+  const [deltaPeriod, setDeltaPeriod] = useState<DeltaPeriod>('24h')
+  const [balanceSeries, setBalanceSeries] = useState<MetricSeries[]>([])
+  const [balancePeriod, setBalancePeriod] = useState<DeltaPeriod>('7d')
   const [configured, setConfigured] = useState(true)
   const [detailLoading, setDetailLoading] = useState(false)
   const [detailLoadError, setDetailLoadError] = useState(false)
@@ -57,11 +63,18 @@ export function AdminMetricsPage() {
       setLastUpdatedAt(null)
     }
 
-    Promise.all([adminApi.getUserDetail(selectedUuid), metricsApi.getForUser(selectedUuid)])
-      .then(([user, m]) => {
+    Promise.all([
+      adminApi.getUserDetail(selectedUuid),
+      metricsApi.getForUser(selectedUuid),
+      metricsApi.getDeltaForUser(selectedUuid, deltaPeriod),
+      metricsApi.getBalanceForUser(selectedUuid, balancePeriod),
+    ])
+      .then(([user, m, d, b]) => {
         setNodes(user.nodes)
         setConfigured(m.configured)
         setSeries(m.series ?? [])
+        setDeltaSeries(d.series ?? [])
+        setBalanceSeries(b.series ?? [])
         setLastUpdatedAt(new Date())
         setDetailLoadError(false)
       })
@@ -72,7 +85,7 @@ export function AdminMetricsPage() {
         setDetailLoadError((prev) => prev || lastUpdatedAt === null)
       })
       .finally(() => setDetailLoading(false))
-  }, [selectedUuid])
+  }, [selectedUuid, deltaPeriod, balancePeriod])
 
   return (
     <div className="flex flex-col gap-4">
@@ -113,7 +126,11 @@ export function AdminMetricsPage() {
         <p className="text-muted-foreground">{t('metrics.notConfigured')}</p>
       )}
       {selectedUuid && !detailLoading && !detailLoadError && configured && (
-        <NodeMetricTiles nodes={nodes} series={series} />
+        <>
+          <NodeMetricDeltaTiles nodes={nodes} series={deltaSeries} period={deltaPeriod} onPeriodChange={setDeltaPeriod} />
+          <NodeBalanceChart nodes={nodes} series={balanceSeries} period={balancePeriod} onPeriodChange={setBalancePeriod} />
+          <NodeMetricTiles nodes={nodes} series={series} />
+        </>
       )}
     </div>
   )

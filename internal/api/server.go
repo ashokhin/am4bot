@@ -147,11 +147,19 @@ func NewServer(st *store.Store, tokens *auth.TokenManager, enc *secrets.Encrypto
 	// -- see metrics_handlers.go); the Prometheus instance itself is
 	// admin-only to configure.
 	publicMux.HandleFunc("GET /api/metrics", s.requireNonAdminUser(s.handleGetMetrics))
+	// "How much changed over this window" companion to /api/metrics above --
+	// see deltaMetrics/deltaPeriods' doc comments in metrics_handlers.go.
+	publicMux.HandleFunc("GET /api/metrics/delta", s.requireNonAdminUser(s.handleGetMetricsDelta))
+	// Balance-over-time chart -- see balanceMetric/queryBalanceRange's doc
+	// comments in metrics_handlers.go.
+	publicMux.HandleFunc("GET /api/metrics/balance", s.requireNonAdminUser(s.handleGetMetricsBalance))
 	publicMux.HandleFunc("GET /api/admin/prometheus", s.requireAdmin(s.handleGetPrometheusSettings))
 	publicMux.HandleFunc("PUT /api/admin/prometheus", s.requireAdmin(s.handleSetPrometheusSettings))
 	// Admin's own metrics view: any user's nodes, picked by uuid -- see
 	// handleAdminGetMetrics's doc comment.
 	publicMux.HandleFunc("GET /api/admin/metrics", s.requireAdmin(s.handleAdminGetMetrics))
+	publicMux.HandleFunc("GET /api/admin/metrics/delta", s.requireAdmin(s.handleAdminGetMetricsDelta))
+	publicMux.HandleFunc("GET /api/admin/metrics/balance", s.requireAdmin(s.handleAdminGetMetricsBalance))
 
 	// The built React SPA -- everything not matched by a route above
 	// (react-router's own client-side routes included) falls through to
