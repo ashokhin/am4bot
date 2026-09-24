@@ -93,6 +93,17 @@ func NewServer(st *store.Store, tokens *auth.TokenManager, enc *secrets.Encrypto
 
 	publicMux := http.NewServeMux()
 
+	// Unauthenticated on purpose -- these exist for infrastructure
+	// (HAProxy's own backend healthcheck, `docker compose`'s own
+	// `healthcheck:`), which have no session cookie to send. Not
+	// dangerous to leave world-reachable in principle (handleHealthz
+	// reveals nothing, handleReadyz only a boolean-ish "database
+	// reachable or not"), but nothing here routes them through the
+	// public HAProxy frontend either -- see docker-compose.multi-tenant.yml
+	// and this file's own doc comments on handleHealthz/handleReadyz.
+	publicMux.HandleFunc("GET /healthz", s.handleHealthz)
+	publicMux.HandleFunc("GET /readyz", s.handleReadyz)
+
 	publicMux.HandleFunc("POST /api/auth/login", s.handleLogin)
 	publicMux.HandleFunc("POST /api/auth/logout", s.handleLogout)
 	publicMux.HandleFunc("GET /api/me", s.requireAuth(s.handleMe))

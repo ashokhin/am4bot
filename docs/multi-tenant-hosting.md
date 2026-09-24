@@ -98,7 +98,7 @@ every later restart, and the account is forced through the same
 - Still has their own login/password (change it, `must_change_password`
   applies the same way) and display name, via the same Settings page.
 
-### User (a friend)
+### User
 
 - Gets **two nodes automatically** at account creation, named `player` and
   `maintenance`, both **disabled** and both **undeletable** (only
@@ -149,7 +149,7 @@ attack shape and never triggering the other two on its own:
   banned their own IP too, with no other admin account reachable to lift
   it.
 - **Sustained hammering of a small, fixed set of known logins** (e.g.
-  alternating between "admin" and one known friend's login, back and
+  alternating between "admin" and one other known login, back and
   forth, never a third): the login-guessing check above never fires
   (never more than a couple of distinct logins), and each login
   self-throttles individually at 5. A separate raw counter — every
@@ -308,6 +308,45 @@ VPN (`ON DELETE SET NULL`), it never blocks the delete or errors.
    client supplies no PromQL of its own, which is what makes the
    server-side label injection safe.
 
+### Dashboard widgets: delta and balance-over-time
+
+Beyond the scalar stat tiles above (each gauge's current, all-time value —
+e.g. `am4_stats_flights_operated_total` is a since-account-creation total,
+not "how active recently"), the dashboard has two more widgets, both
+period-selectable (`24h`/`3d`/`7d`/`14d`/`30d`):
+
+- **`GET /api/metrics/delta?period=<period>`** — "how much changed over
+  this window", currently just `am4_flights_departed_total`: a real
+  Counter this node's own depart service increments locally (see
+  `internal/bot/depart.go`), **not**
+  `am4_stats_flights_operated_total` (the whole airline account's
+  lifetime flights, read off a game page — identical across every node
+  logged into the same account regardless of which services that node
+  runs, which made an early version of this widget show a nonzero
+  "flights dispatched" delta on a node that never runs depart at all,
+  simply because another node on the same account did). Computed as
+  `metric{...} - metric{...} offset <period>`, **not** PromQL's
+  `delta()`/`increase()` over a `[period]` range vector: those
+  extrapolate beyond whatever data actually exists inside the window,
+  which blows up for any node younger than the selected period (a
+  freshly-provisioned node's first scrape captures the account's real
+  lifetime total, so a couple of hours of real samples inside a 7-day
+  window gets stretched across the full 7 days and can report a number
+  bigger than the metric's own current value). The `offset` form has no
+  such failure mode — if the metric didn't exist that far back, the two
+  sides simply don't match and the series is just absent from the
+  response, not a fabricated number.
+- **`GET /api/metrics/balance?period=<period>`** — a line chart of the
+  company's `am4_company_money{type="Airline account"}` balance over the
+  window, via `/api/v1/query_range` at a period-appropriate step (5m for
+  24h, up to 4h for 30d — enough points for a smooth line without asking
+  Prometheus or the browser to push thousands of them).
+
+Both have `GET /api/admin/metrics/delta` / `GET /api/admin/metrics/balance`
+admin counterparts (`user_uuid` query parameter, same as
+`/api/admin/metrics`) and the same server-injected `user_uuid` safety
+property as the scalar endpoint above — see `internal/api/metrics_handlers.go`.
+
 **That internal Prometheus also loads alert rules** from
 `prometheus/alerts.yml` (`rule_files` in `prometheus.yml`) — no
 Alertmanager is bundled, so these just show up as firing alerts on its
@@ -370,6 +409,39 @@ scrape_configs:
           - /path/to/prometheus-sd/targets.json
         refresh_interval: 30s
 ```
+
+## Health and readiness checks
+
+`apiserver` exposes two unauthenticated endpoints on its **public**
+listener (not `/internal/*` — see [Architecture](#architecture)):
+
+- **`GET /healthz`** — liveness only: confirms the process is up and
+  serving requests at all. Never touches the database or any other
+  dependency, so it stays `200` even while Postgres is unreachable —
+  that distinction is exactly what `/readyz` is for.
+- **`GET /readyz`** — readiness: actually pings Postgres
+  (`store.Ping`, a 3-second timeout so a hung database fails the probe
+  fast rather than tying it up). Returns `200 {"status":"ok"}` when the
+  database answers, `503 {"status":"unavailable","error":"..."}`
+  otherwise.
+
+"Unauthenticated on its public listener" doesn't mean "meant for the
+public internet" — nothing in either compose example's HAProxy/reverse
+proxy example routes these paths through the public frontend, so in
+practice they're only ever reached by infrastructure on the same
+host/network: a reverse proxy's own backend healthcheck, or `docker
+compose`'s own `healthcheck:` on the `apiserver` service (see the
+production compose example). They reveal nothing sensitive either way
+(a boolean-ish "database reachable or not"), but treat them as
+operator-facing, not user-facing.
+
+If `WEB_ROUTE_PREFIX` is set (see [Configuration reference](#configuration-reference)
+below), both paths are reachable two ways: unprefixed (`/healthz`) for
+anything checking the container directly on its own network, and
+prefixed (e.g. `/ambot/healthz`) for anything going through a reverse
+proxy that forwards the prefixed path as-is — `apiserver` only strips
+`WEB_ROUTE_PREFIX` from a request path that actually starts with it, so
+both forms reach the same handler.
 
 ## Configuration reference
 

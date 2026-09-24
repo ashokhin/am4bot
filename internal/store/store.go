@@ -58,6 +58,13 @@ func (s *Store) Close() error {
 	return s.db.Close()
 }
 
+// Ping checks that the database connection is actually reachable right
+// now -- for a readiness probe, not just "did Open succeed once at
+// startup".
+func (s *Store) Ping(ctx context.Context) error {
+	return s.db.PingContext(ctx)
+}
+
 // migrate applies every migrations/*.sql file, in filename order, that
 // isn't already recorded in schema_migrations. Each file runs inside its
 // own transaction, so a failure partway through a file rolls that file

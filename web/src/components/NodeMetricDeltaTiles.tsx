@@ -5,14 +5,18 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs'
 
 // "How much changed over this window" companion to NodeMetricTiles' raw
-// all-time gauges -- e.g. am4_stats_flights_operated_total's raw value is
-// a since-account-creation total, not "how active recently". Backed by
-// GET /api/metrics/delta?period=... (see internal/api/metrics_handlers.go's
-// deltaMetrics/deltaPeriods), which wraps the same gauges in PromQL's
-// delta() over the chosen lookback window -- still a single instant
-// query per metric, no query_range/charting involved yet.
+// all-time gauges. Backed by GET /api/metrics/delta?period=... (see
+// internal/api/metrics_handlers.go's deltaMetrics/deltaPeriods), a single
+// instant query per metric, no query_range/charting involved yet.
+//
+// am4_flights_departed_total, not am4_stats_flights_operated_total --
+// see deltaMetrics' own doc comment in metrics_handlers.go for why: the
+// latter is the whole airline account's lifetime flights, identical
+// across every node on the same account regardless of which services
+// that node runs, so it leaked a nonzero "flights dispatched" delta onto
+// nodes that never run depart at all.
 const DELTA_TILE_METRICS: { metric: string; labelKey: string; format: (v: number) => string }[] = [
-  { metric: 'am4_stats_flights_operated_total', labelKey: 'metrics.delta.flightsOperated', format: (v) => Math.round(v).toLocaleString() },
+  { metric: 'am4_flights_departed_total', labelKey: 'metrics.delta.flightsOperated', format: (v) => Math.round(v).toLocaleString() },
 ]
 
 interface NodeForDeltaTiles {

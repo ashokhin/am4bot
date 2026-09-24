@@ -384,6 +384,9 @@ am4_marketing_company_duration_seconds{type="Eco friendly"} 21092
 # TYPE am4_stats_cargo_transported_total gauge
 am4_stats_cargo_transported_total{type="heavy"} 6.35925e+08
 am4_stats_cargo_transported_total{type="large"} 6.36211e+08
+# HELP am4_flights_departed_total Aircraft this node's own depart service has dispatched, counted locally (not read from a game page).
+# TYPE am4_flights_departed_total counter
+am4_flights_departed_total 41
 # HELP am4_stats_flights_operated_total Company flights operated value.
 # TYPE am4_stats_flights_operated_total gauge
 am4_stats_flights_operated_total 82737

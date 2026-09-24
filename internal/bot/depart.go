@@ -32,7 +32,20 @@ func (b *Bot) depart(ctx context.Context) error {
 		// get the number of aircraft still ready for departure
 		availableAfterDepart = b.getReadyForDepart(ctx)
 
-		slog.Info("aircraft departed", "count", (aircraftReadyForDepart - availableAfterDepart))
+		departedThisIteration := aircraftReadyForDepart - availableAfterDepart
+
+		slog.Info("aircraft departed", "count", departedThisIteration)
+
+		// FlightsDepartedTotal counts what THIS node's depart service
+		// actually dispatched, unlike am4_stats_flights_operated_total
+		// (the whole airline account's lifetime total, read off a game
+		// page -- see that gauge's own doc comment in
+		// internal/metrics/prometheus.go) -- only add a positive count;
+		// a stuck/grounded aircraft can leave availableAfterDepart >=
+		// aircraftReadyForDepart, and a Counter must never go backwards.
+		if departedThisIteration > 0 {
+			b.PrometheusMetrics.FlightsDepartedTotal.Add(float64(departedThisIteration))
+		}
 
 		aircraftReadyForDepart = availableAfterDepart
 

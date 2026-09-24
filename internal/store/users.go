@@ -27,8 +27,8 @@ const userColumns = `
 	created_at, disabled_at, must_change_password
 `
 
-// User is a control-plane account: one of the admin's friends, or the
-// admin themself (IsAdmin true). PasswordHash is a bcrypt hash of this
+// User is a control-plane account: a regular user, or the admin
+// themself (IsAdmin true). PasswordHash is a bcrypt hash of this
 // user's OWN login password -- unrelated to any game account password,
 // which lives on Node instead. Login is just an identifier the admin
 // picks when creating the account (there is no signup flow, so it never

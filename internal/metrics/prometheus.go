@@ -23,6 +23,7 @@ type Metrics struct {
 	HangarCapacity                   prometheus.Gauge
 	SharePrice                       prometheus.Gauge
 	FlightsOperatedTotal             prometheus.Gauge
+	FlightsDepartedTotal             prometheus.Counter
 	AllianceContributedTotal         prometheus.Gauge
 	AllianceContributedPerDay        prometheus.Gauge
 	AllianceFlightsTotal             prometheus.Gauge
@@ -156,6 +157,23 @@ func New() *Metrics {
 				Namespace: namespace,
 				Name:      "stats_flights_operated_total",
 				Help:      "Company flights operated value.",
+			},
+		),
+		// A real Counter, unlike every other "_total" metric above (those
+		// are gauges snapshotting a value the game itself reports -- see
+		// their own doc comments). This one is different in kind: it's
+		// this node's OWN depart() counting aircraft IT dispatched, not a
+		// value read off a game page. stats_flights_operated_total is the
+		// whole airline account's lifetime total -- identical across
+		// every node logged into the same game account regardless of
+		// which services that node runs -- so it can't answer "how many
+		// flights did THIS node's depart service actually send", which is
+		// what this counter is for instead.
+		FlightsDepartedTotal: prometheus.NewCounter(
+			prometheus.CounterOpts{
+				Namespace: namespace,
+				Name:      "flights_departed_total",
+				Help:      "Aircraft this node's own depart service has dispatched, counted locally (not read from a game page).",
 			},
 		),
 		AllianceContributedTotal: prometheus.NewGauge(
@@ -333,6 +351,7 @@ func (m *Metrics) RegisterMetrics(registry *prometheus.Registry) {
 		m.HangarCapacity,
 		m.SharePrice,
 		m.FlightsOperatedTotal,
+		m.FlightsDepartedTotal,
 		m.AllianceContributedTotal,
 		m.AllianceContributedPerDay,
 		m.AllianceFlightsTotal,

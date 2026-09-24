@@ -56,12 +56,22 @@ var exposedMetrics = []string{
 	"am4_alliance_season_money",
 }
 
-// deltaMetrics is the subset of exposedMetrics's gauges worth showing as
-// a "how much changed over this window" delta rather than (or alongside)
-// their raw all-time value -- e.g. am4_stats_flights_operated_total's raw
-// value is a since-account-creation total, not "how active recently".
+// deltaMetrics is the metrics worth showing as a "how much changed over
+// this window" delta -- currently just am4_flights_departed_total, a
+// real Counter this node's own depart service increments locally (see
+// internal/bot/depart.go and internal/metrics/prometheus.go's doc
+// comment on it). Deliberately NOT am4_stats_flights_operated_total (an
+// early version of this widget used that instead): it's the whole
+// airline account's lifetime flights, read off a game page, identical
+// across every node logged into the same account regardless of which
+// services that node runs -- so a node with only e.g. a maintenance
+// service enabled, no depart at all, showed a nonzero "flights
+// dispatched" delta simply because ANOTHER node on the same account had
+// depart enabled. am4_flights_departed_total has no such cross-node
+// leakage: it only ever grows when THIS node's own depart() dispatches
+// aircraft, and reads 0/no-data for a node that never runs depart.
 var deltaMetrics = []string{
-	"am4_stats_flights_operated_total",
+	"am4_flights_departed_total",
 }
 
 // deltaPeriods is the fixed set of lookback windows both the delta

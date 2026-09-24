@@ -239,7 +239,7 @@ export function CronScheduleEditor({ value, onChange }: Props) {
 
                 {entry.mode === 'interval' ? (
                   <Select value={String(entry.intervalMinutes)} onValueChange={(v) => updateEntry(i, { ...entry, intervalMinutes: Number(v) })}>
-                    <SelectTrigger className="w-36" aria-label={t('nodes.schedules.everyMinutes')}>
+                    <SelectTrigger className="w-44" aria-label={t('nodes.schedules.everyMinutes')}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>

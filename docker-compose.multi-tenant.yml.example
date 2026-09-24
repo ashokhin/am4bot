@@ -108,6 +108,14 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    # apiserver itself queries the admin-configured Prometheus URL
+    # server-side (see internal/api/metrics_handlers.go) -- if that URL
+    # points at host.docker.internal (Prometheus running on the host or
+    # in a sibling compose project), this container needs to resolve it.
+    # On Linux, unlike Docker Desktop, that name doesn't resolve without
+    # this entry.
+    extra_hosts:
+      - host.docker.internal:host-gateway
     environment:
       DATABASE_URL: postgres://am4bot:${POSTGRES_PASSWORD:?set a real password in .env.multi-tenant}@postgres:5432/am4bot?sslmode=disable
       SECRETS_MASTER_KEY: ${SECRETS_MASTER_KEY:?set in .env.multi-tenant, see this file's header}
@@ -126,6 +134,14 @@ services:
       # multi-host provisioning exists and this needs to mean an actual
       # different machine.
       TARGET_HOSTS: ${TARGET_HOSTS:-host.docker.internal}
+      # Serve the UI/API under a path prefix (e.g. "/ambot") instead of
+      # "/" -- for a reverse proxy that fronts several apps on one host.
+      # Empty by default (no prefix). Must start with "/", not end with
+      # one. Purely a runtime setting -- no image rebuild needed; see
+      # docs/multi-tenant-hosting.md's --web.route-prefix section. Your
+      # reverse proxy must forward the prefixed path AS-IS (no stripping)
+      # to this container's port 8080.
+      WEB_ROUTE_PREFIX: ${WEB_ROUTE_PREFIX:-}
       # No COOKIE_SECURE override here -- apiserver's own default is
       # Secure=true (HTTPS-only cookies), which is what you want once
       # there's a real reverse proxy terminating TLS in front of
@@ -150,6 +166,17 @@ services:
       # reachable from another machine on the LAN -- verified live before
       # writing this.
       - "172.17.0.1:8081:8081"
+    # /readyz actually pings Postgres (see internal/api/health_handlers.go);
+    # /healthz is a plain liveness check with no dependencies. Both live on
+    # the PUBLIC listener but are never routed through a public reverse
+    # proxy frontend -- see docs/multi-tenant-hosting.md's "Health and
+    # readiness checks" section on what "internal" means here.
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/readyz"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
 
   orchestrator:
     image: ${CONTROLPLANE_IMAGE:-ashokhin/am4bot-controlplane:latest}
@@ -157,7 +184,8 @@ services:
     entrypoint: ["/usr/local/bin/orchestrator"]
     restart: unless-stopped
     depends_on:
-      - apiserver
+      apiserver:
+        condition: service_healthy
     environment:
       DATABASE_URL: postgres://am4bot:${POSTGRES_PASSWORD:?set a real password in .env.multi-tenant}@postgres:5432/am4bot?sslmode=disable
       # apiserver's INTERNAL listener -- /internal/nodes/{id}/provision

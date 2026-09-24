@@ -118,12 +118,23 @@ services:
       # container via host.docker.internal, reachable from this host
       # directly, but NOT reachable from another machine on the LAN.
       - "172.17.0.1:18081:8081"
+    # /readyz actually pings Postgres (see internal/api/health_handlers.go);
+    # /healthz is a plain liveness check with no dependencies. Same as the
+    # production compose example -- see docs/multi-tenant-hosting.md's
+    # "Health and readiness checks" section.
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/readyz"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
 
   orchestrator:
     image: am4bot-dev-controlplane
     entrypoint: ["/usr/local/bin/orchestrator"]
     depends_on:
-      - apiserver
+      apiserver:
+        condition: service_healthy
     environment:
       DATABASE_URL: postgres://am4bot:am4bot@postgres:5432/am4bot?sslmode=disable
       # apiserver's INTERNAL listener (see --internal.listen-address
