@@ -227,7 +227,7 @@ export function CronScheduleEditor({ value, onChange }: Props) {
                   </div>
 
                   <Select value={entry.mode} onValueChange={(v) => updateEntry(i, { ...entry, mode: v as Mode })}>
-                    <SelectTrigger className="ml-auto w-44" aria-label={t('nodes.schedules.mode')}>
+                    <SelectTrigger className="ml-auto w-60" aria-label={t('nodes.schedules.mode')}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>

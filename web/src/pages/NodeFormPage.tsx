@@ -125,7 +125,7 @@ export function NodeFormPage() {
   }
 
   return (
-    <div className="flex max-w-3xl flex-col gap-4">
+    <div className="flex max-w-6xl flex-col gap-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">{isEdit ? t('nodes.form.editTitle') : t('nodes.form.createTitle')}</h1>
         {isEdit && (

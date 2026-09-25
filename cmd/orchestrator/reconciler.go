@@ -12,6 +12,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/ashokhin/am4bot/internal/api"
@@ -87,10 +88,10 @@ func (r *reconciler) reconcileNode(ctx context.Context, op store.NodeOperation) 
 	project := "am4bot-node-" + strconv.FormatInt(bundle.NodeID, 10)
 
 	if bundle.Enabled {
-		return r.runComposeCommand(ctx, composePath, project, "up", "-d")
+		return r.runComposeCommand(ctx, composePath, project, bundleSecrets(bundle), "up", "-d")
 	}
 
-	return r.runComposeCommand(ctx, composePath, project, "stop")
+	return r.runComposeCommand(ctx, composePath, project, bundleSecrets(bundle), "stop")
 }
 
 // deleteNode tears down a node's containers using only the snapshot
@@ -120,7 +121,7 @@ func (r *reconciler) deleteNode(ctx context.Context, op store.NodeOperation) err
 
 	project := "am4bot-node-" + strconv.FormatInt(nodeID, 10)
 
-	if err := r.runComposeCommand(ctx, composePath, project, "down", "--volumes"); err != nil {
+	if err := r.runComposeCommand(ctx, composePath, project, nil, "down", "--volumes"); err != nil {
 		return err
 	}
 
@@ -198,7 +199,7 @@ func (r *reconciler) fetchProvisionBundle(ctx context.Context, nodeID int64) (*a
 // secrets that leaked into command output; see writeComposeFiles' doc
 // comment on why secrets shouldn't be there in the first place, this is
 // just defense in depth).
-func (r *reconciler) runComposeCommand(ctx context.Context, composePath, project string, args ...string) error {
+func (r *reconciler) runComposeCommand(ctx context.Context, composePath, project string, secrets []string, args ...string) error {
 	fullArgs := append([]string{"compose", "-f", composePath, "-p", project}, args...)
 
 	cmd := exec.CommandContext(ctx, "docker", fullArgs...)
@@ -212,8 +213,60 @@ func (r *reconciler) runComposeCommand(ctx context.Context, composePath, project
 	slog.Debug("docker compose output", "project", project, "args", args, "output", string(output))
 
 	if runErr != nil {
+		// Without the first line of compose's own message the bare "exit
+		// status N" says nothing about why (see composeErrorDetail for how
+		// it is kept safe to log at the default level).
+		if detail := composeErrorDetail(output, secrets); detail != "" {
+			return fmt.Errorf("docker compose (project=%s, args=%v): %w: %s", project, args, runErr, detail)
+		}
+
 		return fmt.Errorf("docker compose (project=%s, args=%v): %w", project, args, runErr)
 	}
 
 	return nil
+}
+
+// maxComposeErrorDetail bounds composeErrorDetail's result.
+const maxComposeErrorDetail = 200
+
+// composeErrorDetail returns the first non-empty line of docker compose's
+// output, for the error a failed operation is recorded and logged with.
+// That output can echo secret values back (a password containing "$" makes
+// compose report an interpolation error quoting it, for one), so every
+// known secret is replaced with a placeholder first, and only one line,
+// capped in length, is ever kept -- the full output stays Debug-only.
+func composeErrorDetail(output []byte, secrets []string) string {
+	line := ""
+
+	for _, l := range strings.Split(string(output), "\n") {
+		if l = strings.TrimSpace(l); l != "" {
+			line = l
+
+			break
+		}
+	}
+
+	for _, secret := range secrets {
+		if secret != "" {
+			line = strings.ReplaceAll(line, secret, "[redacted]")
+		}
+	}
+
+	if len(line) > maxComposeErrorDetail {
+		line = line[:maxComposeErrorDetail] + "..."
+	}
+
+	return line
+}
+
+// bundleSecrets lists the secret values a node's compose file contains,
+// for composeErrorDetail to scrub.
+func bundleSecrets(b *api.ProvisionResponse) []string {
+	secrets := []string{b.ConfigToken}
+
+	if b.VPN != nil {
+		secrets = append(secrets, b.VPN.Username, b.VPN.Password)
+	}
+
+	return secrets
 }

@@ -114,7 +114,7 @@ export function AdminVPNPage() {
   }
 
   return (
-    <div className="flex max-w-3xl flex-col gap-6">
+    <div className="flex max-w-6xl flex-col gap-6">
       <h1 className="text-2xl font-semibold">{t('vpnAdmin.title')}</h1>
 
       <Card>

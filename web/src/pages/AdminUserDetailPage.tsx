@@ -89,7 +89,7 @@ export function AdminUserDetailPage() {
   }
 
   return (
-    <div className="flex max-w-3xl flex-col gap-4">
+    <div className="flex max-w-6xl flex-col gap-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">{user.display_name ?? user.login}</h1>
         <div className="flex items-center gap-2">

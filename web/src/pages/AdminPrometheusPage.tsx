@@ -57,7 +57,7 @@ export function AdminPrometheusPage() {
   }
 
   return (
-    <div className="flex max-w-3xl flex-col gap-4">
+    <div className="flex max-w-6xl flex-col gap-4">
       <h1 className="text-2xl font-semibold">{t('metricsAdmin.title')}</h1>
       <Card>
         <CardHeader className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">

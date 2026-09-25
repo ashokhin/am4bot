@@ -33,6 +33,12 @@ type composeService struct {
 	ExtraHosts    []string          `yaml:"extra_hosts,omitempty"`
 }
 
+// vpnServiceName is the compose service key the VPN container is defined
+// under. ambot's network_mode: "service:<name>" must use THIS name, not the
+// container_name (e.g. "vpn-node-1"): compose resolves it against service
+// keys, so the container name yields "depends on undefined service".
+const vpnServiceName = "vpn"
+
 // ovpnFileName is the filename the vpn service's OpenVPN config is
 // written under, inside the node's own directory.
 const ovpnFileName = "expressvpn.ovpn"
@@ -85,7 +91,14 @@ func (r *reconciler) writeComposeFiles(dir string, bundle *api.ProvisionResponse
 		// ambot shares the vpn container's network stack instead of
 		// publishing its own port; the vpn service publishes
 		// prometheus_port instead (see addVPNService).
-		ambotSvc.NetworkMode = "service:" + bundle.VPNContainerName
+		ambotSvc.NetworkMode = "service:" + vpnServiceName
+
+		// Docker rejects extra_hosts on a container that joins another's
+		// network ("conflicting options: custom host-to-IP mapping and
+		// the network mode"). The vpn service owns the shared network
+		// namespace, so the host.docker.internal mapping goes there
+		// instead (see addVPNService) and ambot sees it through it.
+		ambotSvc.ExtraHosts = nil
 	} else {
 		ambotSvc.Ports = []string{fmt.Sprintf("%d:9150", bundle.PrometheusPort)}
 	}
@@ -129,7 +142,7 @@ func (r *reconciler) addVPNService(compose *composeFile, dir string, bundle *api
 		environment["SERVER_COUNTRIES"] = *vpn.Region
 	}
 
-	compose.Services["vpn"] = composeService{
+	compose.Services[vpnServiceName] = composeService{
 		Image:         "qmcgaw/gluetun",
 		ContainerName: bundle.VPNContainerName,
 		PullPolicy:    r.ambotPullPolicy,
@@ -139,6 +152,9 @@ func (r *reconciler) addVPNService(compose *composeFile, dir string, bundle *api
 		Environment:   environment,
 		Ports:         []string{fmt.Sprintf("%d:9150", bundle.PrometheusPort)},
 		Volumes:       []string{"./" + ovpnFileName + ":/gluetun/" + ovpnFileName + ":ro"},
+		// Owns the network namespace ambot joins, so this is where the
+		// host.docker.internal mapping for reaching apiserver has to live.
+		ExtraHosts: []string{"host.docker.internal:host-gateway"},
 	}
 
 	return nil

@@ -28,7 +28,7 @@ export function SettingsPage() {
   const { user } = useAuth()
 
   return (
-    <div className="flex max-w-3xl flex-col gap-4">
+    <div className="flex max-w-6xl flex-col gap-4">
       <h1 className="text-2xl font-semibold">{t('settings.title')}</h1>
 
       <AccountSection />
