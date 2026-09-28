@@ -69,6 +69,18 @@ function NavList({ items, onNavigate }: { items: NavItem[]; onNavigate?: () => v
   )
 }
 
+// What the header calls the signed-in user: the display name when one is set,
+// with the login in parentheses unless it is the same string; just the login
+// when no display name is set.
+function signedInName(login: string, displayName: string | null): string {
+  const name = displayName?.trim()
+
+  if (!name) return login
+  if (name === login) return name
+
+  return `${name} (${login})`
+}
+
 export function Layout({ children }: { children: ReactNode }) {
   const { user, logout } = useAuth()
   const { t } = useTranslation()
@@ -115,7 +127,7 @@ export function Layout({ children }: { children: ReactNode }) {
                 </SheetContent>
               </Sheet>
             )}
-            <div className="truncate text-sm text-muted-foreground">{t('nav.signedInAs', { login: user.login })}</div>
+            <div className="truncate text-sm text-muted-foreground">{t('nav.signedInAs', { name: signedInName(user.login, user.display_name) })}</div>
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <LanguageSwitcher />

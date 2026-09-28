@@ -30,7 +30,7 @@
     "adminVpn": "VPN",
     "adminPrometheus": "Prometheus",
     "logout": "Выйти",
-    "signedInAs": "Вы вошли как {{login}}",
+    "signedInAs": "Вы вошли как {{name}}",
     "openMenu": "Открыть меню"
   },
   "users": {
