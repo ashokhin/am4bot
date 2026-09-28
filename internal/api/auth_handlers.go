@@ -56,7 +56,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	// See LoginGuard's doc comment for why this is two independent checks
 	// (by IP and by login).
 	if ban, banned := s.loginGuard.Check(r.Context(), ip, req.Login); banned {
-		slog.Warn("login refused: banned", "login", req.Login, "ip", ip, "user_agent", ua,
+		slog.Warn("login refused: banned", "login", req.Login, "ip", maskIP(ip), "user_agent", ua,
 			"ban_key_type", ban.KeyType, "reason", ban.Reason, "unban_at", ban.UnbanAt)
 		w.Header().Set("Retry-After", fmt.Sprint(int(time.Until(ban.UnbanAt).Seconds())))
 		writeError(w, http.StatusTooManyRequests, "too many failed attempts -- try again later")
@@ -71,7 +71,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	const badCreds = "invalid login or password"
 
 	fail := func() {
-		slog.Warn("failed login attempt", "login", req.Login, "ip", ip, "user_agent", ua)
+		slog.Warn("failed login attempt", "login", req.Login, "ip", maskIP(ip), "user_agent", ua)
 		s.loginGuard.RecordFailure(r.Context(), ip, req.Login)
 
 		if err := s.store.RecordLoginAttempt(r.Context(), req.Login, false, ip, ua); err != nil {

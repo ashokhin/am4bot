@@ -81,16 +81,11 @@ const (
 // stop scripted brute-forcing, not to survive an adversarial
 // restart-timing attack.
 //
-// Client IP is taken from r.RemoteAddr only, never an X-Forwarded-For
-// header -- that header is trivially spoofable by the caller unless a
-// reverse proxy is configured to strip/overwrite it, which this package
-// has no way to verify. Deployed behind a reverse proxy, every request
-// apiserver sees will carry the proxy's own address here, so IP-based
-// banning effectively becomes "ban everyone behind this proxy after 5
-// logins failed from anywhere" -- acceptable for this project's
-// single-reverse-proxy, handful-of-users deployment shape, but worth
-// revisiting (trusted-proxy allowlist + XFF) before relying on this at a
-// larger scale.
+// The client IP comes from Server.clientIP (see client_ip.go): the direct
+// peer's address, or -- only for a peer listed in --web.trusted-proxies --
+// the address that proxy reports in X-Forwarded-For. Without a trusted
+// proxy configured, everyone behind a reverse proxy shares the proxy's
+// own address, so an IP ban would apply to all of them at once.
 type LoginGuard struct {
 	store *store.Store
 
@@ -129,7 +124,7 @@ func (g *LoginGuard) Check(ctx context.Context, ip, login string) (store.LoginBa
 	if b, err := g.store.GetActiveLoginBan(ctx, banKeyTypeIP, ip); err == nil {
 		return *b, true
 	} else if !isNotFound(err) {
-		slog.Warn("checking ip login ban", "ip", ip, "error", err)
+		slog.Warn("checking ip login ban", "ip", maskIP(ip), "error", err)
 	}
 
 	if login == "" {
@@ -173,7 +168,7 @@ func (g *LoginGuard) bumpLogin(ctx context.Context, login string) {
 	g.loginFailures[login] = 0
 	g.mu.Unlock()
 
-	g.createBan(ctx, banKeyTypeLogin, login,
+	g.createBan(ctx, banKeyTypeLogin, login, login,
 		fmt.Sprintf("%d consecutive failed login attempts against this login", maxFailedLoginAttempts))
 }
 
@@ -215,26 +210,28 @@ func (g *LoginGuard) bumpIP(ctx context.Context, ip, login string) {
 	delete(g.ipTotalFailures, ip)
 	g.mu.Unlock()
 
-	g.createBan(ctx, banKeyTypeIP, ip, reason)
+	g.createBan(ctx, banKeyTypeIP, ip, maskIP(ip), reason)
 }
 
 // createBan persists a new ban (both the current-state row and a
-// permanent audit event) for (keyType, key).
-func (g *LoginGuard) createBan(ctx context.Context, keyType, key, reason string) {
+// permanent audit event) for (keyType, key). keyForLog is what the process
+// log shows for the key: the login itself for a login ban, a masked address
+// for an IP ban -- the full address goes to the ban tables only.
+func (g *LoginGuard) createBan(ctx context.Context, keyType, key, keyForLog, reason string) {
 	bannedAt := time.Now()
 	unbanAt := bannedAt.Add(loginBanDuration)
 
 	if err := g.store.UpsertLoginBan(ctx, keyType, key, reason, unbanAt); err != nil {
-		slog.Error("persisting login ban", "key_type", keyType, "key", key, "error", err)
+		slog.Error("persisting login ban", "key_type", keyType, "key", keyForLog, "error", err)
 
 		return
 	}
 
 	if err := g.store.RecordLoginBanEvent(ctx, keyType, key, reason, bannedAt, unbanAt); err != nil {
-		slog.Error("recording login ban event", "key_type", keyType, "key", key, "error", err)
+		slog.Error("recording login ban event", "key_type", keyType, "key", keyForLog, "error", err)
 	}
 
-	slog.Warn("login ban created", "key_type", keyType, "key", key, "reason", reason, "unban_at", unbanAt)
+	slog.Warn("login ban created", "key_type", keyType, "key", keyForLog, "reason", reason, "unban_at", unbanAt)
 }
 
 // RecordSuccess clears login's failure count and both of ip's counters --
