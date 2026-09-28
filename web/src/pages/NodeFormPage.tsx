@@ -137,6 +137,11 @@ export function NodeFormPage() {
           </div>
         )}
       </div>
+      {isEdit && (
+        <p className="text-xs text-muted-foreground">
+          {t('nodes.form.nodeId')}: <span className="select-all font-mono">{id}</span>
+        </p>
+      )}
       {isEdit && <p className="text-xs text-muted-foreground">{t('nodes.form.enabledHint')}</p>}
       <form onSubmit={(e) => void handleSubmit(e)} className="flex flex-col gap-4">
         <Card>

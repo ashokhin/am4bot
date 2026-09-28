@@ -566,55 +566,43 @@ func (s *Server) queryOneMetric(ctx context.Context, prometheusURL, metric, user
 }
 
 // queryOneMetricDelta is queryOneMetric's counterpart for the "how much
-// changed over this window" widget -- current value minus its own value
-// `period` ago. period must already be validated against deltaPeriods by
-// the caller.
+// changed over this window" widget: how much a counter gained over the last
+// `period`. period must already be validated against deltaPeriods by the
+// caller.
 //
-// Deliberately current - (current offset period), NOT PromQL's
-// delta()/increase() over a [period] range vector: those EXTRAPOLATE
-// beyond whatever data actually exists in the window, which blows up for
-// any node younger than the selected period. A brand-new ambot node's
-// first scrape captures the account's real lifetime total (e.g.
-// "276252" flights already flown before the bot ever ran, synced from
-// the game on day one), so if only ~4h of real samples exist inside a
-// requested 7d window, delta() stretches that one jump across the full
-// 7 days and reports a number bigger than the metric's own current
-// value. The offset form has no such failure mode: if the metric didn't
-// exist `period` ago, the two sides simply don't match and Prometheus
-// returns no data for that series instead of a fabricated number -- what
-// happens to such a node next is the fallback below.
+// This is increase(metric[period]), not "current value minus the value
+// `period` ago". deltaMetrics are real Counters that restart from zero
+// whenever a node's container is recreated (an image update, a config
+// change), and subtraction across such a restart goes negative (a widget
+// once showed "+-1569"); increase() detects the drop as a reset and counts
+// the counter from zero again, so restarts inside the window don't matter.
+//
+// A node with less history than `period` (a brand-new metric, a young node)
+// is handled without any special case: Prometheus only extrapolates a
+// series to the window edges when its samples come close to them, so
+// increase() over a window longer than the history is simply the gain over
+// the history that exists. Those nodes additionally get Since, the time
+// that history starts, so the UI can say "since 15:59" instead of implying
+// the number spans the whole period. It undercounts by whatever happened
+// before the first scrape.
 func (s *Server) queryOneMetricDelta(ctx context.Context, prometheusURL, metric, userUUID, period string) ([]metricSeries, error) {
+	dur, err := parsePromDuration(period)
+	if err != nil {
+		return nil, fmt.Errorf("parsing period %q: %w", period, err)
+	}
+
 	selector := fmt.Sprintf(`%s{user_uuid=%q}`, metric, userUUID)
 
-	parsed, err := s.runInstantQuery(ctx, prometheusURL, fmt.Sprintf(`%s - %s offset %s`, selector, selector, period))
+	parsed, err := s.runInstantQuery(ctx, prometheusURL, fmt.Sprintf(`increase(%s[%s])`, selector, period))
 	if err != nil {
 		return nil, err
 	}
 
 	series := toMetricSeries(parsed, metric)
 
-	// A node with less history than `period` has no sample to subtract, so
-	// the query above returns nothing for it -- correct, but it would show
-	// up as a bare dash until the metric is `period` old (a full day for
-	// the shortest long window). For exactly those nodes, fall back to
-	// "current minus the smallest value seen in the window", i.e. what
-	// the counter gained over the history that does exist, plus when that
-	// history starts (Since) so the UI can label it honestly. min_over_time
-	// is read as "the earliest value" because these are counters that only
-	// grow; unlike delta()/increase() it never extrapolates past the data.
-	have := make(map[int64]struct{}, len(series))
-
-	for _, p := range series {
-		if p.NodeID != nil {
-			have[*p.NodeID] = struct{}{}
-		}
-	}
-
-	partialParsed, err := s.runInstantQuery(ctx, prometheusURL, fmt.Sprintf(`%s - min_over_time(%s[%s])`, selector, selector, period))
-	if err != nil {
-		return nil, err
-	}
-
+	// min_over_time(timestamp(...)) over a 1m subquery: the earliest
+	// evaluation step at which the series has a sample, i.e. when its
+	// history in this window begins (accurate to about a minute).
 	sinceParsed, err := s.runInstantQuery(ctx, prometheusURL, fmt.Sprintf(`min_over_time(timestamp(%s)[%s:1m])`, selector, period))
 	if err != nil {
 		return nil, err
@@ -628,24 +616,29 @@ func (s *Server) queryOneMetricDelta(ctx context.Context, prometheusURL, metric,
 		}
 	}
 
-	for _, p := range toMetricSeries(partialParsed, metric) {
-		if p.NodeID == nil {
+	windowStart := time.Now().Add(-dur)
+
+	for i := range series {
+		if series[i].NodeID == nil {
 			continue
 		}
 
-		if _, ok := have[*p.NodeID]; ok {
+		since, ok := sinceByNode[*series[i].NodeID]
+		if !ok || !time.Unix(int64(since), 0).After(windowStart.Add(partialHistoryTolerance)) {
 			continue
 		}
 
-		if since, ok := sinceByNode[*p.NodeID]; ok {
-			p.Since = &since
-		}
-
-		series = append(series, p)
+		series[i].Since = &since
 	}
 
 	return series, nil
 }
+
+// partialHistoryTolerance is how far after the window's start a series' first
+// sample may fall before its delta is reported as covering only part of the
+// window (Since): enough to absorb the subquery's 1m resolution and scrape
+// jitter, so a node with a full window of history isn't mislabeled.
+const partialHistoryTolerance = 3 * time.Minute
 
 // runInstantQuery is the shared HTTP/JSON plumbing behind an instant
 // PromQL query (https://prometheus.io/docs/prometheus/latest/querying/api/#instant-queries)

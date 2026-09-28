@@ -4,14 +4,16 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"testing"
+	"time"
 )
 
 // fakePrometheus answers each instant query with a canned vector chosen by
-// what the query looks like, so queryOneMetricDelta's three-query flow can
-// be exercised without a real Prometheus.
-func fakePrometheus(t *testing.T, primary, partial, since map[string]string) *httptest.Server {
+// what the query looks like, so queryOneMetricDelta's two-query flow can be
+// exercised without a real Prometheus. It also records the queries it saw.
+func fakePrometheus(t *testing.T, increase, since map[string]string, seen *[]string) *httptest.Server {
 	t.Helper()
 
 	vector := func(byNode map[string]string) string {
@@ -26,16 +28,15 @@ func fakePrometheus(t *testing.T, primary, partial, since map[string]string) *ht
 
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		q := r.URL.Query().Get("query")
+		*seen = append(*seen, q)
 
 		var body string
 
 		switch {
 		case strings.HasPrefix(q, "min_over_time(timestamp("):
 			body = vector(since)
-		case strings.Contains(q, "min_over_time("):
-			body = vector(partial)
-		case strings.Contains(q, " offset "):
-			body = vector(primary)
+		case strings.HasPrefix(q, "increase("):
+			body = vector(increase)
 		default:
 			t.Errorf("unexpected query %q", q)
 		}
@@ -45,37 +46,49 @@ func fakePrometheus(t *testing.T, primary, partial, since map[string]string) *ht
 }
 
 func TestQueryOneMetricDelta(t *testing.T) {
+	now := time.Now()
+	unix := func(d time.Duration) string { return strconv.FormatInt(now.Add(d).Unix(), 10) }
+
 	tests := []struct {
-		name    string
-		primary map[string]string
-		partial map[string]string
-		since   map[string]string
-		// node id -> want value; wantSince: node id -> whether Since is set
+		name      string
+		increase  map[string]string
+		since     map[string]string
 		want      map[int64]float64
 		wantSince map[int64]bool
 	}{
 		{
-			name:      "full history: primary wins, no Since",
-			primary:   map[string]string{"1": "10"},
-			partial:   map[string]string{"1": "7"},
-			since:     map[string]string{"1": "1789990000"},
-			want:      map[int64]float64{1: 10},
+			name:      "history covers the whole 24h window: no Since",
+			increase:  map[string]string{"1": "601.1"},
+			since:     map[string]string{"1": unix(-24 * time.Hour)},
+			want:      map[int64]float64{1: 601.1},
 			wantSince: map[int64]bool{1: false},
 		},
 		{
-			name:      "no history for the period: fallback with Since",
-			partial:   map[string]string{"1": "44"},
-			since:     map[string]string{"1": "1789990000"},
+			name:      "history starts within tolerance of the window start: no Since",
+			increase:  map[string]string{"1": "5"},
+			since:     map[string]string{"1": unix(-24*time.Hour + time.Minute)},
+			want:      map[int64]float64{1: 5},
+			wantSince: map[int64]bool{1: false},
+		},
+		{
+			name:      "history shorter than the window: Since is set",
+			increase:  map[string]string{"1": "44"},
+			since:     map[string]string{"1": unix(-4 * time.Hour)},
 			want:      map[int64]float64{1: 44},
 			wantSince: map[int64]bool{1: true},
 		},
 		{
-			name:      "mixed: each node uses its own source",
-			primary:   map[string]string{"1": "10"},
-			partial:   map[string]string{"1": "7", "2": "0"},
-			since:     map[string]string{"1": "1789990000", "2": "1789995000"},
+			name:      "each node is judged on its own history",
+			increase:  map[string]string{"1": "10", "2": "0"},
+			since:     map[string]string{"1": unix(-48 * time.Hour), "2": unix(-2 * time.Hour)},
 			want:      map[int64]float64{1: 10, 2: 0},
 			wantSince: map[int64]bool{1: false, 2: true},
+		},
+		{
+			name:      "no since data: value still returned, no Since",
+			increase:  map[string]string{"1": "3"},
+			want:      map[int64]float64{1: 3},
+			wantSince: map[int64]bool{1: false},
 		},
 		{
 			name: "no data at all: empty",
@@ -85,7 +98,9 @@ func TestQueryOneMetricDelta(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			srv := fakePrometheus(t, tt.primary, tt.partial, tt.since)
+			var seen []string
+
+			srv := fakePrometheus(t, tt.increase, tt.since, &seen)
 			defer srv.Close()
 
 			s := &Server{httpClient: srv.Client()}
@@ -107,6 +122,19 @@ func TestQueryOneMetricDelta(t *testing.T) {
 
 				if (p.Since != nil) != tt.wantSince[*p.NodeID] {
 					t.Fatalf("node %d Since set = %v, want %v", *p.NodeID, p.Since != nil, tt.wantSince[*p.NodeID])
+				}
+			}
+
+			// The value must come from increase() (reset-aware), never from
+			// subtracting an offset sample, which goes negative across a
+			// counter reset.
+			if len(seen) == 0 || !strings.HasPrefix(seen[0], `increase(am4_flights_departed_total{user_uuid="u"}[24h])`) {
+				t.Fatalf("first query = %v, want an increase() over the 24h window", seen)
+			}
+
+			for _, q := range seen {
+				if strings.Contains(q, " offset ") {
+					t.Fatalf("query %q subtracts an offset sample, which breaks across counter resets", q)
 				}
 			}
 		})

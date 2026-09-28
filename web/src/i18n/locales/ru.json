@@ -131,6 +131,7 @@
     "form": {
       "createTitle": "Новый узел",
       "editTitle": "Редактирование узла",
+      "nodeId": "ID узла",
       "sectionAccount": "Аккаунт",
       "sectionServices": "Сервисы",
       "sectionSchedule": "Расписание",
@@ -305,6 +306,7 @@
   "adminNodes": {
     "title": "Все узлы",
     "table": {
+      "id": "ID",
       "owner": "Владелец",
       "name": "Название",
       "services": "Сервисы",
@@ -329,6 +331,9 @@
       "queued": "Обновление поставлено в очередь для нод: {{count}}.",
       "partial": "В очередь поставлено нод: {{queued}}; не удалось поставить: {{failed}}.",
       "failed": "Не удалось поставить обновление в очередь."
+    },
+    "detail": {
+      "ownerUuid": "UUID владельца"
     }
   },
   "adminUserDetail": {

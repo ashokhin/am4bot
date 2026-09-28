@@ -69,6 +69,7 @@ export function AdminNodesPage() {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead>{t('adminNodes.table.id')}</TableHead>
               <TableHead>{t('adminNodes.table.owner')}</TableHead>
               <TableHead>{t('adminNodes.table.name')}</TableHead>
               {/* Hidden below sm -- the row navigates to the node's own
@@ -80,6 +81,7 @@ export function AdminNodesPage() {
           <TableBody>
             {nodes.map((node) => (
               <TableRow key={node.id} className="cursor-pointer" onClick={() => navigate(`/admin/nodes/${node.id}`)}>
+                <TableCell className="font-mono text-muted-foreground">{node.id}</TableCell>
                 <TableCell className="font-medium">{node.owner_login}</TableCell>
                 <TableCell>
                   {node.name}

@@ -80,7 +80,7 @@ export function NodeMetricDeltaTiles({
                   <div className="text-xs text-muted-foreground">
                     {node.name} — {t(labelKey)}
                   </div>
-                  <div className="text-xl font-semibold">{value === undefined ? '—' : `+${format(value)}`}</div>
+                  <div className="text-xl font-semibold">{value === undefined ? '—' : `${value < 0 ? '−' : '+'}${format(Math.abs(value))}`}</div>
                   {/* Shown only when the node has less history than the
                       selected period, so this counts from when tracking
                       began rather than spanning the whole period. */}

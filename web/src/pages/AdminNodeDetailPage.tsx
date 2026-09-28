@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { adminApi } from '../api/admin'
 import type { AdminNodeView, SetNodeLogLevelRequest } from '../api/types'
@@ -82,8 +82,20 @@ export function AdminNodeDetailPage() {
       <Card>
         <CardContent className="flex flex-col gap-3 pt-6">
           <div>
+            <Label>{t('nodes.form.nodeId')}</Label>
+            <p className="select-all font-mono text-sm">{node.id}</p>
+          </div>
+          <div>
             <Label>{t('adminNodes.table.owner')}</Label>
-            <p className="text-sm">{node.owner_login}</p>
+            <p className="text-sm">
+              <Link to={`/admin/users/${node.owner_uuid}`} className="underline underline-offset-2 hover:text-primary">
+                {node.owner_login}
+              </Link>
+            </p>
+          </div>
+          <div>
+            <Label>{t('adminNodes.detail.ownerUuid')}</Label>
+            <p className="select-all font-mono text-sm">{node.owner_uuid}</p>
           </div>
           <div>
             <Label>{t('common.timezone')}</Label>

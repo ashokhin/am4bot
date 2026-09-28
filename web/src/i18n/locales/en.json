@@ -131,6 +131,7 @@
     "form": {
       "createTitle": "Add a new node",
       "editTitle": "Edit node",
+      "nodeId": "Node ID",
       "sectionAccount": "Account",
       "sectionServices": "Services",
       "sectionSchedule": "Schedule",
@@ -305,6 +306,7 @@
   "adminNodes": {
     "title": "All nodes",
     "table": {
+      "id": "ID",
       "owner": "Owner",
       "name": "Name",
       "services": "Services",
@@ -329,6 +331,9 @@
       "queued": "Update queued for {{count}} node(s).",
       "partial": "Queued {{queued}} node(s); {{failed}} failed to queue.",
       "failed": "Failed to queue the update."
+    },
+    "detail": {
+      "ownerUuid": "Owner UUID"
     }
   },
   "adminUserDetail": {

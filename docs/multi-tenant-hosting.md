@@ -372,23 +372,19 @@ period-selectable (`1h`/`6h`/`12h`/`24h`/`3d`/`7d`/`14d`/`30d`):
   logged into the same account regardless of which services that node
   runs, which made an early version of this widget show a nonzero
   "flights dispatched" delta on a node that never runs depart at all,
-  simply because another node on the same account did). Computed as
-  `metric{...} - metric{...} offset <period>`, **not** PromQL's
-  `delta()`/`increase()` over a `[period]` range vector: those
-  extrapolate beyond whatever data actually exists inside the window,
-  which blows up for any node younger than the selected period (a
-  freshly-provisioned node's first scrape captures the account's real
-  lifetime total, so a couple of hours of real samples inside a 7-day
-  window gets stretched across the full 7 days and can report a number
-  bigger than the metric's own current value). The `offset` form has no
-  such failure mode — if the metric didn't exist that far back, the two
-  sides simply don't match. For such a node (a new metric, or a node
-  younger than the selected period) the response falls back to "current
-  value minus the smallest value seen in the window" — what the counter
-  gained over the history that does exist, never extrapolated — and
-  marks it with a `since` timestamp, which the UI shows as "since
-  <time>", so it isn't mistaken for the whole period. That figure
-  undercounts by whatever happened before the first scrape.
+  simply because another node on the same account did). Computed with
+  PromQL's `increase(metric[period])`, not by subtracting the value
+  `period` ago: the counter restarts from zero whenever a node's container
+  is recreated (an image update, a config change), and a subtraction
+  across such a restart goes negative — `increase()` treats the drop as a
+  reset and counts from zero again, so restarts inside the window don't
+  matter. A node with less history than the selected period (a new
+  metric, a young node) needs no special handling: Prometheus doesn't
+  stretch a series across a window it doesn't cover, so the result is the
+  gain over the history that exists, and the response marks it with a
+  `since` timestamp, which the UI shows as "since <time>" so it isn't
+  mistaken for the whole period. That figure undercounts by whatever
+  happened before the first scrape.
 - **`GET /api/metrics/balance?period=<period>`** — a line chart of the
   company's `am4_company_money{type="Airline account"}` balance over the
   window, via `/api/v1/query_range` at a period-appropriate step (5m for
