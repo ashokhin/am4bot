@@ -266,8 +266,9 @@ type NodeWithOwner struct {
 	OwnerUUID  uuid.UUID `db:"owner_uuid"`
 }
 
-// ListAllNodesWithOwner returns every node across every user, newest
-// first, with its owner's login/uuid attached. Admin-only (see
+// ListAllNodesWithOwner returns every node across every user, grouped by
+// owner (oldest account first) and by node id within each owner, with its
+// owner's login/uuid attached. Admin-only (see
 // requireNonAdminUser's doc comment: an admin has no nodes of their own,
 // only visibility into everyone else's) -- never scope a regular user's
 // request through this, use ListNodesByUser instead.
@@ -278,7 +279,7 @@ func (s *Store) ListAllNodesWithOwner(ctx context.Context) ([]NodeWithOwner, err
 		SELECT `+nodeColumnsPrefixed+`, u.login AS owner_login, u.uuid AS owner_uuid
 		FROM nodes n
 		JOIN users u ON u.id = n.user_id
-		ORDER BY n.created_at DESC
+		ORDER BY n.user_id, n.id
 	`); err != nil {
 		return nil, fmt.Errorf("listing all nodes: %w", err)
 	}
