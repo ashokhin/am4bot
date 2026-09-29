@@ -26,7 +26,7 @@ RUN CGO_ENABLED=0 go build \
           -X github.com/prometheus/common/version.BuildDate=${BUILD_DATE}" \
         -o /out/ambot ./cmd/ambot
 
-FROM alpine:3.21
+FROM alpine:3.24
 
 # xvfb + xauth: only needed when chrome_stealth is enabled (see
 # internal/config.Config's ChromeStealth doc comment) -- chromedp-undetected's
