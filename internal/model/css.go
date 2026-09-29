@@ -42,7 +42,7 @@ const (
 	BUTTON_ALLIANCE_INFO string = `div#flightInfo span[onclick="popup('alliance.php','Alliance');"]`                              // "Alliance" info button
 	BUTTON_FI_OVERVIEW   string = `div#flightInfo div#flightInfoSecContainer button[onclick="popup('overview.php','Overview');"]` // "Overview" button
 	BUTTON_FI_DEPART_ALL string = "div#flightInfo button.btn-xs:nth-child(2)"                                                     // "Depart All" button
-	LIST_FI_LANDED       string = "div#flightInfo div#landedList div.flight-list-sorting"                                         // aircraft rows that have landed and are ready to depart (the "Depart" button counter caps at 20, this list does not)
+	LIST_FI_LANDED       string = "div#flightInfo div#landedList div.flight-list-sorting:not(.grounded)"                          // aircraft rows that have landed and are actually ready to depart (the "Depart" button counter caps at 20, this list does not). Excludes grounded aircraft (data-grounded="1", also carrying the "grounded" class): those sit in the same landed list but can't depart, and counting them here made depart() count aircraft the "Depart All" button won't actually move, then hang on it (see internal/bot/depart.go's own comment)
 
 	// "Overview" pop-up
 
