@@ -175,7 +175,7 @@ services:
   # host, or http://prometheus:9090 from inside this compose network) in
   # the admin UI's Prometheus settings page once the stack is up.
   prometheus:
-    image: prom/prometheus:v3.0.1
+    image: prom/prometheus:v3.15.0
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - ./prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro

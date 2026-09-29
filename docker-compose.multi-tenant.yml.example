@@ -238,7 +238,7 @@ services:
   # (/admin/prometheus) -- these two containers share this compose
   # network regardless of whether the port is published.
   prometheus:
-    image: prom/prometheus:v3.0.1
+    image: prom/prometheus:v3.15.0
     restart: unless-stopped
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
