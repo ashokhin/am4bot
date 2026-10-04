@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { adminApi } from '../api/admin'
+import { BackButton } from '../components/BackButton'
 import type { AdminNodeView, SetNodeLogLevelRequest } from '../api/types'
 import { Badge } from '../components/ui/badge'
-import { Button } from '../components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Label } from '../components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
@@ -24,7 +24,6 @@ const NO_OVERRIDE = '__default__'
  */
 export function AdminNodeDetailPage() {
   const { t } = useTranslation()
-  const navigate = useNavigate()
   const { id } = useParams()
   const [node, setNode] = useState<AdminNodeView | undefined>(undefined)
   const [loading, setLoading] = useState(true)
@@ -69,6 +68,7 @@ export function AdminNodeDetailPage() {
 
   return (
     <div className="flex max-w-6xl flex-col gap-4">
+      <BackButton to="/admin/nodes" />
       <div className="flex items-center justify-between">
         <h1 className="flex items-center gap-2 text-2xl font-semibold">
           {node.name}
@@ -174,9 +174,6 @@ export function AdminNodeDetailPage() {
         </CardContent>
       </Card>
 
-      <Button variant="outline" onClick={() => navigate(-1)} className="w-fit">
-        {t('common.back')}
-      </Button>
     </div>
   )
 }

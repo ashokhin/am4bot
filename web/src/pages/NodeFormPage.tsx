@@ -1,15 +1,17 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useBlocker, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { ApiError } from '../api/client'
 import { nodesApi } from '../api/nodes'
 import type { NodeExtraConfig } from '../api/types'
 import { AdvancedSettingsSection } from '../components/AdvancedSettingsSection'
+import { BackButton } from '../components/BackButton'
 import { CronScheduleEditor } from '../components/CronScheduleEditor'
 import { ServiceListEditor } from '../components/ServiceListEditor'
 import { Button } from '../components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../components/ui/dialog'
 import { Input } from '../components/ui/input'
 import { Label } from '../components/ui/label'
 import { PasswordInput } from '../components/ui/password-input'
@@ -45,6 +47,46 @@ export function NodeFormPage() {
   const [error, setError] = useState<string | undefined>(undefined)
   const [submitting, setSubmitting] = useState(false)
 
+  // Everything the user can edit, serialized: dirty is "differs from what was
+  // loaded". Null baseline means "not loaded yet" -- nothing is dirty then.
+  const snapshot = JSON.stringify({
+    name,
+    gameUsername,
+    gamePassword,
+    services,
+    schedules,
+    jitterSeconds,
+    timeoutSeconds,
+    timezone,
+    enabled,
+    extraConfig,
+  })
+  const [baseline, setBaseline] = useState<string | null>(isEdit ? null : snapshot)
+  const dirty = baseline !== null && snapshot !== baseline
+  // Set just before a successful save navigates away, so the blocker below
+  // doesn't stop that navigation.
+  const allowLeaveRef = useRef(false)
+
+  const blocker = useBlocker(
+    ({ currentLocation, nextLocation }) =>
+      dirty && !allowLeaveRef.current && currentLocation.pathname !== nextLocation.pathname,
+  )
+
+  useEffect(() => {
+    if (!dirty) {
+      return
+    }
+
+    function onBeforeUnload(e: BeforeUnloadEvent) {
+      e.preventDefault()
+      e.returnValue = ''
+    }
+
+    window.addEventListener('beforeunload', onBeforeUnload)
+
+    return () => window.removeEventListener('beforeunload', onBeforeUnload)
+  }, [dirty])
+
   useEffect(() => {
     if (!isEdit) {
       return
@@ -53,6 +95,20 @@ export function NodeFormPage() {
     nodesApi
       .get(Number(id))
       .then((node) => {
+        setBaseline(
+          JSON.stringify({
+            name: node.name,
+            gameUsername: node.game_username,
+            gamePassword: '',
+            services: node.services,
+            schedules: node.cron_schedules,
+            jitterSeconds: node.cron_jitter_seconds,
+            timeoutSeconds: node.timeout_seconds,
+            timezone: node.timezone,
+            enabled: node.enabled,
+            extraConfig: node.extra_config,
+          }),
+        )
         setName(node.name)
         setGameUsername(node.game_username)
         setServices(node.services)
@@ -72,6 +128,18 @@ export function NodeFormPage() {
       .catch(() => setError(t('nodes.errors.loadFailed')))
       .finally(() => setLoading(false))
   }, [id, isEdit, t])
+
+  function stay() {
+    if (blocker.state === 'blocked') {
+      blocker.reset()
+    }
+  }
+
+  function leave() {
+    if (blocker.state === 'blocked') {
+      blocker.proceed()
+    }
+  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -108,6 +176,7 @@ export function NodeFormPage() {
         toast.success(t('nodes.created', { name }))
       }
 
+      allowLeaveRef.current = true
       navigate('/nodes')
     } catch (err) {
       if (err instanceof ApiError && err.status === 400) {
@@ -126,6 +195,7 @@ export function NodeFormPage() {
 
   return (
     <div className="flex max-w-6xl flex-col gap-4">
+      <BackButton to="/nodes" />
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">{isEdit ? t('nodes.form.editTitle') : t('nodes.form.createTitle')}</h1>
         {isEdit && (
@@ -250,6 +320,22 @@ export function NodeFormPage() {
           </Button>
         </div>
       </form>
+      <Dialog open={blocker.state === 'blocked'} onOpenChange={(open) => !open && stay()}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('nodes.form.unsavedTitle')}</DialogTitle>
+            <DialogDescription>{t('nodes.form.unsavedDescription')}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={stay}>
+              {t('nodes.form.unsavedStay')}
+            </Button>
+            <Button variant="destructive" onClick={leave}>
+              {t('nodes.form.unsavedLeave')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

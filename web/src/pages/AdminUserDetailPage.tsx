@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { adminApi } from '../api/admin'
+import { BackButton } from '../components/BackButton'
 import type { AdminUserDetail } from '../api/types'
 import { useAuth } from '../auth/AuthContext'
 import { ConfirmDialog } from '../components/ConfirmDialog'
@@ -90,6 +91,7 @@ export function AdminUserDetailPage() {
 
   return (
     <div className="flex max-w-6xl flex-col gap-4">
+      <BackButton to="/users" />
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">{user.display_name ?? user.login}</h1>
         <div className="flex items-center gap-2">

@@ -145,7 +145,11 @@
       "timeoutSeconds": "Run timeout (seconds)",
       "timezoneHint": "Interprets every schedule entry above — one timezone for the whole node.",
       "notReadyHint": "This node needs a game login, password, and schedule before it can be enabled.",
-      "enabledHint": "Toggling this only takes effect once you save — finish configuring below, then turn it on and save in one step."
+      "enabledHint": "Toggling this only takes effect once you save — finish configuring below, then turn it on and save in one step.",
+      "unsavedTitle": "Unsaved changes",
+      "unsavedDescription": "You have changes that haven't been saved. If you leave now, they will be lost.",
+      "unsavedStay": "Stay",
+      "unsavedLeave": "Leave without saving"
     },
     "advanced": {
       "activeCount": "{{count}} active",
