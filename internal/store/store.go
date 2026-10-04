@@ -59,7 +59,7 @@ func (s *Store) Close() error {
 }
 
 // Ping checks that the database connection is actually reachable right
-// now -- for a readiness probe, not just "did Open succeed once at
+// now - for a readiness probe, not just "did Open succeed once at
 // startup".
 func (s *Store) Ping(ctx context.Context) error {
 	return s.db.PingContext(ctx)

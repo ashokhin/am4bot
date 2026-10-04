@@ -12,7 +12,7 @@ import (
 
 // spaFileServer serves the built React SPA out of distFS (see
 // internal/webui.DistFS), falling back to index.html for any path that
-// isn't a real file -- react-router's client-side routes (e.g. /nodes,
+// isn't a real file - react-router's client-side routes (e.g. /nodes,
 // /admin/users/<uuid>) only exist in the browser, so a hard refresh or a
 // direct link to one has to still get index.html, not a 404, and let the
 // SPA's own router take it from there.
@@ -24,14 +24,14 @@ import (
 // no path rewriting needed on the proxy side). NewServer already strips
 // basePath from every incoming request before it reaches this handler (or
 // any /api/* route) via http.StripPrefix, so nothing here or in
-// server.go's route registrations needs to know about it -- the ONE place
+// server.go's route registrations needs to know about it - the ONE place
 // that does is index.html's own asset references (`src="/assets/..."`),
 // since those are absolute paths the BROWSER re-requests verbatim; without
 // rewriting them to `src="<basePath>/assets/..."` here, the browser would
 // ask for them at the untranslated root path and get a 404. See
 // rewriteIndexHTML.
 //
-// Registered on "/" on the PUBLIC mux only -- api routes registered on
+// Registered on "/" on the PUBLIC mux only - api routes registered on
 // more specific patterns (e.g. "GET /api/nodes") take precedence in
 // Go's ServeMux, so this never shadows them; it only ever handles
 // requests nothing more specific matched.
@@ -56,7 +56,7 @@ func spaFileServer(distFS fs.FS, basePath string) (http.Handler, error) {
 		}
 
 		if _, err := fs.Stat(distFS, name); err != nil {
-			// Not a real file in the build output -- serve index.html
+			// Not a real file in the build output - serve index.html
 			// (already rewritten) instead of 404ing, same SPA-fallback
 			// reasoning as above.
 			serveIndex(w, r)
@@ -71,7 +71,7 @@ func spaFileServer(distFS fs.FS, basePath string) (http.Handler, error) {
 // rewriteIndexHTML reads index.html out of distFS once at startup and, if
 // basePath is non-empty, rewrites its absolute asset references
 // (`src="/..."`, `href="/..."`) to be prefixed with basePath, and injects
-// a <meta name="am4bot-base-path" content="..."> tag -- the frontend's own
+// a <meta name="am4bot-base-path" content="..."> tag - the frontend's own
 // runtime source of truth for this (see web/src/api/client.ts and
 // web/src/main.tsx), so the same build works mounted at any path without a
 // rebuild, matching Prometheus/Grafana's own route-prefix behavior.
@@ -96,7 +96,7 @@ func rewriteIndexHTML(distFS fs.FS, basePath string) ([]byte, error) {
 
 	// html.EscapeString even though basePath is operator-controlled (a
 	// CLI flag/env var, never end-user input) and validateRoutePrefix
-	// already constrains its shape -- cheap defense-in-depth against
+	// already constrains its shape - cheap defense-in-depth against
 	// breaking out of the attribute if that validation is ever loosened.
 	meta := fmt.Sprintf(`<meta name="am4bot-base-path" content="%s">`, html.EscapeString(basePath))
 	if idx := strings.Index(content, "<head>"); idx != -1 {

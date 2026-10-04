@@ -15,7 +15,7 @@ type setPasswordRequest struct {
 }
 
 // handleSetMyPassword is self-service for ANY signed-in user, admin
-// included -- covers both the forced first-password-change flow (right
+// included - covers both the forced first-password-change flow (right
 // after a login that already proved they know their current password,
 // see User.MustChangePassword's doc comment) and a voluntary change from
 // Settings. No current-password check: the session cookie itself is
@@ -63,7 +63,7 @@ type setDisplayNameRequest struct {
 	DisplayName *string `json:"display_name"`
 }
 
-// handleSetMyDisplayName is self-service for any signed-in user -- a
+// handleSetMyDisplayName is self-service for any signed-in user - a
 // purely cosmetic label, see store.User.DisplayName's doc comment.
 func (s *Server) handleSetMyDisplayName(w http.ResponseWriter, r *http.Request) {
 	userID, err := s.currentUserID(r)
@@ -103,7 +103,7 @@ func (s *Server) handleSetMyDisplayName(w http.ResponseWriter, r *http.Request) 
 }
 
 // handleMyLoginActivity returns the caller's own last loginActivityLimit
-// login attempts (success and failure both) -- the profile page's "recent
+// login attempts (success and failure both) - the profile page's "recent
 // activity" panel. Separate from /api/me itself (called on every page
 // load as the auth check) so that endpoint doesn't grow this extra query
 // for a use case only the Settings/profile page actually needs.

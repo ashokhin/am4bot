@@ -2,7 +2,7 @@
 # Metrics section: federating this project's bundled, internal-only
 # Prometheus (see alerts.yml, prometheus.yml) INTO your own main/external
 # Prometheus instance, for long-term history/alerting on top of it. NOT
-# loaded by anything in this repo's own compose files -- the internal
+# loaded by anything in this repo's own compose files - the internal
 # Prometheus keeps using alerts.yml. Copy this file to wherever your
 # EXTERNAL Prometheus reads rule_files from once you've set up the
 # federation scrape job (see that doc section for the exact config,
@@ -12,16 +12,16 @@
 # re-exposes whatever matches your `match[]` selector. The doc's own
 # example uses `match[]: ['{__name__=~"am4_.+"}']`, which happily carries
 # over every am4_* gauge (including am4_next_scheduled_run_timestamp_seconds
-# below) -- but NOT `up`, since "up" doesn't match that regex. That means
+# below) - but NOT `up`, since "up" doesn't match that regex. That means
 # alerts.yml's AmbotExporterDown (`up{job="am4bot-nodes"} == 0`) has
 # NOTHING to evaluate against here unless you explicitly widen your
-# match[] list to also include `up{job="am4bot-nodes"}` -- see the
+# match[] list to also include `up{job="am4bot-nodes"}` - see the
 # commented-out rule below for that case, and AmbotFederationLinkDown for
 # a federation-safe alternative that needs no such change.
 groups:
   - name: am4bot-federated
     rules:
-      # Identical to alerts.yml's own rule -- am4_next_scheduled_run_timestamp_seconds
+      # Identical to alerts.yml's own rule - am4_next_scheduled_run_timestamp_seconds
       # IS federated by the doc's default match[] selector, so this
       # transfers unchanged. See that file's own doc comment for the full
       # rationale (why this metric exists, why the expression is written
@@ -41,7 +41,7 @@ groups:
 
       # Federation-safe stand-in for alerts.yml's AmbotExporterDown: checks
       # whether THIS Prometheus can even reach the internal one's /federate
-      # endpoint at all, using the scrape job's own `up` series -- which
+      # endpoint at all, using the scrape job's own `up` series - which
       # your OWN federation scrape config produces locally (see this
       # file's header), no match[] widening needed. Catches "the whole
       # am4bot stack/host is unreachable", not "one specific node's
@@ -63,7 +63,7 @@ groups:
       # Per-node exporter-down detection DOES federate, but only if you
       # add `up{job="am4bot-nodes"}` to your scrape job's match[] list
       # (docs/multi-tenant-hosting.md's example only lists
-      # '{__name__=~"am4_.+"}', which excludes it) -- uncomment this once
+      # '{__name__=~"am4_.+"}', which excludes it) - uncomment this once
       # you've made that change on the federating scrape config itself.
       # - alert: AmbotExporterDown
       #   expr: up{job="am4bot-nodes"} == 0

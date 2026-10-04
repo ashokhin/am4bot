@@ -1,6 +1,6 @@
 # Reference production deployment for the multi-tenant control plane. See
 # docs/multi-tenant-hosting.md for the full picture (roles, architecture,
-# the VPN/metrics model) -- this file only covers how the pieces run.
+# the VPN/metrics model) - this file only covers how the pieces run.
 #
 # Differences from docker-compose.multi-tenant.dev.yml.example, the local
 # throwaway stack:
@@ -13,28 +13,28 @@
 #     plain HTTP).
 #   - restart: unless-stopped on every long-running service.
 #   - ambot's image comes from the published ashokhin/am4bot:latest by
-#     default (AMBOT_PULL_POLICY=always) -- no local ambot build needed.
+#     default (AMBOT_PULL_POLICY=always) - no local ambot build needed.
 #   - Bundles its own internal-only Prometheus (see prometheus/prometheus.yml)
-#     scraping every node via orchestrator's file_sd targets file -- keeps
+#     scraping every node via orchestrator's file_sd targets file - keeps
 #     your org's main Prometheus, if you have one, free of per-node churn.
 #     Federate from this one into that one later if you want long-term
 #     history/alerting on top (see docs/multi-tenant-hosting.md's Metrics
 #     section).
 #
-# Network shape -- apiserver runs TWO listeners in the same process (see
+# Network shape - apiserver runs TWO listeners in the same process (see
 # internal/api/server.go's NewServer doc comment), and only one of them
 # is meant to be publicly reachable:
 #   - apiserver's PUBLIC listener (--web.listen-address, port 8080 below)
 #     serves the built SPA and every /api/* route. Your reverse proxy
-#     points at this one -- it's published as 0.0.0.0 so it's reachable
+#     points at this one - it's published as 0.0.0.0 so it's reachable
 #     from outside this host at all.
 #   - apiserver's INTERNAL listener (--internal.listen-address, port 8081
 #     below) serves /internal/* only (used by ambot containers to fetch
 #     their own config, and by orchestrator to provision nodes) and must
-#     NEVER be reachable through your public reverse proxy -- both
+#     NEVER be reachable through your public reverse proxy - both
 #     endpoints hand back decrypted secrets (game/VPN passwords). It's
 #     published bound to the docker0 bridge gateway address (NOT 0.0.0.0,
-#     NOT 127.0.0.1 either -- see the port's own comment below for why
+#     NOT 127.0.0.1 either - see the port's own comment below for why
 #     127.0.0.1 doesn't actually work here) so it stays off the public
 #     internet while still being reachable from each node's own separate
 #     compose project via host.docker.internal, same mechanism the dev
@@ -42,31 +42,31 @@
 #
 # apiserver/orchestrator's image (ashokhin/am4bot-controlplane) is
 # published to Docker Hub on every tagged release, same as ambot's own
-# image -- see CONTROLPLANE_IMAGE/CONTROLPLANE_PULL_POLICY below and
+# image - see CONTROLPLANE_IMAGE/CONTROLPLANE_PULL_POLICY below and
 # .github/workflows/docker-image.yaml. Set CONTROLPLANE_IMAGE to your own
 # registry's tag instead if you'd rather build/host it yourself.
 #
 # Quick start:
 #   1. cp docker-compose.multi-tenant.yml.example docker-compose.yml
 #      cp .env.multi-tenant.example .env.multi-tenant
-#      (both copies are yours to keep local/private -- fill in real
+#      (both copies are yours to keep local/private - fill in real
 #      secrets, never commit them)
 #   2. Fill in .env.multi-tenant: SECRETS_MASTER_KEY / JWT_SIGNING_KEY
-#      (openssl rand -base64 32 each, minimum -- see
+#      (openssl rand -base64 32 each, minimum - see
 #      internal/secrets.GenerateKey / internal/auth.GenerateSigningKey
 #      for the sizes those helpers actually produce), a real
 #      ORCHESTRATOR_TOKEN, POSTGRES_PASSWORD, and COMPOSE_NODES_DIR (an
-#      absolute path with real disk space -- every provisioned node's
+#      absolute path with real disk space - every provisioned node's
 #      compose files, and each node's own container filesystem, live
 #      under it).
 #   3. docker compose -f docker-compose.yml --env-file .env.multi-tenant up -d --build
 #   4. Put a reverse proxy in front of apiserver's PUBLIC listener (port
-#      8080 here) that terminates TLS -- see
+#      8080 here) that terminates TLS - see
 #      docs/multi-tenant-hosting.md's "Deploying for real" section.
 #   5. Log in at admin/admin (apiserver auto-creates this bootstrap
 #      account the first time it starts against an empty database --
 #      there is no signup flow, ever) and change that password
-#      immediately -- you're forced to before doing anything else.
+#      immediately - you're forced to before doing anything else.
 #   6. Set the bundled Prometheus's URL in the admin UI
 #      (/admin/prometheus): http://prometheus:9090. See this file's
 #      `prometheus` service and docs/multi-tenant-hosting.md's Metrics
@@ -84,7 +84,7 @@ services:
       POSTGRES_DB: am4bot
     volumes:
       - am4bot-postgres-data:/var/lib/postgresql/data
-    # Not published to the host by default -- nothing outside this
+    # Not published to the host by default - nothing outside this
     # compose network needs to reach Postgres directly. Uncomment only if
     # you need e.g. an external backup job or a one-off psql session from
     # the host, and prefer a firewalled port over `docker compose exec`.
@@ -98,7 +98,7 @@ services:
 
   # apiserver and orchestrator are two binaries baked into the SAME image
   # (Dockerfile.controlplane, published as ashokhin/am4bot-controlplane)
-  # -- each service here just overrides the entrypoint to pick which one
+  # - each service here just overrides the entrypoint to pick which one
   # actually runs.
   apiserver:
     image: ${CONTROLPLANE_IMAGE:-ashokhin/am4bot-controlplane:latest}
@@ -109,7 +109,7 @@ services:
       postgres:
         condition: service_healthy
     # apiserver itself queries the admin-configured Prometheus URL
-    # server-side (see internal/api/metrics_handlers.go) -- if that URL
+    # server-side (see internal/api/metrics_handlers.go) - if that URL
     # points at host.docker.internal (Prometheus running on the host or
     # in a sibling compose project), this container needs to resolve it.
     # On Linux, unlike Docker Desktop, that name doesn't resolve without
@@ -124,7 +124,7 @@ services:
       # orchestrator only ever provisions on its own local Docker socket
       # regardless of this value (see migrations/0001_init.sql's design
       # note on nodes.target_host: the schema is multi-host-ready, the
-      # orchestrator isn't yet) -- BUT it's also the host half of every
+      # orchestrator isn't yet) - BUT it's also the host half of every
       # node's Prometheus scrape target (see
       # cmd/orchestrator/prometheus_sd.go), so it has to actually be
       # reachable from the `prometheus` service below. The default,
@@ -135,9 +135,9 @@ services:
       # different machine.
       TARGET_HOSTS: ${TARGET_HOSTS:-host.docker.internal}
       # Serve the UI/API under a path prefix (e.g. "/app") instead of
-      # "/" -- for a reverse proxy that fronts several apps on one host.
+      # "/" - for a reverse proxy that fronts several apps on one host.
       # Empty by default (no prefix). Must start with "/", not end with
-      # one. Purely a runtime setting -- no image rebuild needed; see
+      # one. Purely a runtime setting - no image rebuild needed; see
       # docs/multi-tenant-hosting.md's --web.route-prefix section. Your
       # reverse proxy must forward the prefixed path AS-IS (no stripping)
       # to this container's port 8080.
@@ -150,34 +150,34 @@ services:
       # usually the compose network's gateway address. See
       # docs/multi-tenant-hosting.md's "Login hardening" section.
       TRUSTED_PROXIES: ${TRUSTED_PROXIES:-}
-      # No COOKIE_SECURE override here -- apiserver's own default is
+      # No COOKIE_SECURE override here - apiserver's own default is
       # Secure=true (HTTPS-only cookies), which is what you want once
       # there's a real reverse proxy terminating TLS in front of
       # apiserver's public listener. Do NOT add `--no-cookie-secure` in
       # production.
     command: ["--web.listen-address=:8080", "--internal.listen-address=:8081"]
     ports:
-      # PUBLIC listener -- reverse proxy points here. 0.0.0.0 (the
+      # PUBLIC listener - reverse proxy points here. 0.0.0.0 (the
       # default when no host is given) so it's reachable at all.
       - "8080:8080"
-      # INTERNAL listener -- must stay off the public internet (see this
+      # INTERNAL listener - must stay off the public internet (see this
       # file's "Network shape" note above), but ALSO must stay reachable
       # from ambot node containers, each in their own separate compose
       # project, via host.docker.internal. NOT 127.0.0.1: from inside
       # another compose project, "host.docker.internal" always resolves
-      # to the docker0 bridge gateway (172.17.0.1 by default -- run
+      # to the docker0 bridge gateway (172.17.0.1 by default - run
       # `ip addr show docker0` on THIS host to confirm, adjust if it
-      # differs), never to 127.0.0.1 -- a loopback-only bind is invisible
+      # differs), never to 127.0.0.1 - a loopback-only bind is invisible
       # to it and ambot's config fetch would silently fail. Binding here
       # to that same gateway address is reachable from any container via
       # host.docker.internal and from this host directly, but not
-      # reachable from another machine on the LAN -- verified live before
+      # reachable from another machine on the LAN - verified live before
       # writing this.
       - "172.17.0.1:8081:8081"
     # /readyz actually pings Postgres (see internal/api/health_handlers.go);
     # /healthz is a plain liveness check with no dependencies. Both live on
     # the PUBLIC listener but are never routed through a public reverse
-    # proxy frontend -- see docs/multi-tenant-hosting.md's "Health and
+    # proxy frontend - see docs/multi-tenant-hosting.md's "Health and
     # readiness checks" section on what "internal" means here.
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/readyz"]
@@ -196,7 +196,7 @@ services:
         condition: service_healthy
     environment:
       DATABASE_URL: postgres://am4bot:${POSTGRES_PASSWORD:?set a real password in .env.multi-tenant}@postgres:5432/am4bot?sslmode=disable
-      # apiserver's INTERNAL listener -- /internal/nodes/{id}/provision
+      # apiserver's INTERNAL listener - /internal/nodes/{id}/provision
       # only lives there. Same-network container-to-container, so the
       # service name resolves fine (unlike AMBOT_CONFIG_API_URL below,
       # which crosses into a separate compose project/network).
@@ -206,7 +206,7 @@ services:
       # lives in its OWN separate compose project/network (see
       # cmd/orchestrator/compose.go), where that service name doesn't
       # resolve. host.docker.internal does (extra_hosts is added to every
-      # rendered node compose file for exactly this) -- reach apiserver's
+      # rendered node compose file for exactly this) - reach apiserver's
       # internal listener via the host-loopback port published above
       # instead. Never point this at your public HTTPS origin --
       # /internal/* must stay off the public reverse proxy, see this
@@ -215,27 +215,27 @@ services:
       AMBOT_IMAGE: ${AMBOT_IMAGE:-ashokhin/am4bot:latest}
       AMBOT_PULL_POLICY: ${AMBOT_PULL_POLICY:-always}
       COMPOSE_DIR: ${COMPOSE_NODES_DIR:?set in .env.multi-tenant to an absolute host path, see this file's header}
-      # Regenerated after every processed job -- the bundled `prometheus`
+      # Regenerated after every processed job - the bundled `prometheus`
       # service below scrapes exactly this file. Shared via the
       # prometheus-sd volume, not a bind mount, since nothing outside
       # these two containers needs to resolve this path against the host.
       PROMETHEUS_SD_FILE: /var/lib/am4bot/prometheus-sd/targets.json
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      # Same absolute path on both sides -- the daemon (reached via the
+      # Same absolute path on both sides - the daemon (reached via the
       # bind-mounted socket above) resolves `docker compose -f <path>`
       # against the HOST filesystem, not this container's own, so
       # COMPOSE_NODES_DIR must mean the same thing on both sides.
       - ${COMPOSE_NODES_DIR:?set in .env.multi-tenant, see this file's header}:${COMPOSE_NODES_DIR:?set in .env.multi-tenant, see this file's header}
       - prometheus-sd:/var/lib/am4bot/prometheus-sd
 
-  # Internal-only Prometheus -- see this file's header and
+  # Internal-only Prometheus - see this file's header and
   # prometheus/prometheus.yml's own header for why it's bundled rather
   # than sharing your org's main instance. Not published to the host by
   # default; uncomment the port below (loopback-only, like apiserver's)
   # if you want to browse its own UI directly, otherwise reach it at
   # http://prometheus:9090 from apiserver's Prometheus settings page
-  # (/admin/prometheus) -- these two containers share this compose
+  # (/admin/prometheus) - these two containers share this compose
   # network regardless of whether the port is published.
   prometheus:
     image: prom/prometheus:v3.15.0
@@ -255,7 +255,7 @@ services:
 # Optional: pin this project's network so its gateway address stays the
 # same across recreations. Only needed if you set TRUSTED_PROXIES to that
 # gateway (a reverse proxy on the Docker host reaches published ports
-# through it) -- otherwise Docker may hand the network a different subnet
+# through it) - otherwise Docker may hand the network a different subnet
 # next time it is recreated and TRUSTED_PROXIES would silently stop
 # matching. Pick a subnet that no other Docker network on this host uses
 # (see `docker network ls` / `docker network inspect`).

@@ -33,16 +33,16 @@ type reconciler struct {
 	// ambotImage is the image tag every node's ambot service runs.
 	ambotImage string
 	// ambotConfigAPIURL is CONFIG_API_URL's value inside the ambot
-	// container -- not necessarily the same as apiBaseURL, since this
+	// container - not necessarily the same as apiBaseURL, since this
 	// process and the container it configures may reach apiserver over
 	// different network paths.
 	ambotConfigAPIURL string
 	ambotPullPolicy   string
 	httpClient        *http.Client
 	// prometheusSDFile is the path to regenerate Prometheus' file_sd
-	// targets file at after every processed operation -- see
+	// targets file at after every processed operation - see
 	// prometheus_sd.go. Empty disables this entirely (a no-op, not an
-	// error) since it's optional -- see decision #7's Prometheus-labelling
+	// error) since it's optional - see decision #7's Prometheus-labelling
 	// design.
 	prometheusSDFile string
 }
@@ -60,10 +60,10 @@ func (r *reconciler) nodeDir(nodeID int64) string {
 
 // reconcileNode makes one node's containers match its current desired
 // state: fetches the provisioning bundle (placement + whatever secrets
-// the VPN container's env unavoidably needs -- see
+// the VPN container's env unavoidably needs - see
 // api.ProvisionResponse's doc comment on why the ambot container itself
 // gets none), renders composeDir/node-<id>/, and runs `docker compose up
-// -d` (enabled) or `stop` (disabled, per Node.Enabled -- see its doc
+// -d` (enabled) or `stop` (disabled, per Node.Enabled - see its doc
 // comment in migrations/0001_init.sql on why that's not a delete).
 func (r *reconciler) reconcileNode(ctx context.Context, op store.NodeOperation) error {
 	if op.NodeID == nil {
@@ -95,7 +95,7 @@ func (r *reconciler) reconcileNode(ctx context.Context, op store.NodeOperation) 
 }
 
 // deleteNode tears down a node's containers using only the snapshot
-// apiserver took before deleting the node row (op.Payload) -- by the time
+// apiserver took before deleting the node row (op.Payload) - by the time
 // this runs there is no node row left to ask apiserver about. nodeDir is
 // derived from the node id alone (see its doc comment), so this doesn't
 // need the payload to carry a path.
@@ -115,7 +115,7 @@ func (r *reconciler) deleteNode(ctx context.Context, op store.NodeOperation) err
 
 	if _, err := os.Stat(composePath); errors.Is(err, os.ErrNotExist) {
 		// Nothing was ever rendered for this node (it was deleted before
-		// its first successful reconcile) -- nothing to tear down.
+		// its first successful reconcile) - nothing to tear down.
 		return nil
 	}
 
@@ -134,7 +134,7 @@ func (r *reconciler) deleteNode(ctx context.Context, op store.NodeOperation) err
 
 // nodeIDFromContainerName recovers a node's id from its container name
 // ("ambot-node-<id>-u<uuid-suffix>", assigned by EnsureNodeProvisioned)
-// -- the delete payload has no node id of its own (see
+// - the delete payload has no node id of its own (see
 // DeleteOperationPayload's doc comment), but does have this. Only the
 // digit run right after the prefix is the id; anything from the next '-'
 // onward is the owner-uuid suffix appended for `docker ps` readability
@@ -208,7 +208,7 @@ func (r *reconciler) runComposeCommand(ctx context.Context, composePath, project
 
 	// Debug, not Info: docker compose can echo back environment values on
 	// error (e.g. a misconfigured variable reference), and those values
-	// may include what writeComposeFiles wrote to *.env -- keep this out
+	// may include what writeComposeFiles wrote to *.env - keep this out
 	// of the default log level rather than relying on it never happening.
 	slog.Debug("docker compose output", "project", project, "args", args, "output", string(output))
 
@@ -234,7 +234,7 @@ const maxComposeErrorDetail = 200
 // That output can echo secret values back (a password containing "$" makes
 // compose report an interpolation error quoting it, for one), so every
 // known secret is replaced with a placeholder first, and only one line,
-// capped in length, is ever kept -- the full output stays Debug-only.
+// capped in length, is ever kept - the full output stays Debug-only.
 func composeErrorDetail(output []byte, secrets []string) string {
 	line := ""
 

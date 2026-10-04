@@ -13,7 +13,7 @@ import (
 // full address is actually needed (a user's login activity, the login-ban
 // table) it is stored there instead. The result is rebuilt from the parsed
 // address rather than cut from the input, so nothing beyond the masked
-// prefix -- or any non-address text -- can reach the log through it.
+// prefix - or any non-address text - can reach the log through it.
 func maskIP(ip string) string {
 	addr, err := netip.ParseAddr(ip)
 	if err != nil {

@@ -9,14 +9,14 @@ import { Label } from '../components/ui/label'
 import { PasswordInput } from '../components/ui/password-input'
 
 // Forced landing spot for a user whose password is still the one an
-// admin set for them (account creation or a reset) -- see
+// admin set for them (account creation or a reset) - see
 // User.must_change_password's doc comment and ProtectedRoute, which
 // redirects every other route here until this succeeds. Reuses the same
 // PUT /api/me/password endpoint as the voluntary change on SettingsPage
-// -- the backend clears must_change_password on any successful
+// - the backend clears must_change_password on any successful
 // self-service change, forced or not. No current-password field: the
 // caller just typed it seconds ago to log in, so re-asking is pure
-// friction -- see handleSetMyPassword's doc comment on the Go side.
+// friction - see handleSetMyPassword's doc comment on the Go side.
 export function ChangePasswordPage() {
   const { t } = useTranslation()
   const { refreshUser } = useAuth()

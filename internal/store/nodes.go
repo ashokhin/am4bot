@@ -13,11 +13,11 @@ import (
 )
 
 // ErrDefaultNodeNotDeletable is returned by DeleteNode when asked to delete
-// a user's default (auto-created) node -- disable it instead.
+// a user's default (auto-created) node - disable it instead.
 var ErrDefaultNodeNotDeletable = errors.New("store: the default node cannot be deleted, only disabled")
 
 // ErrNodeNotReady is returned by CreateNode/UpdateNode when asked to
-// enable a node that isn't configured enough to actually run yet -- see
+// enable a node that isn't configured enough to actually run yet - see
 // nodeReadyToEnable's doc comment.
 var ErrNodeNotReady = errors.New("store: node needs game credentials, a schedule, and a timezone before it can be enabled")
 
@@ -25,24 +25,24 @@ var ErrNodeNotReady = errors.New("store: node needs game credentials, a schedule
 // ambot needs to not crash-loop immediately: real game credentials, at
 // least one cron schedule, and a timezone. Every node starts disabled
 // (see the two auto-created defaults in admin_handlers.go) so a user
-// configures it FIRST and only then turns it on -- this is what enforces
+// configures it FIRST and only then turns it on - this is what enforces
 // that at the data layer, not just in the UI.
 func nodeReadyToEnable(n *Node) bool {
 	return n.GameUsername != "" && n.GamePasswordEnc != "" && len(n.CronSchedules) > 0 && n.Timezone != ""
 }
 
 // defaultTimeoutSeconds mirrors config.Config's own default for the same
-// field (internal/config's TimeoutSeconds `default:"180"` tag) -- kept as
+// field (internal/config's TimeoutSeconds `default:"180"` tag) - kept as
 // a literal here rather than importing internal/config, to avoid the
 // store package depending on it for one constant.
 const defaultTimeoutSeconds = 180
 
-// defaultGameURL is the one URL every node uses -- the UI deliberately
+// defaultGameURL is the one URL every node uses - the UI deliberately
 // has no field for it (see NodeFormPage's removal of Game URL: "он для
 // всех один"), so this is the only place it's ever set from.
 const defaultGameURL = "https://www.airlinemanager.com/"
 
-// Node is one ambot container's worth of configuration -- one row per node
+// Node is one ambot container's worth of configuration - one row per node
 // in the product's language (e.g. a user's "departure" or "maintenance"
 // node). Services and CronSchedules are ordered: see the design note atop
 // migrations/0001_init.sql for why they're Postgres arrays rather than
@@ -96,7 +96,7 @@ type NewNodeParams struct {
 	TimeoutSeconds    int
 	ExtraConfig       json.RawMessage
 	Timezone          string
-	// Enabled defaults to false (the zero value) if unset -- a node must
+	// Enabled defaults to false (the zero value) if unset - a node must
 	// be explicitly asked to start enabled, and nodeReadyToEnable still
 	// has to hold if it is. This is the opposite of the old behavior
 	// (the enabled column's own DEFAULT TRUE), deliberately: see
@@ -106,7 +106,7 @@ type NewNodeParams struct {
 }
 
 // CreateNode inserts a new node. GamePasswordEnc must already be
-// ciphertext (internal/secrets.Encrypt) -- the store never sees a
+// ciphertext (internal/secrets.Encrypt) - the store never sees a
 // plaintext game password.
 func (s *Store) CreateNode(ctx context.Context, p NewNodeParams) (*Node, error) {
 	if p.ExtraConfig == nil {
@@ -117,7 +117,7 @@ func (s *Store) CreateNode(ctx context.Context, p NewNodeParams) (*Node, error) 
 	// The nodes.timeout_seconds column has its own DEFAULT 180, but since
 	// this INSERT always supplies the value explicitly, an unset (zero-value)
 	// p.TimeoutSeconds would silently store 0 rather than falling through to
-	// that column default -- normalize here instead of relying on every
+	// that column default - normalize here instead of relying on every
 	// caller (an HTTP handler today, admin tooling or a test tomorrow) to
 	// remember to set it themselves.
 	if p.TimeoutSeconds == 0 {
@@ -177,7 +177,7 @@ const nodeColumns = `
 `
 
 // nodeColumnsPrefixed is nodeColumns with an explicit "n." table
-// qualifier on every column -- for queries (like ListAllNodesWithOwner)
+// qualifier on every column - for queries (like ListAllNodesWithOwner)
 // that join nodes against another table also having an "id" column,
 // where the bare list would be ambiguous.
 const nodeColumnsPrefixed = `
@@ -188,7 +188,7 @@ const nodeColumnsPrefixed = `
 `
 
 // ListNodesByUser returns every node belonging to userID, oldest first (so
-// the auto-created default node -- always created first -- sorts to the
+// the auto-created default node - always created first - sorts to the
 // top of a user's node list).
 func (s *Store) ListNodesByUser(ctx context.Context, userID int64) ([]Node, error) {
 	var nodes []Node
@@ -203,10 +203,10 @@ func (s *Store) ListNodesByUser(ctx context.Context, userID int64) ([]Node, erro
 }
 
 // DisableAllNodesForUser turns off every currently-enabled node belonging
-// to userID and returns their ids -- for when an admin disables (or
+// to userID and returns their ids - for when an admin disables (or
 // deletes) a user: their containers must actually stop, not just the
 // account. The caller enqueues a reconcile operation for each returned id
-// (see admin_handlers.go) -- this only flips the DB flag, it has no way
+// (see admin_handlers.go) - this only flips the DB flag, it has no way
 // to reach the orchestrator itself.
 func (s *Store) DisableAllNodesForUser(ctx context.Context, userID int64) ([]int64, error) {
 	var ids []int64
@@ -223,10 +223,10 @@ func (s *Store) DisableAllNodesForUser(ctx context.Context, userID int64) ([]int
 }
 
 // ScrapeTarget is one row of what the orchestrator needs to maintain
-// Prometheus' file_sd targets file -- see
+// Prometheus' file_sd targets file - see
 // cmd/orchestrator/prometheus_sd.go. UserUUID is what tags every metric
 // scraped from this node with its owner, so apiserver's metrics endpoint
-// can filter on it -- see decision #7 in the project's design notes.
+// can filter on it - see decision #7 in the project's design notes.
 type ScrapeTarget struct {
 	NodeID         int64     `db:"id"`
 	TargetHost     string    `db:"target_host"`
@@ -235,8 +235,8 @@ type ScrapeTarget struct {
 }
 
 // ListProvisionedNodesForScraping returns every node that has been
-// assigned a placement (target host + Prometheus port) -- i.e. has gone
-// through EnsureNodeProvisioned at least once -- regardless of which user
+// assigned a placement (target host + Prometheus port) - i.e. has gone
+// through EnsureNodeProvisioned at least once - regardless of which user
 // owns it or whether it's currently enabled (a disabled node's container
 // is stopped, not scrape-worthy, but the orchestrator's own EnsureNodeProvisioned/
 // docker compose state, not this list, is what actually decides whether
@@ -259,7 +259,7 @@ func (s *Store) ListProvisionedNodesForScraping(ctx context.Context) ([]ScrapeTa
 }
 
 // NodeWithOwner is one row of the admin-only "every node, every user"
-// view -- see ListAllNodesWithOwner.
+// view - see ListAllNodesWithOwner.
 type NodeWithOwner struct {
 	Node
 	OwnerLogin string    `db:"owner_login"`
@@ -270,7 +270,7 @@ type NodeWithOwner struct {
 // owner (oldest account first) and by node id within each owner, with its
 // owner's login/uuid attached. Admin-only (see
 // requireNonAdminUser's doc comment: an admin has no nodes of their own,
-// only visibility into everyone else's) -- never scope a regular user's
+// only visibility into everyone else's) - never scope a regular user's
 // request through this, use ListNodesByUser instead.
 func (s *Store) ListAllNodesWithOwner(ctx context.Context) ([]NodeWithOwner, error) {
 	var nodes []NodeWithOwner
@@ -301,7 +301,7 @@ func (s *Store) ListEnabledNodeIDs(ctx context.Context) ([]int64, error) {
 	return ids, nil
 }
 
-// GetNodeWithOwner is the single-row form of ListAllNodesWithOwner -- for
+// GetNodeWithOwner is the single-row form of ListAllNodesWithOwner - for
 // the admin's read-only node detail screen. Admin-only, same caveat as
 // ListAllNodesWithOwner: never scope a regular user's request through
 // this, use GetNode instead.
@@ -341,7 +341,7 @@ func (s *Store) GetNode(ctx context.Context, userID, id int64) (*Node, error) {
 // apiserver's internal config endpoint (authenticating the caller via the
 // node's own config token instead of a user session) and the
 // orchestrator (which acts on behalf of the whole system, not one user).
-// Never call this from a user-facing handler -- use GetNode instead.
+// Never call this from a user-facing handler - use GetNode instead.
 func (s *Store) GetNodeByID(ctx context.Context, id int64) (*Node, error) {
 	var n Node
 
@@ -378,7 +378,7 @@ func (s *Store) SetNodeConfigToken(ctx context.Context, id int64, tokenEnc strin
 }
 
 // EnsureNodeProvisioned assigns whatever a node is still missing to be
-// provisionable -- target host, container name, Prometheus port -- and is
+// provisionable - target host, container name, Prometheus port - and is
 // a no-op for anything already set (so calling it on every reconcile is
 // fine; it only fills gaps, never reassigns). Returns the node's
 // (possibly just-assigned) container name and Prometheus port.
@@ -465,7 +465,7 @@ func (s *Store) allocatePrometheusPort(ctx context.Context, id int64, start, end
 
 // UpdateNodeParams groups the fields UpdateNode can change. A nil pointer
 // leaves that field untouched; Services and CronSchedules are replaced
-// wholesale when non-nil (there is no partial-array update -- the caller,
+// wholesale when non-nil (there is no partial-array update - the caller,
 // e.g. after a drag-and-drop reorder in the UI, always has the full
 // desired order in hand already).
 type UpdateNodeParams struct {
@@ -564,7 +564,7 @@ func nonNilSlice(s []string) []string {
 }
 
 // DeleteNode removes a node, refusing if it's the user's default node
-// (ErrDefaultNodeNotDeletable) -- disable it via UpdateNode instead.
+// (ErrDefaultNodeNotDeletable) - disable it via UpdateNode instead.
 func (s *Store) DeleteNode(ctx context.Context, userID, id int64) error {
 	n, err := s.GetNode(ctx, userID, id)
 	if err != nil {
@@ -584,12 +584,12 @@ func (s *Store) DeleteNode(ctx context.Context, userID, id int64) error {
 }
 
 // SetNodeLogLevel sets or clears (level == "") the "log_level" key inside
-// a node's extra_config JSONB -- the one field of a node's config an
+// a node's extra_config JSONB - the one field of a node's config an
 // admin can set on ANY user's node, unscoped by owning user, unlike
 // every other node field (see requireNonAdminUser's and
 // AdminNodeDetailPage's doc comments on why an admin otherwise only
 // looks, never touches). A regular user never sees or edits this
-// themselves -- it's meant for an admin to dial in debug/error logging
+// themselves - it's meant for an admin to dial in debug/error logging
 // on a misbehaving node without needing game credentials or any other
 // access to it. The jsonb `||` merge operator leaves every other
 // extra_config key untouched and needs no read-modify-write round trip.

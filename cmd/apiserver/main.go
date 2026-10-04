@@ -1,7 +1,7 @@
 // Command apiserver is the HTTP backend for the multi-tenant control
 // plane's React frontend. It owns the Postgres database (users, VPN
 // identities, nodes) and authentication; it never touches Docker or
-// Ansible directly -- provisioning nodes is a separate orchestrator
+// Ansible directly - provisioning nodes is a separate orchestrator
 // service's job, kept out of this process on purpose.
 package main
 
@@ -83,7 +83,7 @@ func run() error {
 	}
 
 	// Same "base64 key in an env var" pattern as the secrets master key
-	// above, but a different size (see auth.GenerateSigningKey) -- decoded
+	// above, but a different size (see auth.GenerateSigningKey) - decoded
 	// directly rather than via secrets.KeyFromBase64, which enforces
 	// secrets.KeySize specifically.
 	signingKey, err := base64.StdEncoding.DecodeString(*jwtSigningKey)
@@ -120,7 +120,7 @@ func run() error {
 
 	// The DistFS root has one extra "dist" path segment (see
 	// internal/webui.embed.go's own doc comment on why go:embed can't
-	// embed web/dist directly) -- fs.Sub strips it so the SPA file server
+	// embed web/dist directly) - fs.Sub strips it so the SPA file server
 	// sees index.html etc. at the FS root, matching how they'll actually
 	// be requested.
 	uiFS, err := fs.Sub(webui.DistFS, "dist")
@@ -242,7 +242,7 @@ const (
 )
 
 // validateRoutePrefix enforces --web.route-prefix's documented shape
-// before it ever reaches api.NewServer -- "" (disabled) is always fine;
+// before it ever reaches api.NewServer - "" (disabled) is always fine;
 // anything else must start with "/" and not end with one, matching how
 // http.StripPrefix and the index.html asset-path rewrite (see
 // internal/api/static.go's rewriteIndexHTML) both expect to concatenate
@@ -304,7 +304,7 @@ func parseTrustedProxies(raw string) ([]*net.IPNet, error) {
 
 // ensureBootstrapAdmin creates the first-run admin account (login/password
 // "admin"/"admin", forced to change it on first login) if and only if no
-// account exists yet -- so a freshly stood-up stack always has a way in
+// account exists yet - so a freshly stood-up stack always has a way in
 // without a manual seeding step, but restarting apiserver on an
 // already-used database never re-creates or resets it.
 func ensureBootstrapAdmin(ctx context.Context, st *store.Store) error {

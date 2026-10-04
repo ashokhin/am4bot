@@ -46,7 +46,7 @@ export function AdminMetricsPage() {
   }, [])
 
   // usePolling's fn also fires on every periodic tick, not just when
-  // selectedUuid actually changes -- this distinguishes "a fresh user was
+  // selectedUuid actually changes - this distinguishes "a fresh user was
   // just picked" (reset to a loading state, previous user's tiles
   // shouldn't linger) from "just another routine re-poll of the same
   // user" (keep showing the current data while the request is in flight,
@@ -80,7 +80,7 @@ export function AdminMetricsPage() {
       })
       .catch(() => {
         // Same "only a first-load failure is fatal" rationale as
-        // MetricsPage -- a transient poll hiccup shouldn't blank out
+        // MetricsPage - a transient poll hiccup shouldn't blank out
         // already-displayed data.
         setDetailLoadError((prev) => prev || lastUpdatedAt === null)
       })

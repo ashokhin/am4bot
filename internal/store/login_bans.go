@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-// LoginBan is one active brute-force ban -- see internal/api/login_guard.go
+// LoginBan is one active brute-force ban - see internal/api/login_guard.go
 // for the counting/threshold logic that creates these; this file only
 // covers reading/writing the row itself.
 type LoginBan struct {
@@ -55,7 +55,7 @@ func (s *Store) GetActiveLoginBan(ctx context.Context, keyType, key string) (*Lo
 	return &b, nil
 }
 
-// DeleteLoginBan removes a ban outright -- used both for the admin
+// DeleteLoginBan removes a ban outright - used both for the admin
 // "unlock" action and to clean up an expired row the next time it's
 // touched. Deleting a ban that doesn't exist is not an error (idempotent):
 // admin unlock and expiry cleanup both want "make sure it's gone", not
@@ -81,7 +81,7 @@ type LoginAttempt struct {
 	CreatedAt time.Time `db:"created_at"`
 }
 
-// RecordLoginAttempt appends one row to login_attempts -- called for
+// RecordLoginAttempt appends one row to login_attempts - called for
 // EVERY login attempt (success or failure), including ones against a
 // login that doesn't correspond to any account.
 func (s *Store) RecordLoginAttempt(ctx context.Context, login string, success bool, ip, userAgent string) error {
@@ -96,7 +96,7 @@ func (s *Store) RecordLoginAttempt(ctx context.Context, login string, success bo
 }
 
 // ListLoginAttemptsByLogin returns the most recent attempts against login
-// (success and failure both), newest first, capped at limit -- for the
+// (success and failure both), newest first, capped at limit - for the
 // admin user detail page's activity history.
 func (s *Store) ListLoginAttemptsByLogin(ctx context.Context, login string, limit int) ([]LoginAttempt, error) {
 	var attempts []LoginAttempt
@@ -115,7 +115,7 @@ func (s *Store) ListLoginAttemptsByLogin(ctx context.Context, login string, limi
 }
 
 // LoginBanEvent is one row of the append-only login_ban_events audit log
-// -- see migrations/0002's doc comment. Unlike LoginBan, a row here is
+// - see migrations/0002's doc comment. Unlike LoginBan, a row here is
 // never deleted: it's the permanent record that a ban happened, even
 // after the ban itself expires or is lifted.
 type LoginBanEvent struct {
@@ -131,7 +131,7 @@ type LoginBanEvent struct {
 }
 
 // RecordLoginBanEvent appends a row recording that a ban was just created
-// -- called alongside UpsertLoginBan, never on its own.
+// - called alongside UpsertLoginBan, never on its own.
 func (s *Store) RecordLoginBanEvent(ctx context.Context, keyType, key, reason string, bannedAt, unbanAt time.Time) error {
 	if _, err := s.db.ExecContext(ctx, `
 		INSERT INTO login_ban_events (key_type, key, reason, banned_at, unban_at)
@@ -144,7 +144,7 @@ func (s *Store) RecordLoginBanEvent(ctx context.Context, keyType, key, reason st
 }
 
 // MarkLoginBanEventUnlocked stamps unlocked_at/unlocked_by_login on the
-// most recent still-open ban event for (keyType, key) -- called when an
+// most recent still-open ban event for (keyType, key) - called when an
 // admin manually unlocks an account before its ban would have expired
 // naturally. A ban that simply expires on its own never gets this call,
 // so unlocked_at staying NULL means exactly "ran out the clock", not
@@ -166,7 +166,7 @@ func (s *Store) MarkLoginBanEventUnlocked(ctx context.Context, keyType, key, unl
 }
 
 // ListLoginBanEventsByKey returns the ban history for (keyType, key),
-// newest first, capped at limit -- for the admin user detail page's "when
+// newest first, capped at limit - for the admin user detail page's "when
 // and why was this account locked" history.
 func (s *Store) ListLoginBanEventsByKey(ctx context.Context, keyType, key string, limit int) ([]LoginBanEvent, error) {
 	var events []LoginBanEvent

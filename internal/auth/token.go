@@ -11,7 +11,7 @@ import (
 	"github.com/google/uuid"
 )
 
-// signingKeySize is the byte length GenerateSigningKey produces -- more
+// signingKeySize is the byte length GenerateSigningKey produces - more
 // than the 32-byte minimum NewTokenManager requires, since HMAC keys don't
 // benefit from being trimmed to the hash's block size the way some other
 // primitives do.
@@ -35,16 +35,16 @@ const TokenTTL = 24 * time.Hour
 
 // ErrInvalidToken covers every way a token can fail to parse/verify: bad
 // signature, wrong issuer, expired, malformed. Callers don't need to
-// distinguish these -- they all mean "make the user log in again".
+// distinguish these - they all mean "make the user log in again".
 var ErrInvalidToken = errors.New("auth: invalid or expired token")
 
 // Claims is what a session token asserts about the caller. UserUUID (not
-// the internal serial id) identifies the user -- consistent with it being
+// the internal serial id) identifies the user - consistent with it being
 // the only user identifier that ever leaves the database (see
 // migrations/0001_init.sql). Login is cached here (not just fetched fresh
 // from the DB on demand) specifically so structured audit-log lines (see
 // internal/api's audit.go) can include a human-readable actor without an
-// extra query on every single mutating request -- safe to cache because
+// extra query on every single mutating request - safe to cache because
 // login is immutable once a user is created (no rename-login endpoint
 // exists anywhere in this codebase).
 type Claims struct {
@@ -55,13 +55,13 @@ type Claims struct {
 }
 
 // TokenManager issues and verifies session tokens (JWT, HS256) with a
-// single server-held signing key -- there is no per-session state to look
+// single server-held signing key - there is no per-session state to look
 // up, so revoking one SPECIFIC already-issued token before it expires
 // isn't possible here; that would need a server-side denylist/session
 // store, deliberately left out of this first pass. What DOES exist is
 // coarser: internal/api's requireAuth separately re-checks the account's
 // disabled_at on every write, which effectively revokes every token for a
-// disabled account (not a single token) -- see that middleware's own doc
+// disabled account (not a single token) - see that middleware's own doc
 // comment.
 type TokenManager struct {
 	key []byte
@@ -103,7 +103,7 @@ func (m *TokenManager) Issue(userUUID uuid.UUID, login string, isAdmin bool) (st
 }
 
 // Verify parses and validates a session token, returning its claims.
-// Returns ErrInvalidToken for anything wrong with it -- see the doc
+// Returns ErrInvalidToken for anything wrong with it - see the doc
 // comment on that variable for why callers don't get more detail than
 // that back.
 func (m *TokenManager) Verify(tokenString string) (*Claims, error) {

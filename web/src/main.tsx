@@ -9,7 +9,7 @@ import { BASE_PATH } from './basePath'
 import { ThemeProvider } from './components/theme-provider'
 
 // A data router (rather than BrowserRouter) so pages can block navigation
-// while they hold unsaved changes -- see useBlocker in NodeFormPage.
+// while they hold unsaved changes - see useBlocker in NodeFormPage.
 const router = createBrowserRouter([{ path: '*', element: <App /> }], { basename: BASE_PATH })
 
 createRoot(document.getElementById('root')!).render(

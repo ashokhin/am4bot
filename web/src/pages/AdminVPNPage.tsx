@@ -16,7 +16,7 @@ import { Textarea } from '../components/ui/textarea'
 
 /**
  * Admin-only: curates the shared VPN region catalog and the one provider
- * account every region connects through -- see internal/store/vpn_regions.go's
+ * account every region connects through - see internal/store/vpn_regions.go's
  * doc comment. There's no per-user or per-node VPN config here on purpose.
  */
 export function AdminVPNPage() {

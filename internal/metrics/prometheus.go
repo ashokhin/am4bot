@@ -71,12 +71,12 @@ func New() *Metrics {
 			},
 		),
 		// StartTimeSeconds is set once, when the process starts (see
-		// Bot.New) -- it answers "how long has this process been up",
+		// Bot.New) - it answers "how long has this process been up",
 		// not "when did it last actually run a cycle" (ambot is a single
 		// long-lived process, its own cron re-triggers Bot.Run
-		// repeatedly -- see cmd/ambot/main.go). LastRunTimestampSeconds
+		// repeatedly - see cmd/ambot/main.go). LastRunTimestampSeconds
 		// is set at the end of EVERY completed Run(), which is what
-		// answers that second question -- e.g. for a "stale/stuck node"
+		// answers that second question - e.g. for a "stale/stuck node"
 		// alert: time() - am4_last_run_timestamp_seconds growing past the
 		// node's own schedule interval means it stopped actually running,
 		// not just that the metric is old.
@@ -87,7 +87,7 @@ func New() *Metrics {
 				Help:      "Unix timestamp of the last completed run.",
 			},
 		),
-		// Set by cmd/ambot itself (not internal/bot -- this is cron
+		// Set by cmd/ambot itself (not internal/bot - this is cron
 		// scheduling, not a bot run), computed via the same robfig/cron
 		// library that actually schedules runs, so it's correct for ANY
 		// schedule shape (multiple entries, weekly, whatever) without
@@ -160,13 +160,13 @@ func New() *Metrics {
 			},
 		),
 		// A real Counter, unlike every other "_total" metric above (those
-		// are gauges snapshotting a value the game itself reports -- see
+		// are gauges snapshotting a value the game itself reports - see
 		// their own doc comments). This one is different in kind: it's
 		// this node's OWN depart() counting aircraft IT dispatched, not a
 		// value read off a game page. stats_flights_operated_total is the
-		// whole airline account's lifetime total -- identical across
+		// whole airline account's lifetime total - identical across
 		// every node logged into the same game account regardless of
-		// which services that node runs -- so it can't answer "how many
+		// which services that node runs - so it can't answer "how many
 		// flights did THIS node's depart service actually send", which is
 		// what this counter is for instead.
 		FlightsDepartedTotal: prometheus.NewCounter(

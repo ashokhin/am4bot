@@ -13,7 +13,7 @@ import (
 
 // composeFile is the small subset of the Compose Spec this project
 // needs. Rendered via yaml.v3 (not string templating, and not via
-// env_file -- see writeComposeFiles' doc comment) so secret values are
+// env_file - see writeComposeFiles' doc comment) so secret values are
 // always correctly YAML-escaped, whatever characters they contain.
 type composeFile struct {
 	Services map[string]composeService `yaml:"services"`
@@ -48,7 +48,7 @@ const ovpnFileName = "expressvpn.ovpn"
 //
 // Secrets (the config token, VPN credentials) go directly into the
 // compose YAML's own "environment:" maps rather than a separate env_file
-// -- docker compose's env_file format does its own, simpler parsing that
+// - docker compose's env_file format does its own, simpler parsing that
 // does NOT reliably support quoting/escaping (unlike environment:, which
 // yaml.v3 marshals with correct YAML string escaping regardless of what
 // characters a credential contains). The whole file is written 0600 to
@@ -71,7 +71,7 @@ func (r *reconciler) writeComposeFiles(dir string, bundle *api.ProvisionResponse
 			"NODE_TOKEN":     bundle.ConfigToken,
 			// cron.New() (cmd/ambot/main.go) uses the process's local
 			// time with no explicit location option, so this env var --
-			// not any app-level config -- is what makes a node's
+			// not any app-level config - is what makes a node's
 			// schedule run in the timezone the user actually picked
 			// (see ProvisionResponse.Timezone's doc comment).
 			"TZ": bundle.Timezone,
@@ -79,7 +79,7 @@ func (r *reconciler) writeComposeFiles(dir string, bundle *api.ProvisionResponse
 		// lets AMBOT_CONFIG_API_URL be "http://host.docker.internal:<port>"
 		// when apiserver runs directly on the host (its current systemd-
 		// managed deployment, not itself in a compose project on a shared
-		// network) -- harmless if ambotConfigAPIURL points somewhere else.
+		// network) - harmless if ambotConfigAPIURL points somewhere else.
 		ExtraHosts: []string{"host.docker.internal:host-gateway"},
 	}
 
@@ -136,7 +136,7 @@ func (r *reconciler) addVPNService(compose *composeFile, dir string, bundle *api
 	// SERVER_COUNTRIES only makes sense for gluetun's built-in providers;
 	// a "custom" provider (our current, and so far only, real deployment)
 	// picks its exit region via the .ovpn file's own server address
-	// instead -- Region is stored for that case too, but as metadata,
+	// instead - Region is stored for that case too, but as metadata,
 	// not something gluetun consumes.
 	if vpn.Region != nil && vpn.Provider != "custom" {
 		environment["SERVER_COUNTRIES"] = *vpn.Region

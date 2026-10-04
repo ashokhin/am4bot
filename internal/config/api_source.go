@@ -20,7 +20,7 @@ type apiSource struct {
 	httpClient *http.Client
 	// lastRaw is the exact JSON body from the last successful fetch.
 	// ReloadConfigIfChanged has no cheap "has this changed" signal for a
-	// remote resource the way it has a file's mtime -- comparing raw
+	// remote resource the way it has a file's mtime - comparing raw
 	// bytes is the simplest way to tell "fetched again, byte-for-byte
 	// identical" apart from an actual change, without needing the server
 	// to support something like ETags.
@@ -30,7 +30,7 @@ type apiSource struct {
 // NewFromAPI creates a Config by fetching it from apiserver's internal
 // node-config endpoint instead of reading a local config.yaml. Used only
 // for nodes hosted through the multi-tenant control plane; standalone/OSS
-// users keep using New. token authenticates as this one node -- callers
+// users keep using New. token authenticates as this one node - callers
 // should read it from an environment variable rather than a CLI flag, so
 // it doesn't show up in `ps`.
 func NewFromAPI(baseURL string, nodeID int64, token string) (*Config, error) {
@@ -56,7 +56,7 @@ func NewFromAPI(baseURL string, nodeID int64, token string) (*Config, error) {
 
 // loadFromAPI fetches the current config from apiserver and, if its raw
 // JSON differs from the last successful fetch, replaces *c with the
-// freshly parsed value -- the same "build a fresh Config, then swap it
+// freshly parsed value - the same "build a fresh Config, then swap it
 // in" shape loadConfig uses for the file-based path, so PromslogConfig
 // and the apiSrc itself survive the swap the same way confFilePath does
 // there. Returns whether the config actually changed.

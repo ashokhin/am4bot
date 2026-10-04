@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 
 /**
  * The last loginActivityLimit (10, see internal/api/login_activity.go)
- * login attempts, success and failure both -- used both on a user's own
+ * login attempts, success and failure both - used both on a user's own
  * Settings page (their own activity) and the admin user detail page
  * (someone else's).
  */
@@ -49,7 +49,7 @@ export function LoginActivityTable({ entries }: { entries: LoginActivityEntry[] 
         </TableHeader>
         <TableBody>
           {entries.map((e, i) => (
-            // No stable id in the API response -- index + timestamp is
+            // No stable id in the API response - index + timestamp is
             // fine, this list is never reordered/filtered in place.
             <TableRow key={`${e.created_at}-${i}`}>
               <TableCell className="whitespace-nowrap text-sm">{new Date(e.created_at).toLocaleString()}</TableCell>

@@ -16,7 +16,7 @@ type loginRequest struct {
 	Password string `json:"password"`
 }
 
-// userResponse is the user shape returned to the frontend -- notably
+// userResponse is the user shape returned to the frontend - notably
 // missing PasswordHash, which never leaves the store package.
 type userResponse struct {
 	UUID               string  `json:"uuid"`
@@ -78,7 +78,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 			slog.Error("recording login attempt", "error", err)
 		}
 
-		// Best-effort -- see SetUserLastFailedLogin's doc comment: a
+		// Best-effort - see SetUserLastFailedLogin's doc comment: a
 		// failure here must not fail the (already-failed) login response.
 		if err := s.store.SetUserLastFailedLogin(r.Context(), req.Login, ip, ua); err != nil {
 			slog.Error("recording last failed login", "login", req.Login, "error", err)
@@ -118,7 +118,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		slog.Error("recording login attempt", "error", err)
 	}
 
-	// Best-effort -- see SetUserLastLogin's doc comment: a failure here
+	// Best-effort - see SetUserLastLogin's doc comment: a failure here
 	// must not fail the login itself.
 	if err := s.store.SetUserLastLogin(r.Context(), u.UUID, ip, ua); err != nil {
 		slog.Error("recording last login", "user_uuid", u.UUID, "error", err)
@@ -139,7 +139,7 @@ func (s *Server) handleMe(w http.ResponseWriter, r *http.Request) {
 	u, err := s.store.GetUserByUUID(r.Context(), claims.UserUUID)
 	if err != nil {
 		// A valid, unexpired token whose user has vanished (e.g. deleted
-		// directly in the database) -- treat it the same as "not logged
+		// directly in the database) - treat it the same as "not logged
 		// in" rather than a server error.
 		if errors.Is(err, store.ErrNotFound) {
 			writeError(w, http.StatusUnauthorized, "not authenticated")

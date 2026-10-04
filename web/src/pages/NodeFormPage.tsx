@@ -35,7 +35,7 @@ export function NodeFormPage() {
   const [timeoutSeconds, setTimeoutSeconds] = useState(180)
   const [timezone, setTimezone] = useState('UTC')
   // Whether the node being edited already has a real game password to
-  // fall back to if the field below is left blank -- a freshly
+  // fall back to if the field below is left blank - a freshly
   // auto-created default node never does, even though it's reached via
   // the edit route (isEdit alone isn't enough to tell). See
   // nodeResponse.HasGamePassword's doc comment on the Go side.
@@ -48,7 +48,7 @@ export function NodeFormPage() {
   const [submitting, setSubmitting] = useState(false)
 
   // Everything the user can edit, serialized: dirty is "differs from what was
-  // loaded". Null baseline means "not loaded yet" -- nothing is dirty then.
+  // loaded". Null baseline means "not loaded yet" - nothing is dirty then.
   const snapshot = JSON.stringify({
     name,
     gameUsername,
@@ -118,7 +118,7 @@ export function NodeFormPage() {
         setTimezone(node.timezone)
         setHasGamePassword(node.has_game_password)
         setEnabled(node.enabled)
-        // A plain type assertion, not a runtime copy -- any key this
+        // A plain type assertion, not a runtime copy - any key this
         // form doesn't know about (e.g. "log_level", which only an
         // admin ever sets, see AdminNodeDetailPage) rides along
         // untouched through every spread AdvancedSettingsSection does,

@@ -1,11 +1,11 @@
 // Command orchestrator is the only process allowed to provision Docker
 // containers for hosted nodes. It polls node_operations (written only by
-// cmd/apiserver, never called directly -- see internal/store's doc
+// cmd/apiserver, never called directly - see internal/store's doc
 // comment on that table) and, for each pending job, fetches whatever
 // secrets it needs transiently from apiserver's internal endpoints,
 // renders a per-node docker-compose.yml + env files under --compose-dir,
 // and runs `docker compose`. Runs as a user in the "docker" group, not
-// root -- see the design discussion this arrangement grew out of for why
+// root - see the design discussion this arrangement grew out of for why
 // that's still root-equivalent host access, and why it's confined to this
 // one process rather than also being apiserver's problem.
 package main
@@ -127,7 +127,7 @@ func (r *reconciler) pollOnce(ctx context.Context, limit int) int {
 
 // processOperation runs one claimed operation to completion and records
 // its outcome. Panics inside an op_type handler would otherwise take down
-// the whole poll loop for every other node -- not a concern here since
+// the whole poll loop for every other node - not a concern here since
 // nothing below panics on bad input, only returns errors, but worth
 // calling out as the reason op_type handlers must keep it that way.
 func (r *reconciler) processOperation(ctx context.Context, op store.NodeOperation) {
@@ -167,7 +167,7 @@ func (r *reconciler) processOperation(ctx context.Context, op store.NodeOperatio
 
 	// Placement (target host, prometheus_port) only ever changes as a
 	// side effect of reconcileNode's EnsureNodeProvisioned call, and a
-	// delete removes a node from the scrape list entirely -- regenerate
+	// delete removes a node from the scrape list entirely - regenerate
 	// after every operation rather than trying to track which ones
 	// actually changed placement.
 	r.writePrometheusSDFile(ctx)

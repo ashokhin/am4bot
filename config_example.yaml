@@ -16,7 +16,7 @@ chrome_headless: true
 chrome_debug: true
 # Launch Chrome via chromedp-undetected (patched navigator.webdriver/CDP
 # fingerprints, headless via a real Xvfb display) instead of a plain
-# exec-allocator. Leave false for local troubleshooting -- see README.md's
+# exec-allocator. Leave false for local troubleshooting - see README.md's
 # configuration table.
 chrome_stealth: false
 

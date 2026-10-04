@@ -3,7 +3,7 @@ import { XIcon } from 'lucide-react'
 import * as React from 'react'
 import { cn } from '@/lib/utils'
 
-// A side-drawer panel -- same underlying Radix primitive as Dialog
+// A side-drawer panel - same underlying Radix primitive as Dialog
 // (dialog.tsx), just anchored to an edge and sliding in instead of
 // appearing centered. Used for the mobile nav drawer (see Layout.tsx);
 // generic enough to reuse for any other off-canvas panel later.

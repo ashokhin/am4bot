@@ -3,7 +3,7 @@
 -- Design notes:
 --   * Secrets (game account passwords, VPN credentials, per-node config
 --     tokens) are stored as AES-256-GCM ciphertext (see internal/secrets)
---     in *_enc columns -- opaque bytes to Postgres, decrypted only in the
+--     in *_enc columns - opaque bytes to Postgres, decrypted only in the
 --     API server process that holds the master key. This is deliberately
 --     different from users.password_hash (bcrypt, one-way): a game
 --     password/VPN credential/config token must be recoverable to hand to
@@ -19,29 +19,29 @@
 --     the UI/API add support for a new one without a migration each time.
 --     The API server validates it by unmarshalling into config.Config
 --     before rendering a node's config.yaml, so a bad value is still
---     rejected -- just not at the schema level.
---   * services and cron_schedules are TEXT[] (arrays), not JSON -- Postgres
+--     rejected - just not at the schema level.
+--   * services and cron_schedules are TEXT[] (arrays), not JSON - Postgres
 --     arrays are ordered, and neither pgx/lib/pq array scanning into a Go
 --     []string nor yaml.v3 marshalling that slice re-sorts it. Execution
 --     order of services is meaningful to the user (e.g. "buy fuel and
 --     marketing before departing"), so never introduce a query that
 --     reorders them (e.g. "SELECT unnest(services) ... ORDER BY ..." for
---     anything other than display) -- always read/write the array as a
+--     anything other than display) - always read/write the array as a
 --     whole, in the order the UI's drag-and-drop last left it in.
 --   * users.uuid is what appears in UI URLs and the
---     Prometheus user_uuid label -- never users.id, which is a guessable
+--     Prometheus user_uuid label - never users.id, which is a guessable
 --     sequential integer. The label gets attached without touching ambot
 --     itself: the orchestrator maintains a Prometheus file_sd targets
 --     file, one entry per node, each with labels: {user_uuid: ...,
---     node_id: ...} alongside its scrape target -- Prometheus does the
+--     node_id: ...} alongside its scrape target - Prometheus does the
 --     labelling at scrape time, ambot stays unaware of which tenant it
 --     belongs to.
 --   * users.login (not "email"): there is no signup/registration flow and
---     never will be -- the admin creates every account by hand -- so this
+--     never will be - the admin creates every account by hand - so this
 --     is just a login identifier the admin picks, not a real email
 --     address.
 --   * A node's timezone (not a user's) interprets that node's
---     cron_schedules -- the user sets it themselves while configuring the
+--     cron_schedules - the user sets it themselves while configuring the
 --     node's schedule, one zone per node, applied to every cron_schedules
 --     entry on it.
 --   * VPN model: exactly ONE provider account, admin-configured once
@@ -49,10 +49,10 @@
 --     The admin also curates a catalog of exit regions (vpn_regions, an
 --     .ovpn file per region under that same account). Each user picks ONE
 --     region for their whole account (users.vpn_region_id), applied to
---     every one of their nodes uniformly -- never a per-node choice. See
+--     every one of their nodes uniformly - never a per-node choice. See
 --     internal/store/vpn_regions.go's doc comment for the full rationale.
 --   * Every user gets TWO default nodes up front ("player" and
---     "maintenance"), both created disabled -- undeletable (is_default),
+--     "maintenance"), both created disabled - undeletable (is_default),
 --     only disable-able (see DeleteNode). A node can't be persisted with
 --     enabled=true unless it has real game credentials, a schedule, and a
 --     timezone (see nodeReadyToEnable in internal/store/nodes.go).
@@ -63,7 +63,7 @@
 --     later.
 --   * Coordination between apiserver and the separate orchestrator service
 --     is entirely through the node_operations job queue apiserver writes
---     to and orchestrator polls -- never a direct call between the two
+--     to and orchestrator polls - never a direct call between the two
 --     processes, a deliberate security boundary (apiserver must never
 --     have Docker-socket or shell access).
 
@@ -89,7 +89,7 @@ CREATE TABLE vpn_provider_credentials (
 );
 
 -- Singleton row (id always 1) holding the Prometheus instance apiserver's
--- metrics endpoint proxies queries to -- admin-configured in the UI and
+-- metrics endpoint proxies queries to - admin-configured in the UI and
 -- stored here, not a startup flag/env var, so it can be set/changed
 -- without a redeploy. No secret here (a URL, not a credential), so unlike
 -- vpn_provider_credentials this is plaintext, not AES-encrypted.
@@ -105,18 +105,18 @@ CREATE TABLE users (
     -- the user_uuid Prometheus label (see above) both use this, not id --
     -- an incrementing integer would let one user enumerate/guess others'.
     uuid          UUID NOT NULL UNIQUE DEFAULT gen_random_uuid(),
-    -- login identifier the admin picks when creating the account -- see
+    -- login identifier the admin picks when creating the account - see
     -- the module doc comment on why this isn't "email".
     login         TEXT NOT NULL UNIQUE,
     -- bcrypt hash of this user's OWN login password (not a game account
-    -- password) -- how they authenticate to this control plane.
+    -- password) - how they authenticate to this control plane.
     password_hash TEXT NOT NULL,
     is_admin      BOOLEAN NOT NULL DEFAULT FALSE,
     -- purely cosmetic, self-editable label; NULL means "show login
     -- instead". Never used for sign-in.
     display_name  TEXT,
     -- which vpn_regions catalog entry this user's nodes exit VPN traffic
-    -- through -- a single per-user choice, not per-node. NULL means no VPN.
+    -- through - a single per-user choice, not per-node. NULL means no VPN.
     vpn_region_id BIGINT REFERENCES vpn_regions(id) ON DELETE SET NULL,
     created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
     disabled_at   TIMESTAMPTZ,
@@ -150,7 +150,7 @@ CREATE TABLE nodes (
     cron_jitter_seconds INT NOT NULL DEFAULT 0,
     timeout_seconds     INT NOT NULL DEFAULT 180,
     -- IANA zone name interpreting every one of this node's cron_schedules
-    -- entries -- one zone for the whole node, chosen by the user alongside
+    -- entries - one zone for the whole node, chosen by the user alongside
     -- the schedule.
     timezone            TEXT NOT NULL DEFAULT 'UTC',
 
@@ -165,19 +165,19 @@ CREATE TABLE nodes (
 
     -- one of the two nodes ("player"/"maintenance") auto-created alongside
     -- a new user. Can be disabled (enabled = false) like any other node,
-    -- but the API must refuse to delete it -- every user always has both.
+    -- but the API must refuse to delete it - every user always has both.
     is_default          BOOLEAN NOT NULL DEFAULT FALSE,
 
     -- filled in by the orchestrator once it creates the container/publishes
     -- a metrics port; NULL until the node's first (re)conciliation.
     container_name      TEXT,
     prometheus_port     INT,
-    -- which host a node's containers run on -- see the module doc comment
+    -- which host a node's containers run on - see the module doc comment
     -- on why this exists before multi-host execution does.
     target_host         TEXT,
     -- AES-256-GCM ciphertext of the per-node bearer token ambot presents
     -- to apiserver's internal config-fetch endpoint. Like game_password_enc,
-    -- encrypted (recoverable) rather than hashed -- the orchestrator needs
+    -- encrypted (recoverable) rather than hashed - the orchestrator needs
     -- the plaintext back to hand to the container's environment.
     config_token_enc    TEXT,
 
@@ -194,7 +194,7 @@ CREATE INDEX idx_nodes_user_id ON nodes(user_id);
 CREATE UNIQUE INDEX idx_nodes_prometheus_port ON nodes(prometheus_port) WHERE prometheus_port IS NOT NULL;
 
 -- The job queue apiserver writes to and the separate orchestrator service
--- polls -- see the module doc comment on why these two processes never
+-- polls - see the module doc comment on why these two processes never
 -- call each other directly.
 --
 -- Design notes:
@@ -202,13 +202,13 @@ CREATE UNIQUE INDEX idx_nodes_prometheus_port ON nodes(prometheus_port) WHERE pr
 --     node delete must not silently vanish the very operation queued to
 --     tear that node's containers down. payload snapshots everything the
 --     orchestrator needs (container names, target host, ...) at enqueue
---     time, so a since-deleted node_id is fine -- the operation is
+--     time, so a since-deleted node_id is fine - the operation is
 --     self-sufficient.
 --   * Only two op_types: "reconcile" (create, update, enable, disable all
---     collapse into this -- the orchestrator just makes containers match
+--     collapse into this - the orchestrator just makes containers match
 --     the node's current row) and "delete" (the one case with no row left
 --     to reconcile against). This avoids a queue of stale, superseded
---     "update" operations racing each other -- a node with two pending
+--     "update" operations racing each other - a node with two pending
 --     reconciles just gets reconciled twice, which is idempotent, rather
 --     than each op_type meaning something different that has to be
 --     ordered correctly.
@@ -217,7 +217,7 @@ CREATE TABLE node_operations (
     node_id       BIGINT REFERENCES nodes(id) ON DELETE SET NULL,
     op_type       TEXT NOT NULL CHECK (op_type IN ('reconcile', 'delete')),
     -- snapshot of whatever the orchestrator needs to carry out this
-    -- operation, taken at enqueue time -- see the node_id note above.
+    -- operation, taken at enqueue time - see the node_id note above.
     payload       JSONB NOT NULL DEFAULT '{}',
     status        TEXT NOT NULL DEFAULT 'pending'
                   CHECK (status IN ('pending', 'running', 'succeeded', 'failed')),

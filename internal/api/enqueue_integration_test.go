@@ -44,7 +44,7 @@ func TestCreateNodeEnqueuesReconcile(t *testing.T) {
 	}
 
 	// drain the default node's reconcile op, if any (there shouldn't be
-	// one -- see handleCreateUser's comment -- but keep this test focused
+	// one - see handleCreateUser's comment - but keep this test focused
 	// on the node created below regardless).
 	if _, err := st.ClaimPendingOperations(ctx, 100); err != nil {
 		t.Fatalf("draining pending operations: %v", err)
@@ -88,7 +88,7 @@ func TestDeleteNodeEnqueuesDeleteWithSnapshot(t *testing.T) {
 	}
 
 	// Simulate the node already having been provisioned once, the way
-	// EnsureNodeProvisioned would leave it -- otherwise handleDeleteNode
+	// EnsureNodeProvisioned would leave it - otherwise handleDeleteNode
 	// has nothing to snapshot and correctly enqueues nothing.
 	containerName, _, err := st.EnsureNodeProvisioned(ctx, n.ID, "test-host", 9200, 9299)
 	if err != nil {

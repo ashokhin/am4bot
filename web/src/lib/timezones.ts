@@ -1,10 +1,10 @@
-// The full IANA timezone database the runtime already ships -- no need to
+// The full IANA timezone database the runtime already ships - no need to
 // hand-maintain a list ourselves. Intl.supportedValuesOf('timeZone')
 // returns one entry per zone (never both a legacy link name and its
 // canonical target for the same zone), so there's nothing to dedupe here.
 export interface TimezoneOption {
   value: string
-  // "(UTC+04:00) Europe/Moscow" -- offset first, like most sites' pickers,
+  // "(UTC+04:00) Europe/Moscow" - offset first, like most sites' pickers,
   // so the list can be sorted by offset instead of alphabetically by
   // region (which tells you nothing about how far a schedule's local
   // time is from anyone else's).
@@ -15,7 +15,7 @@ export interface TimezoneOption {
 function supportedTimezones(): string[] {
   // Intl.supportedValuesOf is broadly supported in browsers this app
   // otherwise already requires (Radix/Vite's own baseline), but isn't in
-  // every TS lib target -- feature-detect rather than assume.
+  // every TS lib target - feature-detect rather than assume.
   const intl = Intl as typeof Intl & { supportedValuesOf?: (key: string) => string[] }
 
   if (typeof intl.supportedValuesOf === 'function') {
@@ -26,14 +26,14 @@ function supportedTimezones(): string[] {
     }
   }
 
-  // Minimal fallback for a runtime without supportedValuesOf -- UTC plus
+  // Minimal fallback for a runtime without supportedValuesOf - UTC plus
   // whatever the browser already reports as the local zone, so the field
   // is never completely empty.
   return Array.from(new Set(['UTC', Intl.DateTimeFormat().resolvedOptions().timeZone]))
 }
 
 // The current UTC offset for zone, in minutes (DST-aware, evaluated
-// "now" -- an offset picker showing today's actual offset is what every
+// "now" - an offset picker showing today's actual offset is what every
 // site does; a handful of zones will read differently in six months
 // across a DST transition, which is expected, not a bug).
 function offsetMinutes(zone: string, at: Date): number {

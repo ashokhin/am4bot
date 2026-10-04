@@ -17,7 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 const NONE = '__none__'
 
 /**
- * Every signed-in user's own account settings -- admin included (display
+ * Every signed-in user's own account settings - admin included (display
  * name + password change apply to everyone). VPN region is the one
  * section that's non-admin-only: an admin has no nodes of their own to
  * apply it to (see internal/store/vpn_regions.go's doc comment for the
@@ -50,7 +50,7 @@ function LoginActivitySection() {
       .myLoginActivity()
       .then(setEntries)
       .catch(() => {
-        /* best-effort -- an empty activity table is an acceptable degrade */
+        /* best-effort - an empty activity table is an acceptable degrade */
       })
       .finally(() => setLoading(false))
   }, [])
@@ -204,7 +204,7 @@ function VPNRegionSection() {
       toast.success(t('settings.saved'))
     } catch (err) {
       // 409: the admin hasn't configured the shared VPN provider account
-      // yet (see handleSetMyVPNRegion) -- nothing the user can fix.
+      // yet (see handleSetMyVPNRegion) - nothing the user can fix.
       toast.error(err instanceof ApiError && err.status === 409 ? t('settings.errors.vpnNotConfigured') : t('settings.errors.saveFailed'))
     } finally {
       setSaving(false)

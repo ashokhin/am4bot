@@ -18,7 +18,7 @@ function assert(cond, msg) {
 }
 
 // Radix Select renders a button trigger + a portal-mounted listbox, not a
-// native <select> -- click the trigger, then click the option by its text.
+// native <select> - click the trigger, then click the option by its text.
 async function selectRadixOption(page, triggerSelector, optionText) {
   await page.click(triggerSelector)
   await page.click(`[role=option]:has-text("${optionText}")`)

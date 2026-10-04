@@ -4,7 +4,7 @@ import "net/http"
 
 // contentSecurityPolicy was written against an actual audit of what
 // web/dist's built SPA loads at runtime (grepped the compiled JS/CSS for
-// every http(s):// literal): nothing external at all -- no CDN, no
+// every http(s):// literal): nothing external at all - no CDN, no
 // Google Fonts, no analytics, no third-party script of any kind. Every
 // script/style/font/image the page needs is bundled into the same-origin
 // JS/CSS files apiserver itself serves. That's what makes a strict
@@ -16,23 +16,23 @@ import "net/http"
 //     static.go's rewriteIndexHTML.
 //   - style-src keeps 'unsafe-inline': Radix UI (Popover, Select,
 //     Dialog, ...) sets inline style="" attributes at runtime for
-//     dynamic positioning (via Floating UI) -- there's no practical way
+//     dynamic positioning (via Floating UI) - there's no practical way
 //     to nonce those without much deeper surgery, and an inline STYLE
 //     attribute can't execute script, so this is a far smaller
 //     concession than 'unsafe-inline' on script-src would be.
 //   - connect-src 'self': every fetch() this app makes is to its own
 //     /api/*.
 //   - frame-ancestors 'none': the modern, more consistently-enforced
-//     equivalent of X-Frame-Options: DENY below -- kept both since
+//     equivalent of X-Frame-Options: DENY below - kept both since
 //     browser support for each differs slightly.
 //   - object-src 'none', base-uri 'self', form-action 'self': standard
 //     hardening boilerplate this app has no legitimate use for anyway
 //     (no <object>/<embed>, no reason to ever repoint <base>, no
-//     traditional <form> submissions -- everything goes through fetch).
+//     traditional <form> submissions - everything goes through fetch).
 //
 // Re-audit this (repeat the grep in this comment's own first sentence
 // against a fresh `npm run build`) before adding any new dependency that
-// might load something external -- a forgotten Google Fonts import, an
+// might load something external - a forgotten Google Fonts import, an
 // analytics snippet, etc. would silently violate this and either break
 // or get silently blocked depending on the browser.
 const contentSecurityPolicy = "default-src 'self'; " +
@@ -50,7 +50,7 @@ const contentSecurityPolicy = "default-src 'self'; " +
 // nothing to apply and close off cheap, generic attack classes an
 // internet-facing server otherwise leaves open by default. Deliberately
 // NOT doing here: HSTS (belongs at the TLS-terminating reverse proxy, see
-// docs/multi-tenant-hosting.md -- this app itself may be plain HTTP behind
+// docs/multi-tenant-hosting.md - this app itself may be plain HTTP behind
 // it).
 func withSecurityHeaders(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -59,7 +59,7 @@ func withSecurityHeaders(next http.Handler) http.Handler {
 		// what Content-Type actually says (e.g. treating a JSON error body
 		// as HTML/script because it looks vaguely like markup).
 		h.Set("X-Content-Type-Options", "nosniff")
-		// This app is never meant to be framed by another site -- refuses
+		// This app is never meant to be framed by another site - refuses
 		// clickjacking-style embedding outright.
 		h.Set("X-Frame-Options", "DENY")
 		// Don't leak this app's URLs (which can contain uuids/ids) to

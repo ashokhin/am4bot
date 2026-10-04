@@ -49,7 +49,7 @@ func (s *Server) handleInternalGetNodeConfig(w http.ResponseWriter, r *http.Requ
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			// same response whether the node doesn't exist or the token
-			// is wrong -- don't let a caller distinguish the two
+			// is wrong - don't let a caller distinguish the two
 			writeError(w, http.StatusUnauthorized, "invalid node or token")
 
 			return
@@ -81,7 +81,7 @@ func (s *Server) handleInternalGetNodeConfig(w http.ResponseWriter, r *http.Requ
 // nodeTokenMatches decrypts n's stored config token and compares it to
 // presented in constant time (crypto/subtle), so response timing can't
 // leak how much of a guessed token was correct. A node with no token
-// minted yet (nil ConfigTokenEnc -- not provisioned by the orchestrator
+// minted yet (nil ConfigTokenEnc - not provisioned by the orchestrator
 // yet) never matches anything.
 func (s *Server) nodeTokenMatches(n *store.Node, presented string) bool {
 	if n.ConfigTokenEnc == nil {
@@ -101,7 +101,7 @@ func (s *Server) nodeTokenMatches(n *store.Node, presented string) bool {
 // buildNodeConfig assembles the config.Config a node's ambot container
 // should run with: package defaults, then the node's dedicated columns,
 // then its extra_config JSON overlaid on top (only the fields extra_config
-// actually sets are changed -- see config.Config's doc comment and
+// actually sets are changed - see config.Config's doc comment and
 // TestJSONRoundTripAppliesDefaultsThenOverlay).
 func (s *Server) buildNodeConfig(n *store.Node) (*config.Config, error) {
 	var cfg config.Config
@@ -134,7 +134,7 @@ func (s *Server) buildNodeConfig(n *store.Node) (*config.Config, error) {
 // ProvisionResponse is everything the orchestrator needs to reconcile one
 // node's containers via Ansible: non-secret placement info plus whatever
 // secrets the *VPN* container's env unavoidably needs (gluetun has no
-// equivalent of ambot's "fetch your own config" trick -- it needs real
+// equivalent of ambot's "fetch your own config" trick - it needs real
 // credentials at container-start). The ambot container itself gets no
 // secrets here at all: just ConfigToken, which it uses to fetch its own
 // config from /internal/nodes/{id}/config (handleInternalGetNodeConfig).
@@ -144,10 +144,10 @@ type ProvisionResponse struct {
 	Name     string `json:"name"`
 	// Enabled mirrors nodes.enabled: whether the orchestrator should have
 	// this node's containers running at all right now, vs. stopped (the
-	// user paused it) -- see enabled's doc comment in
+	// user paused it) - see enabled's doc comment in
 	// migrations/0001_init.sql.
 	Enabled bool `json:"enabled"`
-	// Timezone interprets this node's cron_schedules -- rendered by the
+	// Timezone interprets this node's cron_schedules - rendered by the
 	// orchestrator as the ambot container's TZ env var (see
 	// cmd/orchestrator/compose.go), which is how Go's cron.New() (called
 	// with no options, so it uses the process's local time) ends up
@@ -162,7 +162,7 @@ type ProvisionResponse struct {
 }
 
 // VPNEnv is what a node's gluetun container's environment needs, in the
-// clear -- decrypted here, in apiserver, and handed to the orchestrator
+// clear - decrypted here, in apiserver, and handed to the orchestrator
 // only for the duration of one provisioning call. The orchestrator writes
 // it straight into a short-lived extra-vars file and never persists it.
 type VPNEnv struct {
@@ -247,7 +247,7 @@ func (s *Server) handleInternalGetNodeProvision(w http.ResponseWriter, r *http.R
 	}
 
 	// The VPN exit is a per-USER choice (user.VPNRegionID), applied to
-	// every one of their nodes uniformly -- not a per-node setting. See
+	// every one of their nodes uniformly - not a per-node setting. See
 	// vpn_regions.go's doc comment for why: a user's game bot and any
 	// other of their tooling must share one IP.
 	if user.VPNRegionID != nil {

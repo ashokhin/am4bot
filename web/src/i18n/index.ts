@@ -7,7 +7,7 @@ import ru from './locales/ru.json'
 // English is the default/fallback for every user and every string that a
 // locale hasn't translated yet; Russian is the one other supported
 // language for now. Add a new locale by adding it to `resources` and
-// `supportedLngs` below -- nothing else needs to change.
+// `supportedLngs` below - nothing else needs to change.
 export const supportedLngs = ['en', 'ru'] as const
 export type SupportedLng = (typeof supportedLngs)[number]
 

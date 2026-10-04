@@ -10,7 +10,7 @@ import (
 // index-out-of-range on malformed input, ...) and turns it into a logged
 // 500 instead of an unhandled panic. net/http's own per-connection recovery
 // would otherwise just close the connection and dump the stack to raw
-// stderr, bypassing this app's structured logging entirely -- this makes
+// stderr, bypassing this app's structured logging entirely - this makes
 // the failure visible the same way every other error already is (slog),
 // and gives the caller a normal JSON error body instead of a dropped
 // connection.
@@ -25,7 +25,7 @@ func withRecover(next http.Handler) http.Handler {
 					"stack", string(debug.Stack()),
 				)
 
-				// Best-effort -- if the handler already wrote a status
+				// Best-effort - if the handler already wrote a status
 				// code/body before panicking, WriteHeader here is a no-op
 				// net/http logs and ignores, not a second response.
 				writeError(w, http.StatusInternalServerError, "internal server error")

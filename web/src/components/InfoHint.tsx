@@ -1,7 +1,7 @@
 import { HelpCircleIcon } from 'lucide-react'
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover'
 
-// A small "?" icon that shows an explanation ON CLICK, not hover -- easier
+// A small "?" icon that shows an explanation ON CLICK, not hover - easier
 // to hit on touch devices, and doesn't fire accidentally while scanning a
 // long settings form with the mouse. Used next to every advanced node
 // setting to say what it does and which service(s) actually read it.

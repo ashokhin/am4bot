@@ -19,13 +19,13 @@ interface FriendlyEntry {
   days: number[]
   /** Minutes, for mode 'interval'. */
   intervalMinutes: number
-  /** Hours 0-23, for mode 'specific' -- cron cross-multiplies this with `minutes` below. */
+  /** Hours 0-23, for mode 'specific' - cron cross-multiplies this with `minutes` below. */
   hours: number[]
   /** Minutes 0-55 (step 5), for mode 'specific'. */
   minutes: number[]
 }
 
-/** Every value this UI itself ever produces -- used to offer only these. */
+/** Every value this UI itself ever produces - used to offer only these. */
 const INTERVAL_OPTIONS = [5, 10, 15, 20, 30, 45, 60]
 const MINUTE_OPTIONS = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55]
 const HOUR_OPTIONS = Array.from({ length: 24 }, (_, i) => i)
@@ -37,7 +37,7 @@ function sameSet(a: number[], b: number[]): boolean {
   return a.length === b.length && a.every((v) => b.includes(v))
 }
 
-/** Parses a cron field like "1-5", "1,3,5", "*", or "7" into a sorted, deduped number list -- undefined if anything doesn't fit. */
+/** Parses a cron field like "1-5", "1,3,5", "*", or "7" into a sorted, deduped number list - undefined if anything doesn't fit. */
 function parseNumberField(field: string, min: number, max: number): number[] | undefined {
   if (field === '*') {
     return Array.from({ length: max - min + 1 }, (_, i) => min + i)
@@ -84,8 +84,8 @@ function entryToCron(entry: FriendlyEntry): string {
 
 /**
  * Parses a raw cron string this editor itself could have produced (or an
- * equivalent hand-written one -- ranges and lists both parse fine) back
- * into a FriendlyEntry. Anything else returns undefined -- the caller
+ * equivalent hand-written one - ranges and lists both parse fine) back
+ * into a FriendlyEntry. Anything else returns undefined - the caller
  * falls back to showing the raw expression in an "advanced" text field
  * instead of silently reinterpreting (and possibly corrupting) it.
  */
@@ -116,7 +116,7 @@ function cronToEntry(raw: string): FriendlyEntry | undefined {
 
   const hours = parseNumberField(hour, 0, 23)
   // A literal "*" here means "every minute", which is NOT the same as this
-  // editor's own "every value on the 5-minute grid" -- parseNumberField's
+  // editor's own "every value on the 5-minute grid" - parseNumberField's
   // generic '*' handling would expand it to all 60 raw minutes (1, 2, 3,
   // ...), almost none of which are in MINUTE_OPTIONS, tripping the
   // every() check below and wrongly falling back to the raw text field.
@@ -134,7 +134,7 @@ function cronToEntry(raw: string): FriendlyEntry | undefined {
 const DEFAULT_ENTRY: FriendlyEntry = { mode: 'interval', days: DAY_OPTIONS, intervalMinutes: 5, hours: HOUR_OPTIONS, minutes: MINUTE_OPTIONS }
 
 function toggle(values: number[], v: number): number[] {
-  // Never let the last one go -- an entry with zero days/hours/minutes
+  // Never let the last one go - an entry with zero days/hours/minutes
   // selected has no valid cron representation.
   if (values.includes(v)) {
     return values.length === 1 ? values : values.filter((x) => x !== v)
@@ -165,7 +165,7 @@ function ToggleChip({ active, onClick, children }: { active: boolean; onClick: (
  * the week, and either "every N minutes" or one or more specific
  * hour/minute combinations (cron cross-multiplies the two lists, so
  * hours=[6,7,12] + minutes=[20,50] fires at 6:20, 6:50, 7:20, 7:50, 12:20,
- * 12:50) -- covers real-world schedules like "twice an hour during peak
+ * 12:50) - covers real-world schedules like "twice an hour during peak
  * hours on weekdays, once an hour the rest of the week" without anyone
  * needing to know cron syntax. An entry that doesn't fit this shape
  * (hand-edited, a minute not on the 5-minute grid, ...) falls back to a

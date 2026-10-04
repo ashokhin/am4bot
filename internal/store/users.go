@@ -18,7 +18,7 @@ var ErrNotFound = errors.New("store: not found")
 var ErrConflict = errors.New("store: conflict")
 
 // userColumns is every users column except password_hash's raw SQL
-// fragment doesn't change per query, so it's centralized here -- every
+// fragment doesn't change per query, so it's centralized here - every
 // Get*/List below must return exactly this shape into a User.
 const userColumns = `
 	id, uuid, login, password_hash, is_admin, vpn_region_id,
@@ -29,10 +29,10 @@ const userColumns = `
 
 // User is a control-plane account: a regular user, or the admin
 // themself (IsAdmin true). PasswordHash is a bcrypt hash of this
-// user's OWN login password -- unrelated to any game account password,
+// user's OWN login password - unrelated to any game account password,
 // which lives on Node instead. Login is just an identifier the admin
 // picks when creating the account (there is no signup flow, so it never
-// needed to be a real email address -- see migrations/0005's doc comment).
+// needed to be a real email address - see migrations/0005's doc comment).
 type User struct {
 	ID           int64     `db:"id"`
 	UUID         uuid.UUID `db:"uuid"`
@@ -41,18 +41,18 @@ type User struct {
 	IsAdmin      bool      `db:"is_admin"`
 	// VPNRegionID picks which vpn_regions catalog entry ALL of this user's
 	// nodes exit VPN traffic
-	// through -- a single per-user choice, not a per-node one. Nil means no
+	// through - a single per-user choice, not a per-node one. Nil means no
 	// VPN (direct connection). See vpn_regions.go's doc comment for the
 	// full model: one admin-configured VPN provider account, shared by
 	// every user, with only the exit region selectable per user. Always
-	// nil for an admin account -- see requireNonAdminUser's doc comment.
+	// nil for an admin account - see requireNonAdminUser's doc comment.
 	VPNRegionID *int64 `db:"vpn_region_id"`
-	// DisplayName is a purely cosmetic, self-editable label -- nil means
+	// DisplayName is a purely cosmetic, self-editable label - nil means
 	// "show Login instead", not "unset". Never used for sign-in or
 	// uniqueness, unlike Login.
 	DisplayName *string `db:"display_name"`
 	// LastLoginAt/LastLoginIP/LastLoginUserAgent are set together on every
-	// successful password login (see SetUserLastLogin) -- nil LastLoginAt
+	// successful password login (see SetUserLastLogin) - nil LastLoginAt
 	// means the account has never signed in.
 	LastLoginAt        *time.Time `db:"last_login_at"`
 	LastLoginIP        *string    `db:"last_login_ip"`
@@ -69,7 +69,7 @@ type User struct {
 	DisabledAt               *time.Time `db:"disabled_at"`
 	// MustChangePassword is true whenever the current password_hash was
 	// set FOR this user (account creation, an admin's reset) rather than
-	// chosen BY them -- the frontend forces a change-password screen
+	// chosen BY them - the frontend forces a change-password screen
 	// while it's true. See SetUserPasswordHash and migrations/0002's doc
 	// comment.
 	MustChangePassword bool `db:"must_change_password"`
@@ -77,7 +77,7 @@ type User struct {
 
 // CreateUser inserts a new user and returns the full row (including the
 // generated id/uuid/created_at). passwordHash must already be hashed
-// (see internal/auth) -- store never hashes or validates passwords itself.
+// (see internal/auth) - store never hashes or validates passwords itself.
 // Always starts with must_change_password = true: the admin picked this
 // password, not the user themselves (there's no signup flow).
 func (s *Store) CreateUser(ctx context.Context, login, passwordHash string, isAdmin bool) (*User, error) {
@@ -99,7 +99,7 @@ func (s *Store) CreateUser(ctx context.Context, login, passwordHash string, isAd
 }
 
 // GetUserByLogin looks up a user for login. Returns ErrNotFound if no
-// account has that login, including disabled ones -- callers that need to
+// account has that login, including disabled ones - callers that need to
 // distinguish "no such account" from "disabled" should check DisabledAt.
 func (s *Store) GetUserByLogin(ctx context.Context, login string) (*User, error) {
 	var u User
@@ -113,8 +113,8 @@ func (s *Store) GetUserByLogin(ctx context.Context, login string) (*User, error)
 }
 
 // GetUserByUUID looks up a user by their external-facing identifier (the
-// one used in URLs and Prometheus labels -- see migrations/0001_init.sql).
-// GetUserByID looks up a user by their internal serial id -- for
+// one used in URLs and Prometheus labels - see migrations/0001_init.sql).
+// GetUserByID looks up a user by their internal serial id - for
 // resolving a node's owning user (nodes.user_id) internally, never for
 // anything user-facing (use GetUserByUUID there instead).
 func (s *Store) GetUserByID(ctx context.Context, id int64) (*User, error) {
@@ -140,8 +140,8 @@ func (s *Store) GetUserByUUID(ctx context.Context, id uuid.UUID) (*User, error) 
 }
 
 // ListUsers returns every user, most recently created first. For the admin
-// panel's user list -- there is no per-user "list other users" use case.
-// CountUsers returns how many accounts exist -- cheaper than ListUsers
+// panel's user list - there is no per-user "list other users" use case.
+// CountUsers returns how many accounts exist - cheaper than ListUsers
 // when the caller only needs to know "is there anyone at all yet"
 // (see cmd/apiserver's bootstrap-admin startup check).
 func (s *Store) CountUsers(ctx context.Context) (int, error) {
@@ -166,7 +166,7 @@ func (s *Store) ListUsers(ctx context.Context) ([]User, error) {
 	return users, nil
 }
 
-// UserWithNodeStats is one row of ListUsersWithNodeStats -- the admin
+// UserWithNodeStats is one row of ListUsersWithNodeStats - the admin
 // user list's "active/total nodes" columns, computed here rather than by
 // the caller issuing a second query per user.
 type UserWithNodeStats struct {
@@ -196,7 +196,7 @@ func (s *Store) ListUsersWithNodeStats(ctx context.Context) ([]UserWithNodeStats
 }
 
 // userColumnsPrefixed is userColumns with an explicit "u." table
-// qualifier -- for queries (like ListUsersWithNodeStats) that join users
+// qualifier - for queries (like ListUsersWithNodeStats) that join users
 // against another table also having an "id" column.
 const userColumnsPrefixed = `
 	u.id, u.uuid, u.login, u.password_hash, u.is_admin, u.vpn_region_id,
@@ -209,7 +209,7 @@ const userColumnsPrefixed = `
 // a user is a separate, reversible step from deleting.
 //
 // Refusing to let an admin disable their OWN account is deliberately NOT
-// enforced here -- that's a caller-identity concern the store layer has no
+// enforced here - that's a caller-identity concern the store layer has no
 // way to check (it only ever sees the target uuid), so it belongs in
 // internal/api/admin_handlers.go's handler, which has both.
 func (s *Store) SetUserDisabled(ctx context.Context, id uuid.UUID, disabled bool) error {
@@ -228,12 +228,12 @@ func (s *Store) SetUserDisabled(ctx context.Context, id uuid.UUID, disabled bool
 	return checkRowsAffected(res, "user")
 }
 
-// DeleteUser removes a user row outright -- their nodes cascade-delete
+// DeleteUser removes a user row outright - their nodes cascade-delete
 // with it (nodes.user_id REFERENCES users(id) ON DELETE CASCADE, see
 // migrations/0001_init.sql). The caller (admin_handlers.go) is
 // responsible for enqueueing orchestrator teardown for each of the
 // user's provisioned nodes BEFORE calling this, the same way
-// handleDeleteNode does for one node -- this only removes the database
+// handleDeleteNode does for one node - this only removes the database
 // rows, it has no way to reach the orchestrator itself.
 func (s *Store) DeleteUser(ctx context.Context, id uuid.UUID) error {
 	res, err := s.db.ExecContext(ctx, `DELETE FROM users WHERE uuid = $1`, id)
@@ -244,11 +244,11 @@ func (s *Store) DeleteUser(ctx context.Context, id uuid.UUID) error {
 	return checkRowsAffected(res, "user")
 }
 
-// SetUserPasswordHash replaces a user's login password hash -- used both
+// SetUserPasswordHash replaces a user's login password hash - used both
 // for admin-initiated resets (by uuid) and self-service changes.
 // mustChangePassword should be true for an admin-initiated reset (the
 // user didn't pick this password, so they're forced to change it before
-// doing anything else -- see migrations/0002's doc comment) and false for
+// doing anything else - see migrations/0002's doc comment) and false for
 // a self-service change (they just proved they know the current password
 // and picked this new one themselves).
 func (s *Store) SetUserPasswordHash(ctx context.Context, id uuid.UUID, passwordHash string, mustChangePassword bool) error {
@@ -273,7 +273,7 @@ func (s *Store) SetUserDisplayName(ctx context.Context, userID int64, name *stri
 	return checkRowsAffected(res, "user")
 }
 
-// SetUserLastLogin stamps a user's last_login_at/ip/user_agent -- called
+// SetUserLastLogin stamps a user's last_login_at/ip/user_agent - called
 // once per successful password login (handleLogin). Best-effort from the
 // caller's point of view: a failure here shouldn't fail the login itself.
 func (s *Store) SetUserLastLogin(ctx context.Context, id uuid.UUID, ip, userAgent string) error {
@@ -288,7 +288,7 @@ func (s *Store) SetUserLastLogin(ctx context.Context, id uuid.UUID, ip, userAgen
 }
 
 // SetUserLastFailedLogin stamps last_failed_login_at/ip/user_agent for the
-// user with this login -- called on every failed password attempt
+// user with this login - called on every failed password attempt
 // (handleLogin), including attempts against a login that turns out not to
 // exist, in which case this is simply a no-op (0 rows affected is not
 // treated as an error here, unlike SetUserLastLogin, since the caller
@@ -306,8 +306,8 @@ func (s *Store) SetUserLastFailedLogin(ctx context.Context, login, ip, userAgent
 }
 
 // SetUserVPNRegion sets or clears (regionID == nil) the vpn_regions entry a
-// user's nodes exit VPN traffic through. Self-service -- called from the
-// authenticated user's own settings, not an admin action -- so it's scoped
+// user's nodes exit VPN traffic through. Self-service - called from the
+// authenticated user's own settings, not an admin action - so it's scoped
 // by the user's own id, not a target uuid the way SetUserDisabled is.
 func (s *Store) SetUserVPNRegion(ctx context.Context, userID int64, regionID *int64) error {
 	res, err := s.db.ExecContext(ctx, `UPDATE users SET vpn_region_id = $2 WHERE id = $1`, userID, regionID)

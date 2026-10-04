@@ -10,7 +10,7 @@ interface AuthState {
   ready: boolean
   login: (login: string, password: string) => Promise<void>
   logout: () => Promise<void>
-  /** Re-fetches /api/me -- call after a self-service change (e.g. picking a VPN region) so the rest of the app sees the new state without a full reload. */
+  /** Re-fetches /api/me - call after a self-service change (e.g. picking a VPN region) so the rest of the app sees the new state without a full reload. */
   refreshUser: () => Promise<void>
 }
 
@@ -25,7 +25,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .me()
       .then(setUser)
       .catch((err: unknown) => {
-        // 401 just means "not logged in yet" -- not worth surfacing.
+        // 401 just means "not logged in yet" - not worth surfacing.
         if (!(err instanceof ApiError && err.status === 401)) {
           console.error('checking current session', err)
         }

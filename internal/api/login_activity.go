@@ -7,7 +7,7 @@ import (
 )
 
 // loginActivityLimit is how many recent login attempts (success or
-// failure) are surfaced in the UI -- on a user's own profile page and on
+// failure) are surfaced in the UI - on a user's own profile page and on
 // the admin user detail page alike. The full history keeps accumulating
 // in login_attempts regardless; this only bounds what's shown.
 const loginActivityLimit = 10

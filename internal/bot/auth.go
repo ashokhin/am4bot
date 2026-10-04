@@ -15,7 +15,7 @@ import (
 // concluding the login itself failed (wrong password, a CAPTCHA, ...)
 // rather than the game's own page just being slow. 30s is generous enough
 // to tolerate a slow VPN exit, but short enough that a genuine failure is
-// reported quickly and clearly -- instead of silently returning success
+// reported quickly and clearly - instead of silently returning success
 // here and only surfacing as an opaque "context deadline exceeded" much
 // later, once some unrelated later step's own element wait runs out the
 // clock on the whole run's timeout_seconds (which can be 180s+).
@@ -58,10 +58,10 @@ func (b *Bot) auth(ctx context.Context) error {
 	}
 
 	// The loading overlay disappearing above proves the PAGE finished
-	// loading, not that the LOGIN succeeded -- a wrong password or a
+	// loading, not that the LOGIN succeeded - a wrong password or a
 	// CAPTCHA just re-renders the login page with an error message, and
 	// that overlay clears the same way either way. Only a dashboard-only
-	// element actually proves we're in -- see money(), the very next
+	// element actually proves we're in - see money(), the very next
 	// step, which already depends on it being there.
 	if !utils.IsElementVisible(ctx, model.BUTTON_MAIN_ACCOUNT, loginVerificationTimeoutSeconds) {
 		return fmt.Errorf("auth: login failed -- dashboard not visible %ds after submitting credentials "+

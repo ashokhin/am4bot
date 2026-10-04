@@ -12,18 +12,18 @@ import (
 // newChromeContext builds a chromedp browser context. It has two paths:
 //
 //   - Plain (conf.ChromeStealth == false): the existing exec-allocator path
-//     using chromeOpts (setupChromeOptions) -- an ordinary, unmodified
+//     using chromeOpts (setupChromeOptions) - an ordinary, unmodified
 //     Chrome/Chromium with visible flags. Useful for local troubleshooting
 //     ("where did the bot get stuck") with a real Chrome window
 //     (chrome_headless: false) and an attachable debugger.
 //   - Stealth (conf.ChromeStealth == true): chromedp-undetected, which
 //     patches navigator.webdriver/CDP fingerprints and, when headless,
 //     launches Chrome inside a real Xvfb display rather than passing
-//     Chrome's own --headless flag -- see internal/config.Config's
+//     Chrome's own --headless flag - see internal/config.Config's
 //     ChromeStealth doc comment and docs/multi-tenant-hosting.md.
 //
 // The returned cancel func tears down everything the chosen path started
-// (allocator, browser context, and -- in the stealth path -- the Xvfb
+// (allocator, browser context, and - in the stealth path - the Xvfb
 // frame buffer).
 func newChromeContext(ctx context.Context, conf *config.Config, chromeOpts []chromedp.ExecAllocatorOption) (context.Context, context.CancelFunc, error) {
 	if !conf.ChromeStealth {

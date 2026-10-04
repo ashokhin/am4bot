@@ -9,7 +9,7 @@ import (
 	"github.com/ashokhin/am4bot/internal/store"
 )
 
-// vpnRegionResponse is deliberately name-only -- the ovpn file contents
+// vpnRegionResponse is deliberately name-only - the ovpn file contents
 // are the shared VPN account's business, never sent to a browser.
 type vpnRegionResponse struct {
 	ID   int64  `json:"id"`
@@ -21,7 +21,7 @@ func toVPNRegionResponse(v *store.VPNRegion) vpnRegionResponse {
 }
 
 // handleListVPNRegions is available to any authenticated user (not just
-// admins) -- everyone needs to see the catalog to pick their own region.
+// admins) - everyone needs to see the catalog to pick their own region.
 func (s *Server) handleListVPNRegions(w http.ResponseWriter, r *http.Request) {
 	regions, err := s.store.ListVPNRegions(r.Context())
 	if err != nil {
@@ -87,7 +87,7 @@ func (s *Server) handleCreateVPNRegion(w http.ResponseWriter, r *http.Request) {
 }
 
 // handleDeleteVPNRegion is admin-only. Any user currently pointing at this
-// region falls back to no VPN -- see migrations/0001_init.sql's
+// region falls back to no VPN - see migrations/0001_init.sql's
 // ON DELETE SET NULL.
 func (s *Server) handleDeleteVPNRegion(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)

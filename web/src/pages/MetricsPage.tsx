@@ -35,7 +35,7 @@ export function MetricsPage() {
       })
       .catch(() => {
         // Only the FIRST load failing is fatal (shows the full-page
-        // error state below) -- a transient hiccup on a later poll just
+        // error state below) - a transient hiccup on a later poll just
         // leaves the previously-good data on screen instead of blanking
         // the whole page out.
         setLoadError((prev) => prev || lastUpdatedAt === null)

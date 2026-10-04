@@ -16,14 +16,14 @@ import type { MetricSeries } from '../api/types'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs'
 
-// Company balance over time -- GET /api/metrics/balance (see
+// Company balance over time - GET /api/metrics/balance (see
 // internal/api/metrics_handlers.go's balanceMetric/queryBalanceRange),
 // one am4_company_money{type="Airline account"} query_range call per
 // selected period. Follows the dataviz skill's line-chart contract: 2px
 // lines, a shared crosshair tooltip listing every node at that point in
 // time, a legend only once there's more than one node (color is then the
 // only way to tell nodes apart), and the eight-hue categorical palette
-// (--chart-series-1..8 in index.css) assigned by node id -- fixed order,
+// (--chart-series-1..8 in index.css) assigned by node id - fixed order,
 // never re-assigned by value/rank.
 
 const SERIES_COLOR_COUNT = 8
@@ -32,7 +32,7 @@ function colorForIndex(index: number): string {
   return `var(--chart-series-${(index % SERIES_COLOR_COUNT) + 1})`
 }
 
-// Compact notation ("34.8B") -- these balances run into the billions,
+// Compact notation ("34.8B") - these balances run into the billions,
 // and the y-axis/tooltip both need to stay readable at a glance rather
 // than showing a wall of digits.
 const compactFormatter = new Intl.NumberFormat(undefined, { notation: 'compact', maximumFractionDigits: 1 })
@@ -52,7 +52,7 @@ function nodeKey(nodeId: number): string {
 }
 
 // Merges every node's [timestamp, value] points onto one array of rows
-// keyed by timestamp -- query_range returns every node on the same step
+// keyed by timestamp - query_range returns every node on the same step
 // grid for a single request, so timestamps line up across nodes; a node
 // with a shorter history (e.g. just provisioned) simply has no key at
 // the earlier rows, which Recharts renders as a gap (no connectNulls),
@@ -125,7 +125,7 @@ export function NodeBalanceChart({
   const { t } = useTranslation()
 
   // Sorted by id, not by however the API happened to order this poll's
-  // response -- color identity must stay fixed per node across renders,
+  // response - color identity must stay fixed per node across renders,
   // never reshuffled by rank/position.
   const sortedNodes = useMemo(() => [...nodes].sort((a, b) => a.id - b.id), [nodes])
   const nodesByKey = useMemo(() => new Map(sortedNodes.map((n) => [nodeKey(n.id), n])), [sortedNodes])
@@ -167,7 +167,7 @@ export function NodeBalanceChart({
                   minTickGap={40}
                 />
                 <YAxis
-                  // Recharts' own default domain is [0, 'auto'] -- fine
+                  // Recharts' own default domain is [0, 'auto'] - fine
                   // for a value that swings near zero, but a balance in
                   // the billions with day-to-day changes in the millions
                   // looks like a flat line forced to share the chart with

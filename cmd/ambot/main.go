@@ -105,7 +105,7 @@ func main() {
 	conf.PromslogConfig = promslogConfig
 
 	// The CLI's "log.level" and config's "log_level" by default are both "info"
-	// if they are not -- check further
+	// if they are not - check further
 	if conf.PromslogConfig.Level.String() != conf.LogLevel {
 		// If CLI's "log.level" is not default (info) then prioritize CLI's value
 		if conf.PromslogConfig.Level.String() != "info" {
@@ -119,7 +119,7 @@ func main() {
 	}
 
 	// The CLI's "web.listen-address" and config's "prometheus_address" by default are both ":9150"
-	// if they are not -- check further
+	// if they are not - check further
 	if *webAddr != conf.PrometheusAddress {
 		// If CLI's "web.listen-address" is not default (:9150) then prioritize CLI's value
 		if *webAddr != ":9150" {
@@ -169,7 +169,7 @@ func main() {
 	entryIDs := make([]cron.EntryID, 0, len(bot.Conf.CronSchedules))
 
 	// runJob is shared by every schedule entry. It applies the configured
-	// "floating start" jitter, then runs the bot -- skipping (rather than
+	// "floating start" jitter, then runs the bot - skipping (rather than
 	// blocking) if a previous run is still in progress.
 	runJob := func() {
 		if bot.Conf.CronJitterSeconds > 0 {

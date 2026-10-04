@@ -34,7 +34,7 @@ export function NodesPage() {
     } catch (err) {
       // Enabling a node that's missing credentials/a schedule gets a
       // specific, actionable 400 from the server (store.ErrNodeNotReady)
-      // -- show that instead of a generic failure message.
+      // - show that instead of a generic failure message.
       if (err instanceof ApiError && err.status === 400) {
         toast.error(err.message)
       } else {

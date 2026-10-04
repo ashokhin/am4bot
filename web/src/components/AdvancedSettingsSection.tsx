@@ -22,31 +22,31 @@ function num(v: string): number | undefined {
 
 /**
  * Everything internal/config.Config supports beyond what the rest of the
- * node form already covers (login, services, schedule, timezone) -- the
+ * node form already covers (login, services, schedule, timezone) - the
  * "maintenance" and "purchasing" parameters that used to only exist in a
  * standalone config.yaml (see the main README's Configuration table).
  * Stored in nodes.extra_config, merged on top of config.Config's own
- * defaults when ambot fetches its config -- see
+ * defaults when ambot fetches its config - see
  * internal/api/internal_handlers.go's doc comment.
  *
  * Every field is disabled unless a service that actually reads it is
- * currently selected -- there's no point letting someone tune
+ * currently selected - there's no point letting someone tune
  * aircraft_wear_percent on a node that doesn't run ac_maintenance, and a
  * value set while a service was off would otherwise just sit there
  * silently unused if the service gets turned back on later without the
  * user remembering to revisit it.
  *
- * log_level is deliberately NOT here -- see AdminNodeDetailPage's
+ * log_level is deliberately NOT here - see AdminNodeDetailPage's
  * diagnostics section, an admin-only control on a different page.
  *
  * Lives inside NodeFormPage's Services card, right below the service
- * list, collapsed by default -- per the user's own explicit call: a
+ * list, collapsed by default - per the user's own explicit call: a
  * separate card at the bottom of the page buried the connection between
  * "which services are on" and "which of these groups actually apply".
  * Since it stays collapsed even as that connection changes, the count
  * badge plus a brief highlight flash on the toggle row (triggered
  * whenever the count itself changes, not on every keystroke) is the
- * signal that something in here just became relevant -- deliberately NOT
+ * signal that something in here just became relevant - deliberately NOT
  * auto-expanding, which would be worse: it would yank the page away from
  * whatever the user was just doing in the service list above it.
  */
@@ -69,7 +69,7 @@ export function AdvancedSettingsSection({
   const hasHubs = services.includes('hubs')
   const hasAlliance = services.includes('alliance_stats')
   // budget_percent.maintenance funds BOTH ac_maintenance's own work AND
-  // hubs' lounge-repair/catering spending -- see internal/bot/hub.go and
+  // hubs' lounge-repair/catering spending - see internal/bot/hub.go and
   // internal/bot/maintenance.go, both draw from the same budget bucket.
   const hasMaintenanceBudget = hasMaintenance || hasHubs
   const cateringSubfieldsEnabled = hasHubs && (value.buy_catering_if_missing ?? true)
@@ -77,7 +77,7 @@ export function AdvancedSettingsSection({
   const activeCount = [hasFuel, hasMarketing, hasMaintenance, hasHubs, hasAlliance].filter(Boolean).length
 
   // Flash the toggle row whenever the ACTIVE COUNT changes (a service with
-  // parameters got turned on/off), not on every render -- a ref holds the
+  // parameters got turned on/off), not on every render - a ref holds the
   // previous count across renders without itself triggering one.
   const prevActiveCount = useRef(activeCount)
 
@@ -109,7 +109,7 @@ export function AdvancedSettingsSection({
   // Shown briefly (matching the flash pattern above) when a disallowed
   // character is actually rejected, so the user gets the same "why
   // didn't that appear" feedback a normal registration-form field gives
-  // -- rather than the character just silently not showing up.
+  // - rather than the character just silently not showing up.
   const [allianceIdsInvalidHint, setAllianceIdsInvalidHint] = useState(false)
   const allianceIdsHintTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
@@ -136,7 +136,7 @@ export function AdvancedSettingsSection({
       setAllianceIdsText(incoming.join(', '))
     }
     // Deliberately only watching value.alliance_ids, not allianceIdsText
-    // itself -- this effect exists to catch EXTERNAL changes, not to run
+    // itself - this effect exists to catch EXTERNAL changes, not to run
     // on every local keystroke.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value.alliance_ids])
@@ -452,13 +452,13 @@ export function AdvancedSettingsSection({
                 onKeyDown={(e) => {
                   // Block a disallowed character BEFORE it's typed
                   // (rather than filtering it out after the fact in
-                  // onChange) -- this is the standard "restricted input"
+                  // onChange) - this is the standard "restricted input"
                   // pattern: the character never appears at all, so
                   // there's no visible flash-then-vanish and no cursor
                   // jump to work around. Modifier-held keys (Ctrl+V
                   // paste, Ctrl+A select-all, ...) and non-printing keys
                   // (Backspace, arrows, ...) are deliberately left alone
-                  // -- e.key.length === 1 is only true for an actual
+                  // - e.key.length === 1 is only true for an actual
                   // printable character.
                   if (e.ctrlKey || e.metaKey || e.altKey || e.key.length !== 1) {
                     return
@@ -470,11 +470,11 @@ export function AdvancedSettingsSection({
                   }
                 }}
                 onChange={(e) => {
-                  // Safety net for input onKeyDown can't see -- paste,
+                  // Safety net for input onKeyDown can't see - paste,
                   // drag-drop, IME composition. Same character-level
                   // filtering (not per-segment): strip anything that
                   // isn't a digit, comma, or space, but otherwise keep
-                  // the raw text as-is -- a trailing comma/space while
+                  // the raw text as-is - a trailing comma/space while
                   // composing the next ID is legitimate mid-typing
                   // state, not yet invalid.
                   const sanitized = e.target.value.replace(/[^\d,\s]/g, '')

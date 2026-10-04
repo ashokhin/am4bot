@@ -5,16 +5,16 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import { cn } from '../lib/utils'
 
 // Stat-tile dashboard: one card per node, a handful of named gauges as
-// tiles. No time-series chart in this first version -- see
+// tiles. No time-series chart in this first version - see
 // internal/api/metrics_handlers.go's exposedMetrics for why only scalar
 // gauges are wired up so far. Palette/spacing follow the dataviz skill's
 // stat-tile contract (label, value, status color for up/down). Shared
 // between MetricsPage (a user's own nodes) and AdminMetricsPage (any
-// user's nodes, picked by an admin) -- the rendering is identical, only
+// user's nodes, picked by an admin) - the rendering is identical, only
 // which series/nodes get passed in differs.
 
 // Renders a Unix-timestamp value as two explicit lines (date, then time)
-// rather than one long toLocaleString() -- at text-xl in a narrow
+// rather than one long toLocaleString() - at text-xl in a narrow
 // 2-column mobile tile, that string is wider than the tile and the
 // browser's own line-break lands wherever, sometimes stranding a lone
 // "PM" on its own line. Breaking it ourselves, at the one place that
@@ -42,7 +42,7 @@ const TILE_METRICS: { metric: string; labelKey: string; format: (v: number) => R
   },
   { metric: 'am4_duration_seconds', labelKey: 'metrics.tiles.lastRunSeconds', format: (v) => Math.round(v).toString() },
   // am4_last_run_timestamp_seconds is set at the end of every completed
-  // cycle (internal/bot/bot.go) -- distinct from am4_duration_seconds
+  // cycle (internal/bot/bot.go) - distinct from am4_duration_seconds
   // above, which is how LONG that cycle took, not WHEN it happened.
   {
     metric: 'am4_last_run_timestamp_seconds',
@@ -51,10 +51,10 @@ const TILE_METRICS: { metric: string; labelKey: string; format: (v: number) => R
     format: formatTimestampTile,
   },
   // am4_next_scheduled_run_timestamp_seconds is set by cmd/ambot's own
-  // cron scheduler (not internal/bot -- see that metric's own doc
+  // cron scheduler (not internal/bot - see that metric's own doc
   // comment in internal/metrics/prometheus.go), correct for any schedule
   // shape. This is also what prometheus/alerts.yml's AmbotMissedSchedule
-  // rule compares against time() -- seeing this tile visibly stuck in the
+  // rule compares against time() - seeing this tile visibly stuck in the
   // past on the page is the same signal that alert fires on.
   {
     metric: 'am4_next_scheduled_run_timestamp_seconds',

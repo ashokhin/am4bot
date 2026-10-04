@@ -1,6 +1,6 @@
 // Package api is the HTTP layer for the multi-tenant control plane: the
 // backend a React frontend talks to. It never touches Docker or Ansible
-// itself -- that's a separate orchestrator service, deliberately kept out
+// itself - that's a separate orchestrator service, deliberately kept out
 // of this process so a bug or compromise here can't run arbitrary
 // commands on the host (see the design discussion this package grew out
 // of). This package only reads and writes the database.
@@ -18,7 +18,7 @@ import (
 )
 
 // Server holds every dependency the HTTP handlers need and wires up the
-// routes. It has no other state -- everything durable lives in Postgres,
+// routes. It has no other state - everything durable lives in Postgres,
 // except loginGuard's in-memory counters (its bans are also persisted to
 // disk, see LoginGuard's doc comment).
 type Server struct {
@@ -39,13 +39,13 @@ type ServerOptions struct {
 	// back at all.
 	CookieSecure bool
 	// OrchestratorToken authenticates cmd/orchestrator's calls to the
-	// /internal/nodes/{id}/provision endpoint -- a single shared secret
+	// /internal/nodes/{id}/provision endpoint - a single shared secret
 	// both processes are configured with (unlike a node's own config
 	// token, which is per-node and minted, not pre-shared). Required.
 	OrchestratorToken string
 	// TargetHosts is the pool of Ansible inventory hosts a newly
 	// provisioned node is assigned to (round-robin by node id). A single
-	// entry is fine -- and is exactly today's deployment -- while still
+	// entry is fine - and is exactly today's deployment - while still
 	// letting the schema/assignment logic support more from day one.
 	TargetHosts []string
 	// PrometheusPortRangeStart/End bound the per-node metrics ports
@@ -53,12 +53,12 @@ type ServerOptions struct {
 	PrometheusPortRangeStart int
 	PrometheusPortRangeEnd   int
 	// RoutePrefix mounts the PUBLIC listener (UI + /api/*) under this path
-	// instead of "/" -- e.g. "/app", so a reverse proxy can serve this UI
+	// instead of "/" - e.g. "/app", so a reverse proxy can serve this UI
 	// and something else (Prometheus at /prometheus, say) on the same
 	// port/domain with no path-rewriting rules needed, the same
 	// route-prefix trick Prometheus/Grafana themselves offer. "" (the
 	// default) mounts at the root, unchanged from before this existed.
-	// Never affects the INTERNAL listener -- /internal/* is never meant to
+	// Never affects the INTERNAL listener - /internal/* is never meant to
 	// sit behind a shared reverse proxy at all, see NewServer's own doc
 	// comment on why it's a separate listener in the first place.
 	// Validated/normalized (must start with "/", must not end with "/")
@@ -72,7 +72,7 @@ type ServerOptions struct {
 	TrustedProxies []*net.IPNet
 }
 
-// NewServer builds a Server and its two http.Handlers -- see
+// NewServer builds a Server and its two http.Handlers - see
 // ServerOptions' field docs for what each setting controls.
 //
 // Two handlers, not one, because they're meant to listen on two
@@ -82,7 +82,7 @@ type ServerOptions struct {
 //   - internal: the /internal/* routes a node's own ambot container and
 //     the orchestrator call, bearer-token-authenticated rather than
 //     cookie-authenticated. Deliberately on a SEPARATE listener so a
-//     misconfigured reverse proxy can't accidentally expose it -- the
+//     misconfigured reverse proxy can't accidentally expose it - the
 //     token alone isn't the only thing standing between these endpoints
 //     (which hand back decrypted game/VPN passwords) and the public
 //     internet; the port itself never being reachable from outside your
@@ -113,14 +113,14 @@ func NewServer(st *store.Store, tokens *auth.TokenManager, enc *secrets.Encrypto
 	publicMux.HandleFunc("POST /api/admin/users/{uuid}/reset-password", s.requireAdmin(s.handleResetUserPassword))
 	publicMux.HandleFunc("POST /api/admin/users/{uuid}/unlock", s.requireAdmin(s.handleUnlockUser))
 
-	// Self-service account settings -- every signed-in user, admin
+	// Self-service account settings - every signed-in user, admin
 	// included (an admin still has their own login password/display name,
 	// even with no nodes/VPN of their own).
 	publicMux.HandleFunc("PUT /api/me/password", s.requireAuth(s.handleSetMyPassword))
 	publicMux.HandleFunc("PUT /api/me/display-name", s.requireAuth(s.handleSetMyDisplayName))
 	publicMux.HandleFunc("GET /api/me/login-activity", s.requireAuth(s.handleMyLoginActivity))
 
-	// Nodes are a regular (non-admin) user's own concern only -- an admin
+	// Nodes are a regular (non-admin) user's own concern only - an admin
 	// has none of their own, see requireNonAdminUser's doc comment. Admins
 	// instead get a read-only view of every user's nodes below.
 	publicMux.HandleFunc("GET /api/nodes", s.requireNonAdminUser(s.handleListNodes))
@@ -130,12 +130,12 @@ func NewServer(st *store.Store, tokens *auth.TokenManager, enc *secrets.Encrypto
 	publicMux.HandleFunc("DELETE /api/nodes/{id}", s.requireNonAdminUser(s.handleDeleteNode))
 
 	// Admin-only: every node across every user, read-only (no create/edit
-	// -- an admin manages the VPN catalog and provider account, not
+	// - an admin manages the VPN catalog and provider account, not
 	// individual users' nodes).
 	publicMux.HandleFunc("GET /api/admin/nodes", s.requireAdmin(s.handleListAllNodes))
 	publicMux.HandleFunc("GET /api/admin/nodes/{id}", s.requireAdmin(s.handleAdminGetNode))
 	// Re-pull the ambot image and recreate every enabled node whose image
-	// changed -- see handleUpdateAllNodes' doc comment.
+	// changed - see handleUpdateAllNodes' doc comment.
 	publicMux.HandleFunc("POST /api/admin/nodes/update-all", s.requireAdmin(s.handleUpdateAllNodes))
 	publicMux.HandleFunc("PUT /api/admin/nodes/{id}/log-level", s.requireAdmin(s.handleSetNodeLogLevel))
 
@@ -148,30 +148,30 @@ func NewServer(st *store.Store, tokens *auth.TokenManager, enc *secrets.Encrypto
 	publicMux.HandleFunc("PUT /api/admin/vpn-provider", s.requireAdmin(s.handleSetVPNProviderCredentials))
 
 	// Self-service: a user picks their own region, applied to every one of
-	// their nodes -- see vpn_handlers.go's doc comment. Not for admins --
+	// their nodes - see vpn_handlers.go's doc comment. Not for admins --
 	// they have no nodes to apply a region to.
 	publicMux.HandleFunc("PUT /api/me/vpn-region", s.requireNonAdminUser(s.handleSetMyVPNRegion))
 
 	// Metrics: any signed-in non-admin user sees only their own nodes'
 	// metrics (a hard server-side user_uuid filter, never client-supplied
-	// -- see metrics_handlers.go); the Prometheus instance itself is
+	// - see metrics_handlers.go); the Prometheus instance itself is
 	// admin-only to configure.
 	publicMux.HandleFunc("GET /api/metrics", s.requireNonAdminUser(s.handleGetMetrics))
 	// "How much changed over this window" companion to /api/metrics above --
 	// see deltaMetrics/deltaPeriods' doc comments in metrics_handlers.go.
 	publicMux.HandleFunc("GET /api/metrics/delta", s.requireNonAdminUser(s.handleGetMetricsDelta))
-	// Balance-over-time chart -- see balanceMetric/queryBalanceRange's doc
+	// Balance-over-time chart - see balanceMetric/queryBalanceRange's doc
 	// comments in metrics_handlers.go.
 	publicMux.HandleFunc("GET /api/metrics/balance", s.requireNonAdminUser(s.handleGetMetricsBalance))
 	publicMux.HandleFunc("GET /api/admin/prometheus", s.requireAdmin(s.handleGetPrometheusSettings))
 	publicMux.HandleFunc("PUT /api/admin/prometheus", s.requireAdmin(s.handleSetPrometheusSettings))
-	// Admin's own metrics view: any user's nodes, picked by uuid -- see
+	// Admin's own metrics view: any user's nodes, picked by uuid - see
 	// handleAdminGetMetrics's doc comment.
 	publicMux.HandleFunc("GET /api/admin/metrics", s.requireAdmin(s.handleAdminGetMetrics))
 	publicMux.HandleFunc("GET /api/admin/metrics/delta", s.requireAdmin(s.handleAdminGetMetricsDelta))
 	publicMux.HandleFunc("GET /api/admin/metrics/balance", s.requireAdmin(s.handleAdminGetMetricsBalance))
 
-	// The built React SPA -- everything not matched by a route above
+	// The built React SPA - everything not matched by a route above
 	// (react-router's own client-side routes included) falls through to
 	// this, which serves static assets or index.html as appropriate. See
 	// spaFileServer's doc comment.
@@ -189,7 +189,7 @@ func NewServer(st *store.Store, tokens *auth.TokenManager, enc *secrets.Encrypto
 	internalMux.HandleFunc("GET /internal/nodes/{id}/config", s.handleInternalGetNodeConfig)
 
 	// Orchestrator-only, guarded by the shared OrchestratorToken rather
-	// than a node's own config token -- the caller here is the
+	// than a node's own config token - the caller here is the
 	// orchestrator provisioning a node, not that node's own ambot
 	// container.
 	internalMux.HandleFunc("GET /internal/nodes/{id}/provision", s.requireOrchestrator(s.handleInternalGetNodeProvision))
@@ -208,7 +208,7 @@ func NewServer(st *store.Store, tokens *auth.TokenManager, enc *secrets.Encrypto
 	rootMux := http.NewServeMux()
 
 	// Deliberately registered OUTSIDE prefixedHandler/RoutePrefix, at a
-	// fixed path regardless of it -- infrastructure (a reverse proxy's own
+	// fixed path regardless of it - infrastructure (a reverse proxy's own
 	// backend healthcheck, `docker compose`'s own `healthcheck:`) expects
 	// a well-known health endpoint that doesn't move depending on
 	// whatever path prefix the UI happens to be mounted under.
@@ -216,11 +216,11 @@ func NewServer(st *store.Store, tokens *auth.TokenManager, enc *secrets.Encrypto
 	// start with its prefix (not a passthrough for the unprefixed case),
 	// so these would 404 once RoutePrefix is set if they were registered
 	// on publicMux like every other route instead. Unauthenticated on
-	// purpose -- these callers have no session cookie to send. Not
+	// purpose - these callers have no session cookie to send. Not
 	// dangerous to leave world-reachable in principle (handleHealthz
 	// reveals nothing, handleReadyz only a boolean-ish "database
 	// reachable or not"), but nothing routes them through a public
-	// reverse proxy frontend either -- see docker-compose.multi-tenant.yml
+	// reverse proxy frontend either - see docker-compose.multi-tenant.yml
 	// and this file's own doc comments on handleHealthz/handleReadyz.
 	rootMux.HandleFunc("GET /healthz", s.handleHealthz)
 	rootMux.HandleFunc("GET /readyz", s.handleReadyz)
@@ -238,7 +238,7 @@ const sessionCookieName = "am4bot_session"
 // cookiePath scopes the session cookie to RoutePrefix when one is set, so
 // it doesn't leak to whatever else a reverse proxy serves on sibling
 // paths of the same domain (e.g. Prometheus at /prometheus on the same
-// host) -- "/" (every path) when there's no prefix, unchanged from
+// host) - "/" (every path) when there's no prefix, unchanged from
 // before RoutePrefix existed.
 func (s *Server) cookiePath() string {
 	if s.opts.RoutePrefix == "" {
@@ -273,7 +273,7 @@ func (s *Server) clearSessionCookie(w http.ResponseWriter) {
 }
 
 // withRequestLogging logs every request's method, path, status, and
-// duration at debug level -- enough to follow along locally without
+// duration at debug level - enough to follow along locally without
 // drowning the default log level in traffic noise.
 func withRequestLogging(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

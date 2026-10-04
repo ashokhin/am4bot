@@ -1,14 +1,14 @@
 // Package api's metrics endpoint proxies a fixed set of PromQL queries to
 // the admin-configured Prometheus instance (store.PrometheusSettings),
 // always with a server-side `{user_uuid="<caller's own uuid>"}` selector
-// -- never a client-supplied one -- so a signed-in user can only ever see
+// - never a client-supplied one - so a signed-in user can only ever see
 // their own nodes' metrics. Every node's metrics carry that label because
 // cmd/orchestrator's file_sd targets file tags each scrape target with
 // its owning user's uuid (see cmd/orchestrator/prometheus_sd.go); ambot
 // itself never needs to know its own tenant.
 //
-// Only a fixed, hardcoded list of metric names is ever queried -- the
-// caller supplies no PromQL of their own -- which is also what makes the
+// Only a fixed, hardcoded list of metric names is ever queried - the
+// caller supplies no PromQL of their own - which is also what makes the
 // server-side label injection safe without needing a real PromQL parser:
 // every query this builds is `<our own fixed metric name>{user_uuid="<a
 // uuid.UUID's own .String() form>"}`, never user-controlled text.
@@ -33,7 +33,7 @@ import (
 )
 
 // exposedMetrics is every scalar (non-vector) gauge internal/metrics
-// publishes that's useful on a per-user dashboard -- see
+// publishes that's useful on a per-user dashboard - see
 // internal/metrics/prometheus.go. GaugeVec metrics (labeled by aircraft,
 // currency, etc.) are deliberately left out of this first version; they
 // need a richer widget than a single stat tile.
@@ -57,14 +57,14 @@ var exposedMetrics = []string{
 }
 
 // deltaMetrics is the metrics worth showing as a "how much changed over
-// this window" delta -- currently just am4_flights_departed_total, a
+// this window" delta - currently just am4_flights_departed_total, a
 // real Counter this node's own depart service increments locally (see
 // internal/bot/depart.go and internal/metrics/prometheus.go's doc
 // comment on it). Deliberately NOT am4_stats_flights_operated_total (an
 // early version of this widget used that instead): it's the whole
 // airline account's lifetime flights, read off a game page, identical
 // across every node logged into the same account regardless of which
-// services that node runs -- so a node with only e.g. a maintenance
+// services that node runs - so a node with only e.g. a maintenance
 // service enabled, no depart at all, showed a nonzero "flights
 // dispatched" delta simply because ANOTHER node on the same account had
 // depart enabled. am4_flights_departed_total has no such cross-node
@@ -75,7 +75,7 @@ var deltaMetrics = []string{
 }
 
 // deltaPeriods is the fixed set of lookback windows both the delta
-// widget's and the balance chart's period buttons offer -- validated
+// widget's and the balance chart's period buttons offer - validated
 // against, never passed through client-supplied text straight into a
 // PromQL range vector or a query_range start time, even though a plain
 // duration string couldn't inject anything unsafe on its own; keeping
@@ -162,7 +162,7 @@ func (s *Server) handleGetMetrics(w http.ResponseWriter, r *http.Request) {
 }
 
 // parseDeltaPeriod reads and validates the "period" query parameter
-// against deltaPeriods -- shared by handleGetMetricsDelta and
+// against deltaPeriods - shared by handleGetMetricsDelta and
 // handleAdminGetMetricsDelta.
 func parseDeltaPeriod(r *http.Request) (string, error) {
 	period := r.URL.Query().Get("period")
@@ -275,7 +275,7 @@ func (s *Server) handleAdminGetMetricsDelta(w http.ResponseWriter, r *http.Reque
 // query_range call for balanceMetric across the whole selected period,
 // per node. Unlike the scalar/delta endpoints above (one point per
 // metric per node), each metricSeries entry in the response is one POINT
-// of a node's line -- the frontend groups by node_id itself.
+// of a node's line - the frontend groups by node_id itself.
 func (s *Server) handleGetMetricsBalance(w http.ResponseWriter, r *http.Request) {
 	claims := claimsFromContext(r.Context())
 
@@ -376,7 +376,7 @@ func (s *Server) handleAdminGetMetricsBalance(w http.ResponseWriter, r *http.Req
 
 // handleAdminGetMetrics is the admin counterpart of handleGetMetrics: an
 // admin has no nodes of their own (see requireNonAdminUser's doc
-// comment), but can look up any user's metrics by uuid -- still always a
+// comment), but can look up any user's metrics by uuid - still always a
 // hard server-side label filter, just parameterized by an admin-supplied
 // user_uuid instead of the caller's own.
 func (s *Server) handleAdminGetMetrics(w http.ResponseWriter, r *http.Request) {
@@ -387,7 +387,7 @@ func (s *Server) handleAdminGetMetrics(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Validate it's a real user's uuid -- not because an invalid one would
+	// Validate it's a real user's uuid - not because an invalid one would
 	// be unsafe to embed in the PromQL selector (see this file's own doc
 	// comment on why that's already safe), just so a typo returns a clear
 	// 404 instead of a silently-empty series list.
@@ -642,7 +642,7 @@ const partialHistoryTolerance = 3 * time.Minute
 
 // runInstantQuery is the shared HTTP/JSON plumbing behind an instant
 // PromQL query (https://prometheus.io/docs/prometheus/latest/querying/api/#instant-queries)
-// -- query is either a bare metric selector or a full PromQL expression
+// - query is either a bare metric selector or a full PromQL expression
 // (e.g. wrapped in delta(...)); either way Prometheus' /api/v1/query
 // handles it the same way.
 func (s *Server) runInstantQuery(ctx context.Context, prometheusURL, query string) (promQueryResponse, error) {
@@ -704,7 +704,7 @@ func toMetricSeries(parsed promQueryResponse, metric string) []metricSeries {
 
 // promRangeQueryResponse is the subset of Prometheus' range-query
 // response (https://prometheus.io/docs/prometheus/latest/querying/api/#range-queries)
-// this cares about -- Values (plural, a whole series of [timestamp,
+// this cares about - Values (plural, a whole series of [timestamp,
 // value] pairs) in place of instant-query's single Value.
 type promRangeQueryResponse struct {
 	Status string `json:"status"`
@@ -762,7 +762,7 @@ func (s *Server) runRangeQuery(ctx context.Context, prometheusURL, query, period
 }
 
 // parsePromDuration parses one of deltaPeriods' fixed strings ("24h",
-// "3d", ...) as a Go time.Duration -- time.ParseDuration itself doesn't
+// "3d", ...) as a Go time.Duration - time.ParseDuration itself doesn't
 // accept a "d" (day) unit, so the day-based periods get expanded to
 // hours first. Only ever called with an already-validated period, so an
 // error here would be a programming error (a new deltaPeriods entry
@@ -874,7 +874,7 @@ func (s *Server) handleSetPrometheusSettings(w http.ResponseWriter, r *http.Requ
 }
 
 // defaultMetricsHTTPClient is a short-timeout client for the Prometheus
-// round trips above -- a hung or unreachable Prometheus must not hang the
+// round trips above - a hung or unreachable Prometheus must not hang the
 // request indefinitely.
 func defaultMetricsHTTPClient() *http.Client {
 	return &http.Client{Timeout: 10 * time.Second}

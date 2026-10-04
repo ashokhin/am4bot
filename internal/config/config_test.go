@@ -59,7 +59,7 @@ func TestValidateRejectsEmptyCronSchedules(t *testing.T) {
 // a Config built directly in Go (not via New()/loadConfig(), so
 // safeStorePassword never runs and Password stays populated) marshals to
 // JSON with every field intact, and unmarshals back losslessly. Password
-// staying present is deliberate here -- the whole point of the endpoint
+// staying present is deliberate here - the whole point of the endpoint
 // is to hand ambot a usable, populated Config.
 func TestJSONRoundTrip(t *testing.T) {
 	c := Config{
@@ -118,7 +118,7 @@ func TestJSONRoundTripAppliesDefaultsThenOverlay(t *testing.T) {
 	c.Password = "supersecret"
 	c.CronSchedules = []string{"*/10 * * * *"}
 
-	// extra_config only mentions fuel price -- everything else must
+	// extra_config only mentions fuel price - everything else must
 	// survive from the defaults/dedicated-column pass untouched.
 	extraConfig := []byte(`{"good_price":{"fuel":700}}`)
 	if err := json.Unmarshal(extraConfig, &c); err != nil {

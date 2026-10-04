@@ -20,12 +20,12 @@ const claimsContextKey contextKey = iota
 // claimsFromContext). Responds 401 without calling next otherwise.
 //
 // A disabled/deleted account's already-issued JWT is otherwise still
-// cryptographically valid until it expires (TokenTTL, 24h) -- there's no
+// cryptographically valid until it expires (TokenTTL, 24h) - there's no
 // way to reach into that account's OWN browser and clear its cookie the
 // moment an admin disables them (unlike handleLogout, which clears the
 // cookie of the SAME browser making that exact request); the server has
 // to catch it on that account's own NEXT request instead. This only
-// checks on MUTATING requests (POST/PUT/PATCH/DELETE), not GET -- a read
+// checks on MUTATING requests (POST/PUT/PATCH/DELETE), not GET - a read
 // can't do anything a disabled account wasn't already allowed to have
 // seen, so paying a DB round trip on every read (including the 20s
 // metrics poll, see web/src/hooks/usePolling.ts) to guard against that
@@ -95,7 +95,7 @@ func isMutatingMethod(method string) bool {
 }
 
 // requireAdmin is requireAuth plus an is_admin check. Responds 403 (not
-// 404) on a non-admin caller -- these endpoints' existence isn't a secret,
+// 404) on a non-admin caller - these endpoints' existence isn't a secret,
 // only their data is.
 func (s *Server) requireAdmin(next http.HandlerFunc) http.HandlerFunc {
 	return s.requireAuth(func(w http.ResponseWriter, r *http.Request) {
@@ -111,11 +111,11 @@ func (s *Server) requireAdmin(next http.HandlerFunc) http.HandlerFunc {
 	})
 }
 
-// requireNonAdminUser is requireAuth plus a NOT-admin check -- the mirror
+// requireNonAdminUser is requireAuth plus a NOT-admin check - the mirror
 // of requireAdmin. Admin accounts have no nodes and no VPN region of
 // their own (see decision in the project notes: an admin only curates
 // the VPN region catalog/provider account and can see every user's
-// nodes, never their own) -- routes gated by this reject an admin caller
+// nodes, never their own) - routes gated by this reject an admin caller
 // the same way requireAdmin rejects a non-admin one.
 func (s *Server) requireNonAdminUser(next http.HandlerFunc) http.HandlerFunc {
 	return s.requireAuth(func(w http.ResponseWriter, r *http.Request) {
@@ -132,7 +132,7 @@ func (s *Server) requireNonAdminUser(next http.HandlerFunc) http.HandlerFunc {
 }
 
 // claimsFromContext retrieves the claims requireAuth stored. Panics if
-// called outside a requireAuth-wrapped handler -- that's a programming
+// called outside a requireAuth-wrapped handler - that's a programming
 // error (a route registered without the middleware), not a runtime
 // condition to handle gracefully.
 func claimsFromContext(ctx context.Context) *auth.Claims {
@@ -141,7 +141,7 @@ func claimsFromContext(ctx context.Context) *auth.Claims {
 
 // requireOrchestrator guards a route with the single shared
 // ServerOptions.OrchestratorToken instead of a user session or a node's
-// own per-node config token -- for the one caller that is the
+// own per-node config token - for the one caller that is the
 // orchestrator service itself, acting on behalf of the whole system
 // rather than one user or one node.
 func (s *Server) requireOrchestrator(next http.HandlerFunc) http.HandlerFunc {

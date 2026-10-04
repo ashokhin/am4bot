@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils'
 import { Input } from './input'
 
 // Every password field in the app should be this, not a raw
-// `<Input type="password">` -- the toggle lets someone check what they
+// `<Input type="password">` - the toggle lets someone check what they
 // actually typed before submitting, same as any modern password field.
 export function PasswordInput({ className, ...props }: React.ComponentProps<typeof Input>) {
   const [visible, setVisible] = useState(false)

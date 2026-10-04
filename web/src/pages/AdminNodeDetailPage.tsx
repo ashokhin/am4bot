@@ -15,10 +15,10 @@ const NO_OVERRIDE = '__default__'
 /**
  * Admin-only, read-only: the same information a node's own owner sees on
  * NodeFormPage, minus game login/password (shows "owner: <login>"
- * instead) -- an admin can look, never touch, with exactly one
+ * instead) - an admin can look, never touch, with exactly one
  * exception: the Diagnostics card below lets them set this node's
  * log_level, for debugging a misbehaving node without needing any other
- * access to it (a regular user never sees this field at all -- see
+ * access to it (a regular user never sees this field at all - see
  * NodeFormPage/AdvancedSettingsSection, which deliberately don't render
  * it). Reachable from AdminNodesPage and AdminUserDetailPage.
  */

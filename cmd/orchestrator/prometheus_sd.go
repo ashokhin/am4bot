@@ -12,7 +12,7 @@ import (
 // prometheusSDTarget is one entry of Prometheus' file_sd_config JSON
 // format (https://prometheus.io/docs/prometheus/latest/configuration/configuration/#file_sd_config).
 // user_uuid is the label apiserver's metrics endpoint filters every query
-// by -- see internal/api/metrics_handlers.go's doc comment -- so a
+// by - see internal/api/metrics_handlers.go's doc comment - so a
 // scraped node's metrics are always attributable to exactly one user,
 // without ambot itself needing to know its own tenant.
 type prometheusSDTarget struct {
@@ -22,7 +22,7 @@ type prometheusSDTarget struct {
 
 // writePrometheusSDFile regenerates the whole file_sd targets file from
 // the database's current state. Called after every processed operation
-// (see main.go) -- cheap full regeneration rather than incremental
+// (see main.go) - cheap full regeneration rather than incremental
 // patching, since the number of nodes this hosts is small and Prometheus
 // only re-reads the file when its mtime changes, so an unchanged write is
 // harmless. A no-op if --prometheus-sd-file wasn't set.
@@ -56,7 +56,7 @@ func (r *reconciler) writePrometheusSDFile(ctx context.Context) {
 		return
 	}
 
-	// Write to a temp file then rename -- Prometheus polls this path
+	// Write to a temp file then rename - Prometheus polls this path
 	// periodically and a half-written file mid-scan would be a transient
 	// parse error on its side; rename is atomic on the same filesystem.
 	tmp := r.prometheusSDFile + ".tmp"

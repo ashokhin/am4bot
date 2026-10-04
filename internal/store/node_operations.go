@@ -11,7 +11,7 @@ import (
 // this node's containers match its current row" (OpReconcile) or "tear
 // down what payload describes, the node row may already be gone"
 // (OpDelete). apiserver only ever inserts these; only the orchestrator
-// reads and updates them -- see migrations/0001_init.sql's
+// reads and updates them - see migrations/0001_init.sql's
 // design notes for why the two never call each other directly.
 type NodeOperation struct {
 	ID           int64           `db:"id"`
@@ -73,7 +73,7 @@ func (s *Store) EnqueueOperation(ctx context.Context, nodeID int64, opType strin
 // ClaimPendingOperations atomically marks up to limit pending operations
 // as running and returns them, oldest first. Uses
 // "FOR UPDATE SKIP LOCKED" so it's safe to run more than one orchestrator
-// process concurrently -- each claims a disjoint set of rows instead of
+// process concurrently - each claims a disjoint set of rows instead of
 // blocking on or double-processing the same one.
 func (s *Store) ClaimPendingOperations(ctx context.Context, limit int) ([]NodeOperation, error) {
 	tx, err := s.db.BeginTxx(ctx, nil)
@@ -122,7 +122,7 @@ func (s *Store) ClaimPendingOperations(ctx context.Context, limit int) ([]NodeOp
 
 // FinishOperation records the outcome of a claimed operation. errMsg
 // should be nil on success; on failure it's a short, safe-to-store
-// description -- never raw command output, which could contain the
+// description - never raw command output, which could contain the
 // decrypted secrets the orchestrator handled transiently while running
 // this operation.
 func (s *Store) FinishOperation(ctx context.Context, id int64, succeeded bool, errMsg *string) error {

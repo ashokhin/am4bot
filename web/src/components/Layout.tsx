@@ -22,8 +22,8 @@ const workspaceNav: NavItem[] = [
   { to: '/settings', labelKey: 'nav.settings', icon: SettingsIcon },
 ]
 
-// An admin has no nodes of their own -- see requireNonAdminUser's doc
-// comment -- so they get a different nav for that, but they still get
+// An admin has no nodes of their own - see requireNonAdminUser's doc
+// comment - so they get a different nav for that, but they still get
 // their own Metrics (scoped to any user they pick) and Settings (display
 // name + password, no VPN region section).
 const adminNav: NavItem[] = [
@@ -57,7 +57,7 @@ function NavLink({ item, onNavigate }: { item: NavItem; onNavigate?: () => void 
 }
 
 // Shared between the always-visible desktop sidebar and the mobile Sheet
-// drawer -- onNavigate closes the drawer after a tap (irrelevant on
+// drawer - onNavigate closes the drawer after a tap (irrelevant on
 // desktop, where nothing renders it).
 function NavList({ items, onNavigate }: { items: NavItem[]; onNavigate?: () => void }) {
   return (
@@ -91,7 +91,7 @@ export function Layout({ children }: { children: ReactNode }) {
   }
 
   // Forced onto /change-password by ProtectedRoute (see
-  // User.must_change_password's doc comment) -- every nav link would just
+  // User.must_change_password's doc comment) - every nav link would just
   // bounce back there anyway, so don't show them at all. Logout stays
   // available in the header below in case they'd rather bail than change
   // it right now.

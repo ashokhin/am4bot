@@ -9,11 +9,11 @@ import (
 // This file implements the actual VPN model: there is exactly ONE VPN
 // provider account, shared by every user, whose credentials the admin
 // configures once (VPNProviderCredentials, a singleton row). The admin
-// also curates a catalog of exit regions (VPNRegion) -- each just an
+// also curates a catalog of exit regions (VPNRegion) - each just an
 // .ovpn file naming a different server/location for that same account.
 // A user picks ONE region from that catalog (users.vpn_region_id) and
 // every one of their nodes
-// exits through it -- there is deliberately no per-node VPN choice, so a
+// exits through it - there is deliberately no per-node VPN choice, so a
 // user's game bot and any other of their tooling always share one IP.
 
 // VPNRegion is one entry in the admin-curated catalog of VPN exit
@@ -46,7 +46,7 @@ func (s *Store) CreateVPNRegion(ctx context.Context, name, ovpnConfigEnc string)
 	return &v, nil
 }
 
-// ListVPNRegions returns the whole catalog, alphabetically -- there's no
+// ListVPNRegions returns the whole catalog, alphabetically - there's no
 // per-user scoping, every user picks from the same list.
 func (s *Store) ListVPNRegions(ctx context.Context) ([]VPNRegion, error) {
 	var regions []VPNRegion
@@ -60,7 +60,7 @@ func (s *Store) ListVPNRegions(ctx context.Context) ([]VPNRegion, error) {
 	return regions, nil
 }
 
-// GetVPNRegionByID looks up one region by id -- used both to validate a
+// GetVPNRegionByID looks up one region by id - used both to validate a
 // user's region choice and by the provisioning flow to fetch its ovpn file.
 func (s *Store) GetVPNRegionByID(ctx context.Context, id int64) (*VPNRegion, error) {
 	var v VPNRegion
@@ -77,7 +77,7 @@ func (s *Store) GetVPNRegionByID(ctx context.Context, id int64) (*VPNRegion, err
 
 // DeleteVPNRegion removes a region from the catalog. Any user currently
 // pointing at it falls back to no VPN (users.vpn_region_id references this
-// ON DELETE SET NULL) rather than being blocked -- see
+// ON DELETE SET NULL) rather than being blocked - see
 // migrations/0001_init.sql.
 func (s *Store) DeleteVPNRegion(ctx context.Context, id int64) error {
 	res, err := s.db.ExecContext(ctx, `DELETE FROM vpn_regions WHERE id = $1`, id)
@@ -89,7 +89,7 @@ func (s *Store) DeleteVPNRegion(ctx context.Context, id int64) error {
 }
 
 // VPNProviderCredentials is the single shared VPN account every region in
-// the catalog above connects through -- one admin-entered username/
+// the catalog above connects through - one admin-entered username/
 // password, reused for every user and every region. Modeled as a
 // singleton row (id always 1) rather than a config-file setting so it can
 // be rotated from the admin UI without a redeploy.

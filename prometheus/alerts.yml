@@ -1,20 +1,20 @@
 # Alert rules for the bundled, internal-only Prometheus (see
-# prometheus.yml's own header) -- catches a hosted node that's silently
+# prometheus.yml's own header) - catches a hosted node that's silently
 # stopped actually running, which the admin/user otherwise only notices
 # by happening to look at the UI's "Next run" tile (see
 # web/src/components/NodeMetricTiles.tsx) and eyeballing that it's stuck
 # in the past.
 #
-# No Alertmanager is bundled here -- these rules just make a stuck node
+# No Alertmanager is bundled here - these rules just make a stuck node
 # show up as a firing alert on THIS Prometheus's own /alerts page. Wire up
 # Alertmanager yourself (or federate into your org's main Prometheus,
 # see docs/multi-tenant-hosting.md's Metrics section) for actual
-# notifications (email/Slack/whatever) -- out of scope for what this
+# notifications (email/Slack/whatever) - out of scope for what this
 # project bundles by default.
 groups:
   - name: am4bot
     rules:
-      # Catches "the container/exporter isn't reachable at all" -- crashed,
+      # Catches "the container/exporter isn't reachable at all" - crashed,
       # never started, network problem, etc. 5m (not `scrape_interval`
       # itself) so one missed scrape doesn't immediately fire.
       - alert: AmbotExporterDown
@@ -38,7 +38,7 @@ groups:
       # am4_next_scheduled_run_timestamp_seconds is computed by cmd/ambot
       # itself via the SAME robfig/cron library that does the actual
       # scheduling (see internal/metrics/prometheus.go's doc comment on
-      # that metric) -- correct for any schedule shape (multiple entries,
+      # that metric) - correct for any schedule shape (multiple entries,
       # weekly, whatever) without this expression needing to understand
       # cron syntax at all.
       #
@@ -49,7 +49,7 @@ groups:
       # schedules where a false positive from ordinary run-time variance
       # would be more annoying than a slightly later alert.
       - alert: AmbotMissedSchedule
-        # NOT `time() > next_run + 600` -- with a plain (non-`bool`)
+        # NOT `time() > next_run + 600` - with a plain (non-`bool`)
         # comparison between two instant vectors, Prometheus alerting's
         # $value in the annotation below is the LEFT side's value (here,
         # time() itself, i.e. "now"), not anything about how overdue the

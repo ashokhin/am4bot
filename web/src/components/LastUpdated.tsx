@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next'
 
-/** "Updated HH:MM:SS" -- the last time this page's data was successfully
+/** "Updated HH:MM:SS" - the last time this page's data was successfully
  * (re)fetched, see usePolling. null (before the first successful fetch)
  * renders nothing. */
 export function LastUpdated({ at }: { at: Date | null }) {

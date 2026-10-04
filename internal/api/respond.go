@@ -30,7 +30,7 @@ type apiError struct {
 
 // writeError writes a JSON error body. msg is shown to the caller, so it
 // must never contain anything sensitive (a raw DB error, a stack trace,
-// credential material) -- callers pass a fixed, safe string here and log
+// credential material) - callers pass a fixed, safe string here and log
 // the real error themselves beforehand if it's worth keeping.
 func writeError(w http.ResponseWriter, status int, msg string) {
 	writeJSON(w, status, apiError{Error: msg})
@@ -38,7 +38,7 @@ func writeError(w http.ResponseWriter, status int, msg string) {
 
 // maxRequestBodyBytes bounds every JSON request body readJSON decodes.
 // Generous for anything this API legitimately receives (the largest is an
-// OVPN config file upload, well under a megabyte) -- this exists purely to
+// OVPN config file upload, well under a megabyte) - this exists purely to
 // stop an internet-facing endpoint from being handed a multi-gigabyte body
 // and decoding it into memory unbounded.
 const maxRequestBodyBytes = 1 << 20 // 1 MiB
@@ -46,7 +46,7 @@ const maxRequestBodyBytes = 1 << 20 // 1 MiB
 // readJSON decodes the request body into v, rejecting unknown fields so a
 // typo or an out-of-date client silently dropping a field is a visible
 // error instead of quietly ignored input. The body is capped at
-// maxRequestBodyBytes via http.MaxBytesReader -- a decode that hits the
+// maxRequestBodyBytes via http.MaxBytesReader - a decode that hits the
 // limit fails with an error readJSON's callers already treat as a normal
 // "invalid request body" 400.
 func readJSON(w http.ResponseWriter, r *http.Request, v any) error {

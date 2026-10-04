@@ -11,14 +11,14 @@ import { Label } from './ui/label'
 import { Switch } from './ui/switch'
 
 interface Props {
-  /** Enabled services, in the exact order they'll run in -- see Node.services' doc comment. A service may appear more than once (e.g. buying fuel both before and after departing) -- ambot runs whatever's in this array top to bottom, duplicates and all. */
+  /** Enabled services, in the exact order they'll run in - see Node.services' doc comment. A service may appear more than once (e.g. buying fuel both before and after departing) - ambot runs whatever's in this array top to bottom, duplicates and all. */
   value: string[]
   onChange: (next: string[]) => void
 }
 
 /**
  * Every known service is always listed (per-service on/off switch), plus
- * the current run order below as a reorderable, duplicable list -- see
+ * the current run order below as a reorderable, duplicable list - see
  * this component's Props doc comment on why duplicates are meaningful,
  * not a bug to prevent.
  */
@@ -62,7 +62,7 @@ export function ServiceListEditor({ value, onChange }: Props) {
     onChange(value.filter((_, i) => i !== index))
   }
 
-  // Stable per-instance ids for dnd-kit: "service#instanceIndex" -- two
+  // Stable per-instance ids for dnd-kit: "service#instanceIndex" - two
   // duplicate entries of the same service need distinct sortable ids.
   const instanceIds = value.map((service, i) => `${service}#${i}`)
 

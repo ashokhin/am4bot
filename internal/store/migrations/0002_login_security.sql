@@ -5,7 +5,7 @@
 -- doesn't need its own volume mount to survive a container restart.
 
 -- One row per currently-banned key. A key is either an IP address
--- (key_type='ip') or a login string (key_type='login') -- see
+-- (key_type='ip') or a login string (key_type='login') - see
 -- LoginGuard's doc comment on why both are tracked independently. Expired
 -- rows are deleted rather than kept around, so this table only ever holds
 -- active bans.
@@ -34,7 +34,7 @@ ALTER TABLE users
 -- Append-only log of every login attempt, successful or not, against any
 -- login string (including ones that don't correspond to a real account --
 -- that's itself useful signal). Grows without bound; nothing prunes it
--- yet, acceptable at this project's scale (a handful of users) -- revisit
+-- yet, acceptable at this project's scale (a handful of users) - revisit
 -- with a retention policy before this matters.
 CREATE TABLE login_attempts (
     id         BIGSERIAL PRIMARY KEY,
@@ -50,7 +50,7 @@ CREATE INDEX login_attempts_login_idx ON login_attempts (login, created_at DESC)
 -- login_bans above (which only holds CURRENTLY active bans and loses the
 -- row once one expires or an admin unlocks it). unlocked_at/
 -- unlocked_by_login are set only when an admin manually unlocks it before
--- its natural unban_at -- both stay NULL for a ban that simply expired on
+-- its natural unban_at - both stay NULL for a ban that simply expired on
 -- its own. unlocked_by_login is a snapshot string, not a foreign key: this
 -- is an audit trail, and should keep reading correctly even if that admin
 -- account is later deleted.

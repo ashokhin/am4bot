@@ -10,7 +10,7 @@ import { Button } from '../components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table'
 
 /**
- * Admin-only, read-only: every node across every user -- see
+ * Admin-only, read-only: every node across every user - see
  * requireNonAdminUser's doc comment on why an admin has none of their own
  * to create or edit here, only visibility into everyone else's.
  */

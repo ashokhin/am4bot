@@ -17,7 +17,7 @@ import (
 )
 
 // defaultCronSchedules matches config.Config's own package default
-// (internal/config's `default:"[\"*/5 * * * *\"]"` tag) -- used when a
+// (internal/config's `default:"[\"*/5 * * * *\"]"` tag) - used when a
 // create request doesn't specify any, so a node is never silently stored
 // with zero schedules (which config.Config.validate() rejects, meaning
 // its ambot container would crash-loop forever on every start otherwise).
@@ -25,7 +25,7 @@ var defaultCronSchedules = []string{"*/5 * * * *"}
 
 // validateCronSchedules mirrors config.Config.validate()'s own checks for
 // these two fields, at the API layer, so a bad value is rejected here --
-// with a helpful 400 -- rather than being accepted, stored, and only
+// with a helpful 400 - rather than being accepted, stored, and only
 // discovered when the node's ambot container fails to start.
 func validateCronSchedules(schedules []string, jitterSeconds int) error {
 	if len(schedules) == 0 {
@@ -56,7 +56,7 @@ func validateTimezone(tz string) error {
 	return nil
 }
 
-// allianceIDPattern matches a single alliance ID -- these are purely
+// allianceIDPattern matches a single alliance ID - these are purely
 // numeric (see internal/bot/stats.go's allianceStatsByID, which embeds
 // one directly into a game URL as ?id=<value>), so anything else is
 // rejected here rather than silently stored and only discovered as a
@@ -64,7 +64,7 @@ func validateTimezone(tz string) error {
 var allianceIDPattern = regexp.MustCompile(`^\d+$`)
 
 // validateExtraConfig checks the handful of nodes.extra_config fields
-// that need more than "is it valid JSON" -- everything else in there is
+// that need more than "is it valid JSON" - everything else in there is
 // opaque to apiserver (see internal_handlers.go's doc comment: it's
 // merged on top of config.Config's defaults only when ambot itself fetches
 // it), so this deliberately only unmarshals the one field it validates,
@@ -92,7 +92,7 @@ func validateExtraConfig(raw json.RawMessage) error {
 	return nil
 }
 
-// nodeResponse is the node shape returned to the frontend -- notably
+// nodeResponse is the node shape returned to the frontend - notably
 // missing GamePasswordEnc, which never leaves the store package. There is
 // deliberately no way to read a node's game password back out via the
 // API, encrypted or not; the frontend only ever writes a new one.
@@ -111,7 +111,7 @@ type nodeResponse struct {
 	IsDefault         bool            `json:"is_default"`
 	// HasGamePassword tells the frontend whether there's already a real
 	// password to fall back to if the form's password field is left blank
-	// -- true for any node that's been given one, false for a freshly
+	// - true for any node that's been given one, false for a freshly
 	// auto-created default node that never has (see the two default nodes
 	// created alongside a new user in handleCreateUser). Without this the
 	// edit form's "leave blank to keep the current password" placeholder
@@ -292,7 +292,7 @@ func (s *Server) handleCreateNode(w http.ResponseWriter, r *http.Request) {
 // comment in migrations/0001_init.sql). Logged, not surfaced to
 // the caller, on failure: the node row itself is already committed by the
 // time this runs, so a queueing failure shouldn't turn into a failed
-// request -- it just means provisioning is delayed until the next change
+// request - it just means provisioning is delayed until the next change
 // to the node prompts another enqueue.
 func (s *Server) enqueueReconcile(ctx context.Context, nodeID int64) {
 	if _, err := s.store.EnqueueOperation(ctx, nodeID, store.OpReconcile, nil); err != nil {
@@ -301,15 +301,15 @@ func (s *Server) enqueueReconcile(ctx context.Context, nodeID int64) {
 }
 
 // enqueueNodeDelete snapshots what the orchestrator needs to tear down
-// n's containers with and enqueues the delete operation -- shared by
+// n's containers with and enqueues the delete operation - shared by
 // handleDeleteNode and the admin's delete-user flow (admin_handlers.go),
 // which tears down every one of a deleted user's nodes the same way.
 // Must be called BEFORE the node row itself is deleted:
 // node_operations.node_id references nodes(id) and the row must still
 // exist for this insert to succeed; it becomes harmlessly NULL afterward
-// via ON DELETE SET NULL (see migrations/0001_init.sql) -- the
+// via ON DELETE SET NULL (see migrations/0001_init.sql) - the
 // operation survives on its payload snapshot alone from that point on.
-// A no-op if n was never provisioned (n.ContainerName == nil) -- nothing
+// A no-op if n was never provisioned (n.ContainerName == nil) - nothing
 // exists to tear down.
 func (s *Server) enqueueNodeDelete(ctx context.Context, n *store.Node) {
 	if n.ContainerName == nil {
@@ -374,7 +374,7 @@ func (s *Server) handleGetNode(w http.ResponseWriter, r *http.Request) {
 // updateNodeRequest mirrors createNodeRequest but every field is optional
 // (a pointer/nil-able slice): only fields present in the request body are
 // changed. Services/CronSchedules, when present, replace the array
-// wholesale -- see store.UpdateNodeParams's doc comment for why there is
+// wholesale - see store.UpdateNodeParams's doc comment for why there is
 // no partial-array update.
 type updateNodeRequest struct {
 	Name              *string          `json:"name,omitempty"`
@@ -413,7 +413,7 @@ func (s *Server) handleUpdateNode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Only validate the fields this request actually touches -- an update
+	// Only validate the fields this request actually touches - an update
 	// that doesn't mention cron_schedules/cron_jitter_seconds must not be
 	// rejected over the node's existing, already-valid values.
 	if req.CronSchedules != nil {
@@ -522,7 +522,7 @@ func (s *Server) handleDeleteNode(w http.ResponseWriter, r *http.Request) {
 
 	// Snapshot what the orchestrator needs to tear down containers with,
 	// and enqueue the delete operation, BEFORE actually deleting the node
-	// row below -- node_operations.node_id references nodes(id) and the
+	// row below - node_operations.node_id references nodes(id) and the
 	// row must still exist for that insert to succeed. It becomes
 	// harmlessly NULL afterward via ON DELETE SET NULL (see
 	// migrations/0001_init.sql); the operation survives on its

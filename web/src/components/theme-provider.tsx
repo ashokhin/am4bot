@@ -46,7 +46,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     try {
       localStorage.setItem(STORAGE_KEY, next)
     } catch {
-      // best-effort only -- a private window or blocked storage just means
+      // best-effort only - a private window or blocked storage just means
       // the choice doesn't persist across reloads.
     }
   }

@@ -12,7 +12,7 @@ import (
 )
 
 // maxFailedLoginAttempts/loginBanDuration: 5 consecutive failures bans for
-// an hour -- see LoginGuard's doc comment for the three separate cases
+// an hour - see LoginGuard's doc comment for the three separate cases
 // this covers.
 const (
 	maxFailedLoginAttempts = 5
@@ -46,12 +46,12 @@ const (
 //     consecutive failures against that login, regardless of source IP,
 //     and bans the LOGIN after maxFailedLoginAttempts. This is also what
 //     happens when a real person just mistypes their own password
-//     repeatedly -- see handleUnlockUser for how an admin lifts it.
+//     repeatedly - see handleUnlockUser for how an admin lifts it.
 //   - Login guessing / enumeration (one IP trying many DIFFERENT logins):
 //     counts the number of DISTINCT logins that have failed from one IP,
 //     and bans the IP once that count reaches maxFailedLoginAttempts.
 //     Repeatedly failing the SAME login from one IP never grows this past
-//     1 -- that's the password-guessing case above, handled entirely by
+//     1 - that's the password-guessing case above, handled entirely by
 //     the login-side counter, and must NOT also ban the IP (early
 //     versions of this did, which meant one person testing their own
 //     wrong password locked themselves out of the admin UI too, with no
@@ -63,7 +63,7 @@ const (
 //     individual login only self-throttles at maxFailedLoginAttempts.
 //     maxIPTotalFailedAttempts catches this by counting EVERY failure
 //     from an IP, repeats included, and banning the IP once that raw
-//     total crosses it -- see that constant's own doc comment for why
+//     total crosses it - see that constant's own doc comment for why
 //     its value is derived from maxFailedLoginAttempts rather than
 //     picked arbitrarily.
 //
@@ -75,14 +75,14 @@ const (
 // keep (it only holds currently-active bans).
 //
 // The in-memory counters (loginFailures, ipFailedLogins) are NOT
-// persisted -- only a ban itself is. A restart mid-attack resets an
+// persisted - only a ban itself is. A restart mid-attack resets an
 // in-progress (not yet banned) count back to zero; acceptable at this
 // project's scale, where apiserver restarts are rare and this exists to
 // stop scripted brute-forcing, not to survive an adversarial
 // restart-timing attack.
 //
 // The client IP comes from Server.clientIP (see client_ip.go): the direct
-// peer's address, or -- only for a peer listed in --web.trusted-proxies --
+// peer's address, or - only for a peer listed in --web.trusted-proxies --
 // the address that proxy reports in X-Forwarded-For. Without a trusted
 // proxy configured, everyone behind a reverse proxy shares the proxy's
 // own address, so an IP ban would apply to all of them at once.
@@ -93,18 +93,18 @@ type LoginGuard struct {
 	// loginFailures[login] is that login's consecutive failure count.
 	loginFailures map[string]int
 	// ipFailedLogins[ip] is the SET of distinct logins that have failed
-	// from that IP -- its size, not a raw failure count, is what's
+	// from that IP - its size, not a raw failure count, is what's
 	// compared against maxFailedLoginAttempts. A map[string]struct{}, not
 	// a slice, so retrying the same login from the same IP is a no-op.
 	ipFailedLogins map[string]map[string]struct{}
 	// ipTotalFailures[ip] is that IP's RAW failure count, repeats
-	// included (unlike ipFailedLogins's distinct-login set) -- compared
+	// included (unlike ipFailedLogins's distinct-login set) - compared
 	// against maxIPTotalFailedAttempts. See that constant's doc comment.
 	ipTotalFailures map[string]int
 }
 
 // NewLoginGuard creates a LoginGuard backed by st. Active bans are read
-// from Postgres on demand (Check), not cached at startup -- there's no
+// from Postgres on demand (Check), not cached at startup - there's no
 // separate load step, unlike the earlier JSON-file design this replaced.
 func NewLoginGuard(st *store.Store) *LoginGuard {
 	return &LoginGuard{
@@ -119,7 +119,7 @@ func NewLoginGuard(st *store.Store) *LoginGuard {
 // before the database user lookup/bcrypt are touched, so a banned caller
 // doesn't get to spend the server's own CPU on a password it'll reject
 // anyway. A store error is treated as "not banned" (fail open) and
-// logged -- a database hiccup must never itself lock every login out.
+// logged - a database hiccup must never itself lock every login out.
 func (g *LoginGuard) Check(ctx context.Context, ip, login string) (store.LoginBan, bool) {
 	if b, err := g.store.GetActiveLoginBan(ctx, banKeyTypeIP, ip); err == nil {
 		return *b, true
@@ -172,11 +172,11 @@ func (g *LoginGuard) bumpLogin(ctx context.Context, login string) {
 		fmt.Sprintf("%d consecutive failed login attempts against this login", maxFailedLoginAttempts))
 }
 
-// bumpIP updates both of an IP's counters -- the distinct-logins set
+// bumpIP updates both of an IP's counters - the distinct-logins set
 // (login-guessing case) and the raw total (sustained-hammering-of-a-few-
-// known-logins case) -- and bans the IP the moment either threshold is
+// known-logins case) - and bans the IP the moment either threshold is
 // reached. Retrying the same login from the same IP is a no-op for the
-// distinct-logins set but still counts toward the raw total -- see
+// distinct-logins set but still counts toward the raw total - see
 // LoginGuard's doc comment for why both exist.
 func (g *LoginGuard) bumpIP(ctx context.Context, ip, login string) {
 	g.mu.Lock()
@@ -216,7 +216,7 @@ func (g *LoginGuard) bumpIP(ctx context.Context, ip, login string) {
 // createBan persists a new ban (both the current-state row and a
 // permanent audit event) for (keyType, key). keyForLog is what the process
 // log shows for the key: the login itself for a login ban, a masked address
-// for an IP ban -- the full address goes to the ban tables only.
+// for an IP ban - the full address goes to the ban tables only.
 func (g *LoginGuard) createBan(ctx context.Context, keyType, key, keyForLog, reason string) {
 	bannedAt := time.Now()
 	unbanAt := bannedAt.Add(loginBanDuration)
@@ -248,10 +248,10 @@ func (g *LoginGuard) RecordSuccess(ip, login string) {
 	delete(g.ipTotalFailures, ip)
 }
 
-// UnlockLogin lifts an active login-type ban early (admin action -- see
+// UnlockLogin lifts an active login-type ban early (admin action - see
 // handleUnlockUser), and, if lastFailedIP is non-empty, ALSO lifts any
 // active IP-type ban on that address. The two no longer trip together in
-// the common case (see LoginGuard's doc comment -- repeatedly failing the
+// the common case (see LoginGuard's doc comment - repeatedly failing the
 // SAME login from one IP only ever bans the login, never the IP), but a
 // mixed incident (e.g. a shared office IP where one person is guessing
 // logins while another just mistypes their own password) can still leave
@@ -273,7 +273,7 @@ func (g *LoginGuard) UnlockLogin(ctx context.Context, login, lastFailedIP, unloc
 	return nil
 }
 
-// unlock lifts one (keyType, key) ban -- see UnlockLogin, its only caller.
+// unlock lifts one (keyType, key) ban - see UnlockLogin, its only caller.
 func (g *LoginGuard) unlock(ctx context.Context, keyType, key, unlockedByLogin string) error {
 	if err := g.store.DeleteLoginBan(ctx, keyType, key); err != nil {
 		return fmt.Errorf("deleting %s ban: %w", keyType, err)

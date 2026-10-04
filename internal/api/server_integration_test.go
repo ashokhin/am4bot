@@ -6,7 +6,7 @@
 //
 // requiring TEST_DATABASE_URL to point at a scratch database. Skipped by
 // default (no build tag => not compiled) so `go test ./...` and CI never
-// need a live Postgres -- same convention as internal/store's.
+// need a live Postgres - same convention as internal/store's.
 package api
 
 import (
@@ -40,7 +40,7 @@ func testServer(t *testing.T) (*httptest.Server, *client) {
 }
 
 // testServerWithDeps is testServer, but also returns the Store and
-// Encryptor backing it -- for tests (like the internal config endpoint's)
+// Encryptor backing it - for tests (like the internal config endpoint's)
 // that need to poke state testServer's callers can't reach through the
 // HTTP API alone, e.g. minting a node's config token the way the
 // orchestrator eventually will.
@@ -53,7 +53,7 @@ func testServerWithDeps(t *testing.T) (*httptest.Server, *client, *store.Store, 
 	}
 
 	// pgx's driver is registered (as "pgx") by store's blank import of
-	// pgx/v5/stdlib, transitively -- reuse it directly here just to drop
+	// pgx/v5/stdlib, transitively - reuse it directly here just to drop
 	// the schema before Store re-applies migrations from scratch.
 	rawDB, err := sql.Open("pgx", dsn)
 	if err != nil {
@@ -89,7 +89,7 @@ func testServerWithDeps(t *testing.T) (*httptest.Server, *client, *store.Store, 
 	}
 
 	// NewServer returns two handlers meant for two separate listeners in
-	// production (see its own doc comment) -- tests only need one
+	// production (see its own doc comment) - tests only need one
 	// httptest.Server, so combine them behind a single outer mux instead
 	// of standing up two. A minimal uiFS is enough: no test exercises the
 	// embedded SPA's actual content, only /api/* and /internal/*, but
@@ -169,7 +169,7 @@ func (c *client) do(t *testing.T, method, path string, body any) (*http.Response
 }
 
 // doList is like do, but decodes a JSON array response instead of an
-// object -- for list endpoints (GET /api/nodes, GET /api/admin/users).
+// object - for list endpoints (GET /api/nodes, GET /api/admin/users).
 func (c *client) doList(t *testing.T, method, path string) []map[string]any {
 	t.Helper()
 
@@ -364,7 +364,7 @@ func TestNodeServiceOrderSurvivesCreateAndUpdate(t *testing.T) {
 }
 
 // TestNodeExtraConfigRejectsNonNumericAllianceIDs covers validateExtraConfig
-// (node_handlers.go) -- a defense-in-depth check behind the frontend's own
+// (node_handlers.go) - a defense-in-depth check behind the frontend's own
 // input filtering (AdvancedSettingsSection.tsx), since alliance_ids ends
 // up directly in a game URL (internal/bot/stats.go's allianceStatsByID)
 // and the API can be hit directly, bypassing the UI.
@@ -533,7 +533,7 @@ func TestUserSelectsOwnVPNRegionForAllNodes(t *testing.T) {
 	}
 
 	// picking a real region is refused until the admin has configured the
-	// shared VPN provider account -- see handleSetMyVPNRegion.
+	// shared VPN provider account - see handleSetMyVPNRegion.
 	resp, body := user.do(t, "PUT", "/api/me/vpn-region", setUserVPNRegionRequest{VPNRegionID: &regionID})
 	if resp.StatusCode != http.StatusConflict {
 		t.Fatalf("setting a vpn region with no provider configured status = %d %v, want 409", resp.StatusCode, body)
@@ -630,7 +630,7 @@ func TestNodeCannotBeEnabledUntilConfigured(t *testing.T) {
 	nodes := user.doList(t, "GET", "/api/nodes")
 	nodeID := fmt.Sprintf("%.0f", nodes[0]["id"].(float64))
 
-	// the auto-created default has no game credentials yet -- enabling it
+	// the auto-created default has no game credentials yet - enabling it
 	// must be refused, not silently accepted and left to crash-loop.
 	enabledTrue := true
 	resp, body := user.do(t, "PATCH", "/api/nodes/"+nodeID, updateNodeRequest{Enabled: &enabledTrue})
@@ -737,7 +737,7 @@ func TestUserDetailAndListIncludeNodeStatsAndLastLogin(t *testing.T) {
 		t.Fatalf("detail nodes = %v, want 2 entries", detail["nodes"])
 	}
 
-	// user1 logs in -- last_login_at now set.
+	// user1 logs in - last_login_at now set.
 	user := &client{base: admin.base, jar: map[string]string{}}
 	user.do(t, "POST", "/api/auth/login", loginRequest{Login: "user1", Password: "userpass123"})
 
@@ -815,7 +815,7 @@ func TestDisablingUserStopsTheirEnabledNodes(t *testing.T) {
 
 // TestAuditLogRecordsAdminAction verifies the structured audit-log fields
 // (see audit.go) actually reach the log output with the right shape for a
-// representative mutating admin action -- proof that s.audit's fields
+// representative mutating admin action - proof that s.audit's fields
 // aren't just theoretical, for a design meant to be greppable in an
 // external log aggregator (see audit.go's own doc comment).
 func TestAuditLogRecordsAdminAction(t *testing.T) {
@@ -873,7 +873,7 @@ func TestAuditLogRecordsAdminAction(t *testing.T) {
 // disabled-account check (internal/api/middleware.go): a session issued
 // before the account was disabled remains USABLE FOR READS (no DB round
 // trip on every GET, see that middleware's own doc comment), but the very
-// next WRITE attempt is refused and force-logs-out the session -- proven
+// next WRITE attempt is refused and force-logs-out the session - proven
 // here by a GET succeeding right after disable, then a PATCH failing, then
 // a GET *after that* also failing (the cookie itself was cleared, not just
 // that one response).
@@ -894,7 +894,7 @@ func TestDisabledAccountRejectedOnNextWriteNotRead(t *testing.T) {
 		t.Fatalf("admin disabling user1 status = %d, want 204", resp.StatusCode)
 	}
 
-	// The read still works -- the disabled check only runs on mutating
+	// The read still works - the disabled check only runs on mutating
 	// methods, see requireAuth's doc comment.
 	resp, _ = user.do(t, "GET", "/api/nodes", nil)
 	if resp.StatusCode != http.StatusOK {
@@ -910,7 +910,7 @@ func TestDisabledAccountRejectedOnNextWriteNotRead(t *testing.T) {
 		t.Fatalf("PUT with a disabled account's session status = %d, want 401", resp.StatusCode)
 	}
 
-	// The cookie was cleared client-side by that 401 -- a subsequent
+	// The cookie was cleared client-side by that 401 - a subsequent
 	// request (even a GET) now fails too, proving it wasn't just that one
 	// response that was refused.
 	resp, _ = user.do(t, "GET", "/api/nodes", nil)
@@ -921,15 +921,15 @@ func TestDisabledAccountRejectedOnNextWriteNotRead(t *testing.T) {
 
 // TestDeletedAccountRejectedOnNextWrite is
 // TestDisabledAccountRejectedOnNextWriteNotRead's sibling for the other
-// branch of requireAuth's switch (internal/api/middleware.go) -- a
+// branch of requireAuth's switch (internal/api/middleware.go) - a
 // session issued before the account was DELETED outright.
 //
 // Unlike disabling, deletion has no "reads still work for a while"
 // window: disabling only sets disabled_at on a row that still exists, so
 // handlers that don't specifically check it (most of them) keep working
 // off the JWT's claims alone; deletion removes that row entirely, so ANY
-// handler that resolves the caller's own user record -- which includes
-// ordinary reads like handleListNodes's currentUserID lookup -- fails on
+// handler that resolves the caller's own user record - which includes
+// ordinary reads like handleListNodes's currentUserID lookup - fails on
 // its own, independent of requireAuth. What requireAuth's write-time
 // check actually buys here is consistency: without it, a write handler
 // hitting the same now-missing-row problem (e.g. handleSetMyDisplayName's
@@ -961,7 +961,7 @@ func TestDeletedAccountRejectedOnNextWrite(t *testing.T) {
 
 	// The very next WRITE gets a clean 401 (not the 500 the handler's own
 	// currentUserID lookup would otherwise produce) and force-clears the
-	// cookie -- requireAuth catches it before the handler even runs.
+	// cookie - requireAuth catches it before the handler even runs.
 	name := "won't stick"
 	resp, _ = user.do(t, "PUT", "/api/me/display-name", struct {
 		DisplayName *string `json:"display_name"`
@@ -1066,7 +1066,7 @@ func TestAdminMetricsRequiresUserUUIDAndValidatesIt(t *testing.T) {
 		t.Fatalf("admin metrics for a nonexistent user_uuid status = %d, want 404", resp.StatusCode)
 	}
 
-	// unconfigured Prometheus -- reports so, not an error.
+	// unconfigured Prometheus - reports so, not an error.
 	resp, body := admin.do(t, "GET", "/api/admin/metrics?user_uuid="+userUUID, nil)
 	if resp.StatusCode != http.StatusOK || body["configured"] != false {
 		t.Fatalf("admin metrics before configuring prometheus = %d %v, want 200 configured:false", resp.StatusCode, body)
@@ -1123,7 +1123,7 @@ func TestAdminSetsNodeLogLevel(t *testing.T) {
 // TestLoginBruteForceBanAndUnlock exercises LoginGuard end to end: enough
 // failed attempts against one login trips a ban (429, not 401), the admin
 // can see it on the user detail page and lift it early, and a correct
-// password works again immediately after -- see internal/api/login_guard.go.
+// password works again immediately after - see internal/api/login_guard.go.
 func TestLoginBruteForceBanAndUnlock(t *testing.T) {
 	_, admin := testServer(t)
 	st, _ := store.Open(context.Background(), os.Getenv("TEST_DATABASE_URL"))
@@ -1144,7 +1144,7 @@ func TestLoginBruteForceBanAndUnlock(t *testing.T) {
 	}
 
 	// The 6th attempt, even with the CORRECT password, must be refused by
-	// the ban itself -- proves Check() runs before credentials are ever
+	// the ban itself - proves Check() runs before credentials are ever
 	// verified.
 	resp, _ := user.do(t, "POST", "/api/auth/login", loginRequest{Login: "user1", Password: "userpass123"})
 	if resp.StatusCode != http.StatusTooManyRequests {
@@ -1186,7 +1186,7 @@ func TestLoginBruteForceBanAndUnlock(t *testing.T) {
 // failure counter on every failed attempt regardless of which login was
 // targeted, so repeatedly failing the SAME login from one IP (ordinary
 // password-guessing, or just a person mistyping their own password)
-// banned that IP too -- locking the tester out of the admin UI with no
+// banned that IP too - locking the tester out of the admin UI with no
 // other admin account reachable to undo it. See LoginGuard's doc comment.
 func TestLoginGuardSeparatesPasswordGuessingFromLoginGuessing(t *testing.T) {
 	_, admin := testServer(t)
@@ -1197,7 +1197,7 @@ func TestLoginGuardSeparatesPasswordGuessingFromLoginGuessing(t *testing.T) {
 	admin.do(t, "POST", "/api/admin/users", createUserRequest{Login: "user1", Password: "userpass123"})
 
 	// Case 1: maxFailedLoginAttempts wrong passwords against the SAME
-	// login, from one IP -- must ban the login, must NOT ban the IP.
+	// login, from one IP - must ban the login, must NOT ban the IP.
 	c1 := &client{base: admin.base, jar: map[string]string{}}
 	for range maxFailedLoginAttempts {
 		c1.do(t, "POST", "/api/auth/login", loginRequest{Login: "user1", Password: "wrong"})
@@ -1216,7 +1216,7 @@ func TestLoginGuardSeparatesPasswordGuessingFromLoginGuessing(t *testing.T) {
 	}
 
 	// Case 2: maxFailedLoginAttempts wrong passwords against DIFFERENT
-	// logins, from one IP -- must ban the IP, must NOT ban any single
+	// logins, from one IP - must ban the IP, must NOT ban any single
 	// login (each of them only failed once).
 	c2 := &client{base: admin.base, jar: map[string]string{}}
 	for i := range maxFailedLoginAttempts {
@@ -1234,12 +1234,12 @@ func TestLoginGuardSeparatesPasswordGuessingFromLoginGuessing(t *testing.T) {
 
 // TestLoginGuardBansIPForSustainedHammeringOfFewLogins covers the third
 // LoginGuard mechanism (maxIPTotalFailedAttempts): alternating between
-// just two known logins ("admin", "abc" -- never a 3rd) so the
+// just two known logins ("admin", "abc" - never a 3rd) so the
 // distinct-logins-per-IP counter never reaches maxFailedLoginAttempts on
 // its own. Each login still bans itself individually at its own 5th
 // failure; the raw total across both crosses maxIPTotalFailedAttempts
 // (10) right as the second login's own ban fires, and the IP must ALSO
-// end up banned at that same moment -- otherwise an attacker who knows
+// end up banned at that same moment - otherwise an attacker who knows
 // just 2-3 real logins could keep cycling between them, each self-throttled
 // but the source IP itself never penalized.
 func TestLoginGuardBansIPForSustainedHammeringOfFewLogins(t *testing.T) {
@@ -1278,7 +1278,7 @@ func TestLoginGuardBansIPForSustainedHammeringOfFewLogins(t *testing.T) {
 // TestAdminCreatesAnotherAdminAndDisablesFirst covers the "promote to
 // admin" checkbox on the create-user form (createUserRequest.IsAdmin):
 // the new admin gets no default nodes (unlike a regular user), and one
-// admin CAN disable another admin -- there is no is_admin check in
+// admin CAN disable another admin - there is no is_admin check in
 // handleSetUserDisabled, only the caller's own uuid is refused. This is
 // exactly how an operator replaces the bootstrap "admin"/"admin" account
 // with one under their own chosen login.

@@ -4,7 +4,7 @@
 //
 //	go test -tags=integration ./internal/store/... -v
 //
-// requiring TEST_DATABASE_URL to point at a scratch database -- these
+// requiring TEST_DATABASE_URL to point at a scratch database - these
 // tests create/drop tables freely and must never run against anything
 // that matters. Skipped by default (no build tag => not compiled) so
 // `go test ./...` and CI never need a live Postgres.
@@ -90,7 +90,7 @@ func TestNodeServicesAndSchedulesPreserveOrder(t *testing.T) {
 		t.Fatalf("CreateUser() error = %v", err)
 	}
 
-	// deliberately NOT alphabetical -- this is the whole point of the test
+	// deliberately NOT alphabetical - this is the whole point of the test
 	services := []string{"buy_fuel", "marketing", "depart", "ac_maintenance"}
 	schedules := []string{"0 10 * * 0,6", "0 8 * * 1-5"}
 
@@ -149,7 +149,7 @@ func TestDeleteDefaultNodeRefused(t *testing.T) {
 	}
 
 	// a user now gets TWO default nodes ("player" + "maintenance", see
-	// admin_handlers.go's handleCreateUser) -- more than one is_default
+	// admin_handlers.go's handleCreateUser) - more than one is_default
 	// row per user is expected, not an error.
 	n2, err := s.CreateNode(ctx, NewNodeParams{
 		UserID:       u.ID,
@@ -208,7 +208,7 @@ func TestVPNRegionCatalogAndUserSelection(t *testing.T) {
 		t.Fatalf("GetUserByID() VPNRegionID = %v, want %d", got.VPNRegionID, region.ID)
 	}
 
-	// deleting the region a user has selected must not fail -- it falls
+	// deleting the region a user has selected must not fail - it falls
 	// back to no VPN (ON DELETE SET NULL), not ErrConflict.
 	if err := s.DeleteVPNRegion(ctx, region.ID); err != nil {
 		t.Fatalf("DeleteVPNRegion() while selected by a user error = %v, want nil (SET NULL)", err)
@@ -307,7 +307,7 @@ func TestListProvisionedNodesForScraping(t *testing.T) {
 		t.Fatalf("CreateNode() error = %v", err)
 	}
 
-	// not provisioned yet -- must not appear in the scrape list.
+	// not provisioned yet - must not appear in the scrape list.
 	targets, err := s.ListProvisionedNodesForScraping(ctx)
 	if err != nil {
 		t.Fatalf("ListProvisionedNodesForScraping() error = %v", err)

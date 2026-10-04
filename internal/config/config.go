@@ -57,7 +57,7 @@ type Config struct {
 	AllianceIDs       []string `yaml:"alliance_ids" json:"alliance_ids"`
 	PrometheusAddress string   `default:":9150" yaml:"prometheus_address" json:"prometheus_address"`
 	// PromslogConfig carries a *slog.LevelVar and other non-serializable
-	// runtime state -- excluded from JSON (json:"-"); it's already outside
+	// runtime state - excluded from JSON (json:"-"); it's already outside
 	// the YAML file too (no yaml tag), wired up separately in cmd/ambot.
 	PromslogConfig *promslog.Config `json:"-"`
 	// Parameters for Chrome/browser configuration
@@ -78,7 +78,7 @@ type Config struct {
 	confModTime   time.Time
 	// apiSrc is non-nil only for a Config built by NewFromAPI (a hosted
 	// node fetching its config from apiserver instead of reading a local
-	// file) -- see api_source.go. nil for every file-based Config (New).
+	// file) - see api_source.go. nil for every file-based Config (New).
 	apiSrc *apiSource
 }
 

@@ -34,7 +34,7 @@ jobs:
 
         # --generate-notes only lists merged pull requests, so a tag whose
         # commits went straight to master (no PR) ends up with an almost
-        # empty body -- just the "Full Changelog" compare link. List every
+        # empty body - just the "Full Changelog" compare link. List every
         # commit by subject instead, so nothing in the tag range is dropped.
         PREV_TAG=$(git describe --tags --abbrev=0 "${TAG}^" 2>/dev/null || true)
 

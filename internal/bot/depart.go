@@ -28,7 +28,7 @@ func (b *Bot) depart(ctx context.Context) error {
 		slog.Info("depart available aircraft", "ready to depart", aircraftReadyForDepart, "depart retries", maxRetries)
 
 		// DoClickElement's chromedp.Click waits for the button with no
-		// timeout of its own -- if it's ever not there (a slow-rendering
+		// timeout of its own - if it's ever not there (a slow-rendering
 		// popup, an unexpected page state), that wait doesn't end on its
 		// own and eats the whole run's timeout instead of just this one
 		// service failing fast. Check first, with a short bound.
@@ -50,8 +50,8 @@ func (b *Bot) depart(ctx context.Context) error {
 		// FlightsDepartedTotal counts what THIS node's depart service
 		// actually dispatched, unlike am4_stats_flights_operated_total
 		// (the whole airline account's lifetime total, read off a game
-		// page -- see that gauge's own doc comment in
-		// internal/metrics/prometheus.go) -- only add a positive count;
+		// page - see that gauge's own doc comment in
+		// internal/metrics/prometheus.go) - only add a positive count;
 		// a stuck/grounded aircraft can leave availableAfterDepart >=
 		// aircraftReadyForDepart, and a Counter must never go backwards.
 		if departedThisIteration > 0 {
@@ -78,7 +78,7 @@ func (b *Bot) depart(ctx context.Context) error {
 // after only ~40 aircraft on large fleets.
 //
 // A grounded aircraft (maintenance overdue, audit, etc.) sits in this same
-// landed list but can't actually depart -- LIST_FI_LANDED's own selector
+// landed list but can't actually depart - LIST_FI_LANDED's own selector
 // excludes it (see model/css.go). Counting it here used to make depart()
 // believe an aircraft the "Depart All" button won't move was still ready,
 // clicking that inert button every iteration until the whole run timed out.
