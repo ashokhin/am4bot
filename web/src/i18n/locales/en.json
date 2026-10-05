@@ -46,7 +46,8 @@
       "lastLogin": "Last login",
       "nodes": "Nodes (active/total)",
       "status": "Status",
-      "actions": "Actions"
+      "actions": "Actions",
+      "enabled": "Enabled"
     },
     "status": {
       "active": "Active",
@@ -78,7 +79,8 @@
       "name": "Name",
       "services": "Services",
       "status": "Status",
-      "actions": "Actions"
+      "actions": "Actions",
+      "enabled": "Enabled"
     },
     "status": {
       "enabled": "Enabled",

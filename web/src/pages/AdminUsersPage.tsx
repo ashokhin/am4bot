@@ -80,7 +80,7 @@ export function AdminUsersPage() {
               <TableHead className="hidden sm:table-cell">{t('users.table.lastLogin')}</TableHead>
               <TableHead className="hidden sm:table-cell">{t('users.table.nodes')}</TableHead>
               <TableHead>{t('users.table.status')}</TableHead>
-              <TableHead className="text-right">{t('users.table.actions')}</TableHead>
+              <TableHead className="text-right">{t('users.table.enabled')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

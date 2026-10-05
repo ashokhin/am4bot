@@ -168,7 +168,7 @@ export function AdminUserDetailPage() {
               onCheckedChange={() => void handleToggleDisabled()}
               title={user.uuid === me?.uuid ? t('users.cannotDisableSelf') : undefined}
             />
-            <span className="text-sm">{user.disabled ? t('users.actions.enable') : t('users.actions.disable')}</span>
+            <span className="text-sm">{t('users.table.enabled')}</span>
           </div>
           <Button
             variant="outline"

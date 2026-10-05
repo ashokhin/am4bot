@@ -85,6 +85,7 @@ export function NodesPage() {
                   it in a summary table on a phone. */}
               <TableHead className="hidden sm:table-cell">{t('nodes.table.services')}</TableHead>
               <TableHead>{t('nodes.table.status')}</TableHead>
+              <TableHead>{t('nodes.table.enabled')}</TableHead>
               <TableHead className="text-right">{t('nodes.table.actions')}</TableHead>
             </TableRow>
           </TableHeader>
@@ -110,17 +111,27 @@ export function NodesPage() {
                   </Badge>
                 </TableCell>
                 <TableCell>
+                  <Switch
+                    checked={node.enabled}
+                    onCheckedChange={() => void handleToggleEnabled(node)}
+                    aria-label={node.enabled ? t('nodes.actions.disable') : t('nodes.actions.enable')}
+                  />
+                </TableCell>
+                <TableCell>
                   <div className="flex items-center justify-end gap-3">
-                    <Switch
-                      checked={node.enabled}
-                      onCheckedChange={() => void handleToggleEnabled(node)}
-                      aria-label={node.enabled ? t('nodes.actions.disable') : t('nodes.actions.enable')}
-                    />
-                    {!node.is_default && (
-                      <Button variant="ghost" size="sm" onClick={() => setPendingDelete(node)}>
-                        {t('nodes.actions.delete')}
-                      </Button>
-                    )}
+                    {/* Default nodes stay in the row but read as unavailable: aria-disabled
+                        (not the disabled attribute) so the click still lands and can explain why. */}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      aria-disabled={node.is_default}
+                      className={node.is_default ? 'text-muted-foreground' : undefined}
+                      onClick={() =>
+                        node.is_default ? toast.error(t('nodes.errors.defaultNotDeletable')) : setPendingDelete(node)
+                      }
+                    >
+                      {t('nodes.actions.delete')}
+                    </Button>
                   </div>
                 </TableCell>
               </TableRow>
