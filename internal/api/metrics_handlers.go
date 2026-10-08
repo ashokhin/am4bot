@@ -39,6 +39,9 @@ import (
 // need a richer widget than a single stat tile.
 var exposedMetrics = []string{
 	"up",
+	// Bare name, no "am4_" prefix - see its own doc comment in
+	// internal/metrics/prometheus.go (StartTimeSeconds).
+	"process_start_time_seconds",
 	"am4_duration_seconds",
 	"am4_last_run_timestamp_seconds",
 	"am4_next_scheduled_run_timestamp_seconds",

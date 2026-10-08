@@ -35,7 +35,7 @@ function colorForIndex(index: number): string {
 // Compact notation ("34.8B") - these balances run into the billions,
 // and the y-axis/tooltip both need to stay readable at a glance rather
 // than showing a wall of digits.
-const compactFormatter = new Intl.NumberFormat(undefined, { notation: 'compact', maximumFractionDigits: 1 })
+const compactFormatter = new Intl.NumberFormat(undefined, { notation: 'compact', minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
 interface NodeForChart {
   id: number

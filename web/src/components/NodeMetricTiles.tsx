@@ -31,6 +31,26 @@ function formatTimestampTile(v: number): ReactNode {
   )
 }
 
+// Grafana-style compact duration: largest-to-smallest units, dropping a
+// larger unit entirely once it's zero, but once one has appeared every
+// smaller one is kept (so "below a day" still reads "2h 05m 09s", not
+// "05m 09s" one tick and "2h 05m 09s" the next). Always shows seconds.
+function formatUptime(startUnixSeconds: number): string {
+  const totalSeconds = Math.max(0, Math.floor(Date.now() / 1000 - startUnixSeconds))
+  const days = Math.floor(totalSeconds / 86400)
+  const hours = Math.floor((totalSeconds % 86400) / 3600)
+  const minutes = Math.floor((totalSeconds % 3600) / 60)
+  const seconds = totalSeconds % 60
+
+  const parts: string[] = []
+  if (days > 0) parts.push(`${days}d`)
+  if (days > 0 || hours > 0) parts.push(`${hours}h`)
+  if (days > 0 || hours > 0 || minutes > 0) parts.push(`${minutes}m`)
+  parts.push(`${seconds}s`)
+
+  return parts.join(' ')
+}
+
 const TILE_METRICS: { metric: string; labelKey: string; format: (v: number) => ReactNode; valueClassName?: string }[] = [
   { metric: 'am4_company_rank', labelKey: 'metrics.tiles.rank', format: (v) => Math.round(v).toLocaleString() },
   { metric: 'am4_ac_fleet_size', labelKey: 'metrics.tiles.fleetSize', format: (v) => Math.round(v).toLocaleString() },
@@ -61,6 +81,23 @@ const TILE_METRICS: { metric: string; labelKey: string; format: (v: number) => R
     labelKey: 'metrics.tiles.nextRunAt',
     valueClassName: 'text-sm font-medium leading-tight',
     format: formatTimestampTile,
+  },
+  // process_start_time_seconds (bare name, no "am4_" prefix - see
+  // internal/metrics/prometheus.go) is set once, when the ambot process
+  // itself starts, not per cycle - see its own doc comment on how that
+  // differs from am4_last_run_timestamp_seconds above. Uptime is derived
+  // from it client-side (now minus start), which only advances on each
+  // poll/refresh, not live every second - fine at a 20s poll interval.
+  {
+    metric: 'process_start_time_seconds',
+    labelKey: 'metrics.tiles.startTime',
+    valueClassName: 'text-sm font-medium leading-tight',
+    format: formatTimestampTile,
+  },
+  {
+    metric: 'process_start_time_seconds',
+    labelKey: 'metrics.tiles.uptime',
+    format: formatUptime,
   },
 ]
 

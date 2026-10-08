@@ -284,7 +284,9 @@
       "flightsOperated": "Flights operated",
       "lastRunSeconds": "Last run duration (s)",
       "lastRunAt": "Last run",
-      "nextRunAt": "Next run due"
+      "nextRunAt": "Next run due",
+      "startTime": "Start time",
+      "uptime": "Uptime"
     },
     "delta": {
       "title": "Activity",
