@@ -410,7 +410,7 @@ period-selectable (`1h`/`6h`/`12h`/`24h`/`3d`/`7d`/`14d`/`30d`):
   metric, a young node) needs no special handling: Prometheus doesn't
   stretch a series across a window it doesn't cover, so the result is the
   gain over the history that exists, and the response marks it with a
-  `since` timestamp, which the UI shows as "since <time>" so it isn't
+  `since` timestamp, which the UI shows as "`since <time>`" so it isn't
   mistaken for the whole period. That figure undercounts by whatever
   happened before the first scrape.
 - **`GET /api/metrics/balance?period=<period>`** - a line chart of the
@@ -657,6 +657,9 @@ opt-out:
   dependency that might load something external.
 - `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`,
   `Referrer-Policy: no-referrer` - standard, low-cost hardening.
+- `Permissions-Policy: geolocation=(), camera=(), microphone=(), payment=()`
+  - this app never asks the browser for any of these; denying them
+    outright also denies them to a compromised/embedded page.
 
 Deliberately NOT set here: HSTS. That belongs at the TLS-terminating
 reverse proxy you put in front of apiserver's PUBLIC listener (see

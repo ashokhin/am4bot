@@ -66,6 +66,9 @@ func withSecurityHeaders(next http.Handler) http.Handler {
 		// whatever a user clicks through to next.
 		h.Set("Referrer-Policy", "no-referrer")
 		h.Set("Content-Security-Policy", contentSecurityPolicy)
+		// This app never uses any of these browser features itself, and
+		// never wants an embedding/compromised page granting them either.
+		h.Set("Permissions-Policy", "geolocation=(), camera=(), microphone=(), payment=()")
 
 		next.ServeHTTP(w, r)
 	})
