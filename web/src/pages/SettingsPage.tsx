@@ -3,9 +3,11 @@ import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { authApi } from '../api/auth'
 import { ApiError } from '../api/client'
+import { addPasskey, passkeysApi } from '../api/passkeys'
 import { useAuth } from '../auth/AuthContext'
 import { vpnRegionsApi } from '../api/vpnRegions'
-import type { LoginActivityEntry, VPNRegion } from '../api/types'
+import type { LoginActivityEntry, Passkey, VPNRegion } from '../api/types'
+import { ConfirmDialog } from '../components/ConfirmDialog'
 import { LoginActivityTable } from '../components/LoginActivityTable'
 import { Button } from '../components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
@@ -32,6 +34,8 @@ export function SettingsPage() {
       <h1 className="text-2xl font-semibold">{t('settings.title')}</h1>
 
       <AccountSection />
+
+      <PasskeysSection />
 
       {!user?.is_admin && <VPNRegionSection />}
 
@@ -175,6 +179,125 @@ function AccountSection() {
           </Button>
         </form>
       </CardContent>
+    </Card>
+  )
+}
+
+function formatPasskeyDate(iso: string): string {
+  return new Date(iso).toLocaleDateString()
+}
+
+function PasskeysSection() {
+  const { t } = useTranslation()
+  const [passkeys, setPasskeys] = useState<Passkey[]>([])
+  const [loading, setLoading] = useState(true)
+  const [name, setName] = useState('')
+  const [adding, setAdding] = useState(false)
+  const [deletingID, setDeletingID] = useState<number | undefined>(undefined)
+  const [confirmDeleteID, setConfirmDeleteID] = useState<number | undefined>(undefined)
+
+  function load() {
+    return passkeysApi
+      .list()
+      .then(setPasskeys)
+      .catch(() => {
+        /* best-effort - an empty list is an acceptable degrade */
+      })
+  }
+
+  useEffect(() => {
+    load().finally(() => setLoading(false))
+  }, [])
+
+  async function handleAdd(e: FormEvent) {
+    e.preventDefault()
+    setAdding(true)
+
+    try {
+      await addPasskey(name || navigator.userAgent)
+      setName('')
+      await load()
+      toast.success(t('settings.saved'))
+    } catch {
+      toast.error(t('passkeys.addError'))
+    } finally {
+      setAdding(false)
+    }
+  }
+
+  async function handleDelete(id: number) {
+    setDeletingID(id)
+
+    try {
+      await passkeysApi.delete(id)
+      await load()
+    } catch {
+      toast.error(t('passkeys.deleteError'))
+    } finally {
+      setDeletingID(undefined)
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">{t('passkeys.settingsTitle')}</CardTitle>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4">
+        <p className="text-sm text-muted-foreground">{t('passkeys.settingsDescription')}</p>
+
+        {loading ? (
+          <p className="text-sm text-muted-foreground">{t('common.loading')}</p>
+        ) : passkeys.length === 0 ? (
+          <p className="text-sm text-muted-foreground">{t('passkeys.noPasskeys')}</p>
+        ) : (
+          <ul className="flex flex-col gap-2">
+            {passkeys.map((p) => (
+              <li key={p.id} className="flex items-center justify-between gap-2 rounded-md border p-3">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium">{p.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {t('passkeys.created', { date: formatPasskeyDate(p.created_at) })}
+                    {' · '}
+                    {p.last_used_at ? t('passkeys.lastUsed', { date: formatPasskeyDate(p.last_used_at) }) : t('passkeys.neverUsed')}
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={deletingID === p.id}
+                  onClick={() => setConfirmDeleteID(p.id)}
+                >
+                  {t('passkeys.delete')}
+                </Button>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <form onSubmit={(e) => void handleAdd(e)} className="flex flex-col gap-2 sm:flex-row">
+          <Input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder={t('passkeys.namePrompt')}
+            className="sm:flex-1"
+          />
+          <Button type="submit" variant="outline" disabled={adding} className="w-fit">
+            {t('passkeys.addPasskey')}
+          </Button>
+        </form>
+      </CardContent>
+
+      <ConfirmDialog
+        open={confirmDeleteID !== undefined}
+        onOpenChange={(open) => !open && setConfirmDeleteID(undefined)}
+        title={t('passkeys.delete')}
+        description={t('passkeys.deleteConfirm')}
+        destructive
+        onConfirm={() => confirmDeleteID !== undefined && void handleDelete(confirmDeleteID)}
+      />
     </Card>
   )
 }

@@ -150,6 +150,13 @@ services:
       # usually the compose network's gateway address. See
       # docs/multi-tenant-hosting.md's "Login hardening" section.
       TRUSTED_PROXIES: ${TRUSTED_PROXIES:-}
+      # This deployment's externally-reachable origin (scheme + host, e.g.
+      # "https://example.com", no path). Required for passkey sign-in -
+      # the WebAuthn Relying Party ID is derived from it. Empty (the
+      # default) simply disables passkey endpoints; everything else works
+      # unchanged. See docs/multi-tenant-hosting.md's --web.public-origin
+      # section.
+      PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:-}
       # No COOKIE_SECURE override here - apiserver's own default is
       # Secure=true (HTTPS-only cookies), which is what you want once
       # there's a real reverse proxy terminating TLS in front of

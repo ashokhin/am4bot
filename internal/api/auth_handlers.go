@@ -26,9 +26,13 @@ type userResponse struct {
 	Disabled           bool    `json:"disabled"`
 	VPNRegionID        *int64  `json:"vpn_region_id"`
 	MustChangePassword bool    `json:"must_change_password"`
+	// ShowPasskeyPrompt tells the frontend to show the post-login "add a
+	// passkey?" modal this time - see recordSuccessfulLogin's doc comment
+	// for when this is true.
+	ShowPasskeyPrompt bool `json:"show_passkey_prompt"`
 }
 
-func toUserResponse(u *store.User) userResponse {
+func toUserResponse(u *store.User, showPasskeyPrompt bool) userResponse {
 	return userResponse{
 		UUID:               u.UUID.String(),
 		Login:              u.Login,
@@ -37,7 +41,36 @@ func toUserResponse(u *store.User) userResponse {
 		Disabled:           u.DisabledAt != nil,
 		VPNRegionID:        u.VPNRegionID,
 		MustChangePassword: u.MustChangePassword,
+		ShowPasskeyPrompt:  showPasskeyPrompt,
 	}
+}
+
+// recordSuccessfulLogin is the bookkeeping every successful sign-in needs
+// to do regardless of method (password, here, or passkey - see
+// handlePasskeyLoginFinish): bump the login counter and report whether the
+// add-a-passkey prompt is due. The prompt is never due for a user who
+// already has one - IncrementLoginCount's own counter has no way to know
+// that, so it's checked here instead.
+func (s *Server) recordSuccessfulLogin(r *http.Request, u *store.User) bool {
+	promptDue, err := s.store.IncrementLoginCount(r.Context(), u.UUID)
+	if err != nil {
+		slog.Error("incrementing login count", "user_uuid", u.UUID, "error", err)
+
+		return false
+	}
+
+	if !promptDue {
+		return false
+	}
+
+	n, err := s.store.CountPasskeysByUser(r.Context(), u.ID)
+	if err != nil {
+		slog.Error("counting passkeys", "user_uuid", u.UUID, "error", err)
+
+		return false
+	}
+
+	return n == 0
 }
 
 func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
@@ -125,7 +158,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.setSessionCookie(w, token)
-	writeJSON(w, http.StatusOK, toUserResponse(u))
+	writeJSON(w, http.StatusOK, toUserResponse(u, s.recordSuccessfulLogin(r, u)))
 }
 
 func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request) {
@@ -153,5 +186,8 @@ func (s *Server) handleMe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, toUserResponse(u))
+	// Not a login event (just the frontend re-checking its session), so no
+	// bookkeeping/prompt here - that only happens in handleLogin and
+	// handlePasskeyLoginFinish.
+	writeJSON(w, http.StatusOK, toUserResponse(u, false))
 }

@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"time"
@@ -24,7 +25,8 @@ const userColumns = `
 	id, uuid, login, password_hash, is_admin, vpn_region_id,
 	display_name, last_login_at, last_login_ip, last_login_user_agent,
 	last_failed_login_at, last_failed_login_ip, last_failed_login_user_agent,
-	created_at, disabled_at, must_change_password
+	created_at, disabled_at, must_change_password,
+	passkey_prompt_disabled, login_count, passkey_prompt_next_at
 `
 
 // User is a control-plane account: a regular user, or the admin
@@ -73,6 +75,15 @@ type User struct {
 	// while it's true. See SetUserPasswordHash and migrations/0002's doc
 	// comment.
 	MustChangePassword bool `db:"must_change_password"`
+	// PasskeyPromptDisabled, LoginCount and PasskeyPromptNextAt drive the
+	// "add a passkey?" prompt shown after a successful login - see
+	// IncrementLoginCount and SkipPasskeyPrompt's doc comments for the
+	// actual logic. Read-only from this struct's perspective; both
+	// methods below update them directly in SQL rather than through a
+	// generic field-by-field update, same as every other users.go setter.
+	PasskeyPromptDisabled bool `db:"passkey_prompt_disabled"`
+	LoginCount            int  `db:"login_count"`
+	PasskeyPromptNextAt   int  `db:"passkey_prompt_next_at"`
 }
 
 // CreateUser inserts a new user and returns the full row (including the
@@ -282,6 +293,63 @@ func (s *Store) SetUserLastLogin(ctx context.Context, id uuid.UUID, ip, userAgen
 		id, ip, userAgent)
 	if err != nil {
 		return fmt.Errorf("setting user last login: %w", err)
+	}
+
+	return checkRowsAffected(res, "user")
+}
+
+// passkeyPromptReAskAfter is how many more successful logins must happen
+// before the add-a-passkey prompt is shown again after a plain "Skip"
+// (without the "don't show again" checkbox) - see SkipPasskeyPrompt.
+const passkeyPromptReAskAfter = 10
+
+// IncrementLoginCount bumps a user's login_count by one on every
+// successful login, regardless of method (password or passkey), and
+// reports whether the add-a-passkey prompt is due this time: the count
+// has reached passkey_prompt_next_at and the user hasn't permanently
+// dismissed it. The caller still needs to separately check the user
+// actually has no passkeys yet (CountPasskeysByUser) before acting on
+// this - a user who already added one has nothing left to be prompted
+// for, independent of this counter.
+func (s *Store) IncrementLoginCount(ctx context.Context, id uuid.UUID) (promptDue bool, err error) {
+	var (
+		loginCount     int
+		promptDisabled bool
+		promptNextAt   int
+	)
+
+	err = s.db.QueryRowContext(ctx, `
+		UPDATE users SET login_count = login_count + 1
+		WHERE uuid = $1
+		RETURNING login_count, passkey_prompt_disabled, passkey_prompt_next_at
+	`, id).Scan(&loginCount, &promptDisabled, &promptNextAt)
+	if err != nil {
+		return false, fmt.Errorf("incrementing login count: %w", err)
+	}
+
+	return !promptDisabled && loginCount >= promptNextAt, nil
+}
+
+// SkipPasskeyPrompt records the user's answer to "add a passkey?" when
+// they decline: dontShowAgain permanently disables the prompt, otherwise
+// it's deferred to passkeyPromptReAskAfter logins from now (login_count
+// at the moment of skipping, not of the original prompt - a user who
+// skips on login 1 and again on login 11 gets asked again at login 21,
+// not 11, since each skip resets the countdown).
+func (s *Store) SkipPasskeyPrompt(ctx context.Context, id uuid.UUID, dontShowAgain bool) error {
+	var res sql.Result
+
+	var err error
+	if dontShowAgain {
+		res, err = s.db.ExecContext(ctx, `UPDATE users SET passkey_prompt_disabled = TRUE WHERE uuid = $1`, id)
+	} else {
+		res, err = s.db.ExecContext(ctx, `
+			UPDATE users SET passkey_prompt_next_at = login_count + $2 WHERE uuid = $1
+		`, id, passkeyPromptReAskAfter)
+	}
+
+	if err != nil {
+		return fmt.Errorf("recording passkey prompt skip: %w", err)
 	}
 
 	return checkRowsAffected(res, "user")

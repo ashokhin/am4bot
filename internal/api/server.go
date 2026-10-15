@@ -12,6 +12,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/go-webauthn/webauthn/webauthn"
+
 	"github.com/ashokhin/am4bot/internal/auth"
 	"github.com/ashokhin/am4bot/internal/secrets"
 	"github.com/ashokhin/am4bot/internal/store"
@@ -28,6 +30,11 @@ type Server struct {
 	opts       ServerOptions
 	httpClient *http.Client
 	loginGuard *LoginGuard
+	// webAuthn and webAuthnSess are nil when ServerOptions.PublicOrigin is
+	// empty - every passkey handler checks for that and answers 503
+	// rather than nil-dereferencing, see requirePasskeysEnabled.
+	webAuthn     *webauthn.WebAuthn
+	webAuthnSess *webAuthnSessions
 }
 
 // ServerOptions carries the deployment-specific settings NewServer needs
@@ -70,6 +77,16 @@ type ServerOptions struct {
 	// which matters because login activity and the per-IP login ban both
 	// key on it. Set by cmd/apiserver's --web.trusted-proxies.
 	TrustedProxies []*net.IPNet
+	// PublicOrigin is this deployment's own externally-reachable origin
+	// (scheme + host, e.g. "https://example.com" - no path), required for
+	// WebAuthn/passkeys: the library needs to know the exact origin a
+	// browser's registration/login ceremony was performed against, and
+	// the Relying Party ID it derives from that must match the real
+	// public hostname, not whatever a request's own Host header happens
+	// to say (trusting that would let a forged Host header bind a
+	// credential to the wrong RP ID). Empty disables passkey endpoints
+	// entirely rather than guessing - see newWebAuthn.
+	PublicOrigin string
 }
 
 // NewServer builds a Server and its two http.Handlers - see
@@ -98,11 +115,31 @@ func NewServer(st *store.Store, tokens *auth.TokenManager, enc *secrets.Encrypto
 		loginGuard: NewLoginGuard(st),
 	}
 
+	if opts.PublicOrigin != "" {
+		wa, err := newWebAuthn(opts.PublicOrigin)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		s.webAuthn = wa
+		s.webAuthnSess = newWebAuthnSessions()
+	}
+
 	publicMux := http.NewServeMux()
 
 	publicMux.HandleFunc("POST /api/auth/login", s.handleLogin)
 	publicMux.HandleFunc("POST /api/auth/logout", s.handleLogout)
 	publicMux.HandleFunc("GET /api/me", s.requireAuth(s.handleMe))
+
+	// Passkeys: an additional sign-in method, see ServerOptions.PublicOrigin's
+	// doc comment on why these 503 rather than existing at all when it's unset.
+	publicMux.HandleFunc("POST /api/me/passkeys/register/begin", s.requireAuth(s.handlePasskeyRegisterBegin))
+	publicMux.HandleFunc("POST /api/me/passkeys/register/finish", s.requireAuth(s.handlePasskeyRegisterFinish))
+	publicMux.HandleFunc("GET /api/me/passkeys", s.requireAuth(s.handleListPasskeys))
+	publicMux.HandleFunc("DELETE /api/me/passkeys/{id}", s.requireAuth(s.handleDeletePasskey))
+	publicMux.HandleFunc("POST /api/me/passkey-prompt/skip", s.requireAuth(s.handleSkipPasskeyPrompt))
+	publicMux.HandleFunc("POST /api/auth/passkey/login/begin", s.handlePasskeyLoginBegin)
+	publicMux.HandleFunc("POST /api/auth/passkey/login/finish", s.handlePasskeyLoginFinish)
 
 	publicMux.HandleFunc("GET /api/admin/users", s.requireAdmin(s.handleListUsers))
 	publicMux.HandleFunc("POST /api/admin/users", s.requireAdmin(s.handleCreateUser))

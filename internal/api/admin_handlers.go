@@ -37,7 +37,7 @@ func (s *Server) handleListUsers(w http.ResponseWriter, r *http.Request) {
 	resp := make([]userListResponse, len(users))
 	for i, u := range users {
 		resp[i] = userListResponse{
-			userResponse: toUserResponse(&u.User),
+			userResponse: toUserResponse(&u.User, false),
 			LastLoginAt:  u.LastLoginAt,
 			ActiveNodes:  u.ActiveNodes,
 			TotalNodes:   u.TotalNodes,
@@ -127,7 +127,7 @@ func (s *Server) handleGetUserDetail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := userDetailResponse{
-		userResponse:             toUserResponse(u),
+		userResponse:             toUserResponse(u, false),
 		LastLoginAt:              u.LastLoginAt,
 		LastLoginIP:              u.LastLoginIP,
 		LastLoginUserAgent:       u.LastLoginUserAgent,
@@ -277,7 +277,7 @@ func (s *Server) handleCreateUser(w http.ResponseWriter, r *http.Request) {
 	// would just sit there orphaned.
 	if req.IsAdmin {
 		s.audit(r, "create_user", u.UUID.String())
-		writeJSON(w, http.StatusCreated, toUserResponse(u))
+		writeJSON(w, http.StatusCreated, toUserResponse(u, false))
 
 		return
 	}
@@ -309,7 +309,7 @@ func (s *Server) handleCreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.audit(r, "create_user", u.UUID.String())
-	writeJSON(w, http.StatusCreated, toUserResponse(u))
+	writeJSON(w, http.StatusCreated, toUserResponse(u, false))
 }
 
 // handleSetUserDisabled returns a handler that enables or disables the

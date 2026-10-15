@@ -19,7 +19,28 @@
   "login": {
     "title": "Вход",
     "submit": "Войти",
-    "error": "Неверный логин или пароль"
+    "error": "Неверный логин или пароль",
+    "withPasskey": "Войти с passkey",
+    "passkeyError": "Не удалось войти с passkey"
+  },
+  "passkeys": {
+    "promptTitle": "Добавить passkey?",
+    "promptBody": "В следующий раз входите быстрее и безопаснее с помощью passkey вместо пароля.",
+    "add": "Добавить",
+    "skip": "Пропустить",
+    "dontShowAgain": "Больше не показывать",
+    "settingsTitle": "Passkeys",
+    "settingsDescription": "Входите без ввода пароля, используя встроенную защиту устройства (отпечаток пальца, лицо или PIN).",
+    "addPasskey": "Добавить passkey",
+    "namePrompt": "Назовите этот passkey (например, название устройства)",
+    "noPasskeys": "Пока ни одного passkey не добавлено.",
+    "created": "Добавлен {{date}}",
+    "lastUsed": "Последнее использование {{date}}",
+    "neverUsed": "Ещё не использовался",
+    "delete": "Удалить",
+    "deleteConfirm": "Удалить этот passkey? Войти с его помощью больше не получится.",
+    "addError": "Не удалось добавить passkey",
+    "deleteError": "Не удалось удалить passkey"
   },
   "nav": {
     "nodes": "Узлы",

@@ -9,9 +9,13 @@ interface AuthState {
   /** true once the initial /api/me check has resolved (either way). */
   ready: boolean
   login: (login: string, password: string) => Promise<void>
+  /** Sets the signed-in user straight from a finished passkey login ceremony - LoginPage's "sign in with passkey" button already has the User the server returned, no need to re-fetch /api/me. */
+  loginWithPasskey: (loggedInUser: User) => void
   logout: () => Promise<void>
   /** Re-fetches /api/me - call after a self-service change (e.g. picking a VPN region) so the rest of the app sees the new state without a full reload. */
   refreshUser: () => Promise<void>
+  /** Clears show_passkey_prompt locally once the post-login prompt has been handled (added a passkey, or skipped) - avoids an extra /api/me round trip just to make the modal stay closed. */
+  clearPasskeyPrompt: () => void
 }
 
 const AuthContext = createContext<AuthState | undefined>(undefined)
@@ -38,6 +42,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(loggedInUser)
   }, [])
 
+  const loginWithPasskey = useCallback((loggedInUser: User) => {
+    setUser(loggedInUser)
+  }, [])
+
   const logout = useCallback(async () => {
     await authApi.logout()
     setUser(undefined)
@@ -47,7 +55,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(await authApi.me())
   }, [])
 
-  return <AuthContext.Provider value={{ user, ready, login, logout, refreshUser }}>{children}</AuthContext.Provider>
+  const clearPasskeyPrompt = useCallback(() => {
+    setUser((u) => (u ? { ...u, show_passkey_prompt: false } : u))
+  }, [])
+
+  return (
+    <AuthContext.Provider value={{ user, ready, login, loginWithPasskey, logout, refreshUser, clearPasskeyPrompt }}>
+      {children}
+    </AuthContext.Provider>
+  )
 }
 
 export function useAuth(): AuthState {

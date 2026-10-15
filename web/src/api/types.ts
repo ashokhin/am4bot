@@ -24,6 +24,23 @@ export interface User {
   // change-password screen until they pick their own. See
   // internal/store/migrations/0002's doc comment.
   must_change_password: boolean
+  // True right after a successful login when the add-a-passkey prompt is
+  // due - see internal/api's recordSuccessfulLogin doc comment for when.
+  // Absent/false on GET /api/me (just a session re-check, not a login).
+  show_passkey_prompt: boolean
+}
+
+// GET /api/me/passkeys row - one of the caller's own registered passkeys,
+// for the Settings page's management list.
+export interface Passkey {
+  id: number
+  name: string
+  created_at: string
+  last_used_at: string | null
+}
+
+export interface SkipPasskeyPromptRequest {
+  dont_show_again: boolean
 }
 
 export interface LoginRequest {

@@ -1,6 +1,8 @@
+import { startAuthentication } from '@simplewebauthn/browser'
 import { useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Navigate } from 'react-router-dom'
+import { passkeysApi } from '../api/passkeys'
 import { useAuth } from '../auth/AuthContext'
 import { LanguageSwitcher } from '../components/LanguageSwitcher'
 import { ThemeToggle } from '../components/ThemeToggle'
@@ -12,11 +14,13 @@ import { PasswordInput } from '../components/ui/password-input'
 
 export function LoginPage() {
   const { t } = useTranslation()
-  const { user, login } = useAuth()
+  const { user, login, loginWithPasskey } = useAuth()
   const [loginValue, setLoginValue] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState(false)
+  const [passkeyError, setPasskeyError] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [passkeySubmitting, setPasskeySubmitting] = useState(false)
 
   if (user) {
     return <Navigate to="/nodes" replace />
@@ -33,6 +37,25 @@ export function LoginPage() {
       setError(true)
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  // Discoverable/usernameless login: the user never types a login, the
+  // authenticator itself tells the server (via loginFinish) who's signing
+  // in - see internal/api/passkey_handlers.go's handlePasskeyLoginBegin.
+  async function handlePasskeyLogin() {
+    setPasskeyError(false)
+    setPasskeySubmitting(true)
+
+    try {
+      const { flow_id, assertion } = await passkeysApi.loginBegin()
+      const response = await startAuthentication({ optionsJSON: assertion.publicKey })
+      const loggedInUser = await passkeysApi.loginFinish(flow_id, response)
+      loginWithPasskey(loggedInUser)
+    } catch {
+      setPasskeyError(true)
+    } finally {
+      setPasskeySubmitting(false)
     }
   }
 
@@ -80,6 +103,21 @@ export function LoginPage() {
               {t('login.submit')}
             </Button>
           </form>
+          <div className="mt-4 flex flex-col gap-1.5">
+            {passkeyError && (
+              <p role="alert" className="text-sm text-destructive">
+                {t('login.passkeyError')}
+              </p>
+            )}
+            <Button
+              type="button"
+              variant="outline"
+              disabled={passkeySubmitting}
+              onClick={() => void handlePasskeyLogin()}
+            >
+              {t('login.withPasskey')}
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>

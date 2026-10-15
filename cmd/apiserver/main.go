@@ -41,6 +41,8 @@ var (
 			Envar("WEB_ROUTE_PREFIX").Default("").String()
 	trustedProxies = kingpin.Flag("web.trusted-proxies", "Comma-separated IPs/CIDRs of reverse proxies allowed to tell apiserver a request's real client address via X-Forwarded-For. Only a connection whose direct peer is in this list has that header honored (otherwise it is ignored, since anyone can forge it); empty (the default) trusts nothing. Without this, behind a reverse proxy every request appears to come from the proxy's own address, so login activity shows that address and the per-IP login ban applies to all users at once.").
 			Envar("TRUSTED_PROXIES").Default("").String()
+	publicOrigin = kingpin.Flag("web.public-origin", "This deployment's externally-reachable origin (scheme + host, e.g. \"https://example.com\", no path), required for WebAuthn/passkeys. Empty (the default) disables passkey sign-in entirely rather than guessing it from a request's Host header.").
+			Envar("PUBLIC_ORIGIN").Default("").String()
 	databaseURL = kingpin.Flag("database-url", "Postgres connection string.").
 			Envar("DATABASE_URL").Required().String()
 	secretsMasterKey = kingpin.Flag("secrets-master-key", "Base64 AES-256 key for encrypting node/VPN credentials at rest (generate with internal/secrets.GenerateKey).").
@@ -136,6 +138,7 @@ func run() error {
 		PrometheusPortRangeEnd:   *prometheusPortRangeEnd,
 		RoutePrefix:              *webRoutePrefix,
 		TrustedProxies:           trustedProxyNets,
+		PublicOrigin:             *publicOrigin,
 	})
 	if err != nil {
 		return fmt.Errorf("building server: %w", err)

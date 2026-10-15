@@ -131,6 +131,34 @@ every later restart, and the account is forced through the same
   (or already knows) is pure friction for this deployment's scale (a
   handful of trusted users, not the general public).
 
+### Passkeys
+
+An additional, optional sign-in method alongside the login password - a user
+can register one or more WebAuthn passkeys (`internal/api/passkey_handlers.go`,
+`internal/store/passkeys.go`) and later sign in with either. The password
+always keeps working; passkeys never replace it.
+
+- After every successful login, a user with no passkey yet who hasn't
+  dismissed the prompt sees an "Add a passkey?" modal. Skipping without
+  checking "don't show again" re-asks after 10 more successful logins;
+  checking it disables the prompt for that account permanently. Either
+  choice can be revisited any time from Settings.
+- Settings lets a user add or remove passkeys at any point, independent of
+  the prompt - several per account, each independently deletable.
+- The login page's "Sign in with a passkey" button is discoverable/
+  usernameless: no login is typed first, the authenticator itself tells the
+  server who's signing in.
+- Requires `--web.public-origin`/`PUBLIC_ORIGIN` to be set (the deployment's
+  externally-reachable scheme+host, no path) - the WebAuthn Relying Party ID
+  is derived from it, and it's deliberately not inferred from a request's
+  `Host` header for the same reason `--web.trusted-proxies` isn't inferred
+  either (a forged header shouldn't be able to bind a credential to the
+  wrong origin). Leaving it unset simply disables every passkey endpoint;
+  nothing else is affected.
+- Works on a `*.ddns.net`-style dynamic hostname with no purchased domain
+  needed - each such subdomain is its own isolated entry in the browser's
+  Public Suffix List, so it already gets its own Relying Party ID.
+
 ### Login hardening
 
 The IP-based mechanisms below key on the client's address, so `apiserver` must
@@ -503,6 +531,7 @@ still point at bare `/healthz`/`/readyz`, not the prefixed path.
 | `--internal.listen-address` | `INTERNAL_LISTEN_ADDRESS` | | `:8081` | Address the INTERNAL listener (`/internal/*`, used by ambot containers and orchestrator) listens on. A deliberately separate port from `--web.listen-address` - never point a public reverse proxy at it, see [Architecture](#architecture). |
 | `--web.route-prefix` | `WEB_ROUTE_PREFIX` | | (none) | Mounts the PUBLIC listener (UI + `/api/*`) under this path instead of `/` - e.g. `/app`, so a reverse proxy can serve this UI and something else (Prometheus at `/prometheus`, say) on the same port/domain with no path-rewriting rules, the same route-prefix idea Prometheus/Grafana themselves offer. Must start with `/` and not end with one. Never affects the INTERNAL listener. |
 | `--web.trusted-proxies` | `TRUSTED_PROXIES` | | (none) | Comma-separated IPs/CIDRs of the reverse proxies allowed to report a request's real client address via `X-Forwarded-For`. Only a connection whose direct peer is in this list has that header honored; for anyone else it is ignored (it is trivially forgeable), and empty trusts nothing. Without it, behind a reverse proxy every request appears to come from the proxy's own address - see [Login hardening](#login-hardening). |
+| `--web.public-origin` | `PUBLIC_ORIGIN` | | (none) | This deployment's externally-reachable origin (scheme + host, e.g. `https://example.com`, no path), required for passkey sign-in - see [Passkeys](#passkeys). Empty disables passkey endpoints entirely. |
 | `--database-url` | `DATABASE_URL` | yes | | Postgres connection string. |
 | `--secrets-master-key` | `SECRETS_MASTER_KEY` | yes | | Base64 AES-256 key encrypting node/VPN secrets at rest. **Losing it is unrecoverable data loss - see [Secrets and key management](#secrets-and-key-management) before generating one.** |
 | `--jwt-signing-key` | `JWT_SIGNING_KEY` | yes | | Base64 key (≥32 bytes) signing session tokens. `openssl rand -base64 64` recommended. |

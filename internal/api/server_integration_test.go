@@ -59,7 +59,7 @@ func testServerWithDeps(t *testing.T) (*httptest.Server, *client, *store.Store, 
 	if err != nil {
 		t.Fatalf("sql.Open() error = %v", err)
 	}
-	if _, err := rawDB.Exec(`DROP TABLE IF EXISTS node_operations, nodes, vpn_configs, vpn_regions, vpn_provider_credentials, prometheus_settings, login_ban_events, login_attempts, login_bans, users, schema_migrations CASCADE`); err != nil {
+	if _, err := rawDB.Exec(`DROP TABLE IF EXISTS node_operations, nodes, vpn_configs, vpn_regions, vpn_provider_credentials, prometheus_settings, login_ban_events, login_attempts, login_bans, passkeys, users, schema_migrations CASCADE`); err != nil {
 		t.Fatalf("resetting schema: %v", err)
 	}
 	rawDB.Close()

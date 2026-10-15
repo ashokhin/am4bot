@@ -6,6 +6,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { cn } from '../lib/utils'
 import { LanguageSwitcher } from './LanguageSwitcher'
+import { PasskeyPromptModal } from './PasskeyPromptModal'
 import { ThemeToggle } from './ThemeToggle'
 import { Button } from './ui/button'
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from './ui/sheet'
@@ -100,6 +101,7 @@ export function Layout({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex min-h-svh">
+      {showNav && <PasskeyPromptModal />}
       {showNav && (
         // Always-visible sidebar from md up; below that it's replaced by
         // the Sheet drawer triggered from the header's hamburger button --

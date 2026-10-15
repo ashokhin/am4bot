@@ -19,7 +19,28 @@
   "login": {
     "title": "Sign in",
     "submit": "Sign in",
-    "error": "Invalid login or password"
+    "error": "Invalid login or password",
+    "withPasskey": "Sign in with a passkey",
+    "passkeyError": "Passkey sign-in failed"
+  },
+  "passkeys": {
+    "promptTitle": "Add a passkey?",
+    "promptBody": "Sign in faster and more securely next time with a passkey instead of your password.",
+    "add": "Add",
+    "skip": "Skip",
+    "dontShowAgain": "Don't show this again",
+    "settingsTitle": "Passkeys",
+    "settingsDescription": "Sign in without typing your password, using your device's built-in security (fingerprint, face, or PIN).",
+    "addPasskey": "Add a passkey",
+    "namePrompt": "Name this passkey (e.g. the device it's on)",
+    "noPasskeys": "No passkeys added yet.",
+    "created": "Added {{date}}",
+    "lastUsed": "Last used {{date}}",
+    "neverUsed": "Never used",
+    "delete": "Delete",
+    "deleteConfirm": "Remove this passkey? You'll no longer be able to sign in with it.",
+    "addError": "Could not add this passkey",
+    "deleteError": "Could not delete this passkey"
   },
   "nav": {
     "nodes": "Nodes",
