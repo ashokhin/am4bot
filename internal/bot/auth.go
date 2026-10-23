@@ -30,6 +30,15 @@ func (b *Bot) auth(ctx context.Context) error {
 
 	if !utils.IsElementVisible(ctx, model.BUTTON_PLAY_NOW) {
 		slog.Debug("already authenticated, skipping auth step")
+
+		if err := chromedp.Do(ctx,
+			// wait for main page to load
+			chromedp.WaitNotVisible(chromedp.CSS(model.OVERLAY_LOADING)),
+			utils.RefreshPage(),
+		); err != nil {
+			return fmt.Errorf("auth: %w", err)
+		}
+
 		b.HasValidCookies = true
 
 		return nil
