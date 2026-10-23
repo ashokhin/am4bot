@@ -9,7 +9,6 @@ import (
 
 	"github.com/ashokhin/am4bot/internal/model"
 	"github.com/ashokhin/am4bot/internal/utils"
-	"github.com/chromedp/cdproto/cdp"
 	"github.com/chromedp/cdproto/target"
 	"github.com/chromedp/chromedp"
 )
@@ -38,9 +37,9 @@ func (b *Bot) companyStats(ctx context.Context) error {
 	slog.Info("check company stats")
 	slog.Debug("open pop-up window", "window", "overview")
 
-	if err := chromedp.Run(ctx,
-		chromedp.Click(model.BUTTON_FI_OVERVIEW, chromedp.ByQuery),
-		chromedp.WaitReady(model.TEXT_OVERVIEW_AIRLINE_REPUTATION, chromedp.ByQuery),
+	if err := chromedp.Do(ctx,
+		chromedp.Click(chromedp.CSS(model.BUTTON_FI_OVERVIEW)),
+		chromedp.WaitReady(chromedp.CSS(model.TEXT_OVERVIEW_AIRLINE_REPUTATION)),
 		utils.GetFloatFromElement(model.TEXT_OVERVIEW_AIRLINE_REPUTATION, &airlineReputation),
 		utils.GetFloatFromElement(model.TEXT_OVERVIEW_CARGO_REPUTATION, &cargoReputation),
 		utils.GetFloatFromElement(model.TEXT_OVERVIEW_FLEET_SIZE, &fleetSize),
@@ -57,8 +56,7 @@ func (b *Bot) companyStats(ctx context.Context) error {
 		utils.GetFloatFromElement(model.TEXT_OVERVIEW_PASSENGERS_FIRST_TRANSPORTED, &passengersFirstTransported),
 		utils.GetFloatFromElement(model.TEXT_OVERVIEW_CARGO_TRANSPORTED_LARGE, &cargoTransportedLarge),
 		utils.GetFloatFromElement(model.TEXT_OVERVIEW_CARGO_TRANSPORTED_HEAVY, &cargoTransportedHeavy),
-		chromedp.Click(model.BUTTON_COMMON_CLOSE_POPUP, chromedp.ByQuery),
-		//utils.Screenshot(),
+		chromedp.Click(chromedp.CSS(model.BUTTON_COMMON_CLOSE_POPUP)),
 	); err != nil {
 		slog.Debug("error in Bot.companyStats", "error", err)
 
@@ -118,8 +116,8 @@ func (b *Bot) allianceStats(ctx context.Context) error {
 	// collect and set Prometheus metrics for personal alliance overview stats (total contributed, contributed per day, flights, season money)
 	slog.Debug("open pop-up window", "window", "alliance_overview")
 
-	if err := chromedp.Run(ctx,
-		chromedp.Click(model.BUTTON_ALLIANCE_INFO, chromedp.ByQuery),
+	if err := chromedp.Do(ctx,
+		chromedp.Click(chromedp.CSS(model.BUTTON_ALLIANCE_INFO)),
 	); err != nil {
 		slog.Debug("error in Bot.allianceStats", "error", err)
 
@@ -134,7 +132,7 @@ func (b *Bot) allianceStats(ctx context.Context) error {
 		return nil
 	}
 
-	if err := chromedp.Run(ctx,
+	if err := chromedp.Do(ctx,
 		utils.GetFloatFromElement(model.TEXT_ALLIANCE_CONTRIBUTED_TOTAL, &contributedTotal),
 		utils.GetFloatFromElement(model.TEXT_ALLIANCE_CONTRIBUTED_PER_DAY, &contributedPerDay),
 		utils.GetFloatFromElement(model.TEXT_ALLIANCE_FLIGHTS, &allianceFlights),
@@ -165,7 +163,7 @@ func (b *Bot) allianceStatsByID(ctx context.Context, allianceID string) (map[str
 
 	slog.Debug("navigate to alliance page", "url", pageURL)
 
-	if err = chromedp.Run(alStatsCtx,
+	if err = chromedp.Do(alStatsCtx,
 		chromedp.Navigate(pageURL),
 	); err != nil {
 		return nil, fmt.Errorf("allianceStatsByID %s: navigate: %w", allianceID, err)
@@ -176,9 +174,7 @@ func (b *Bot) allianceStatsByID(ctx context.Context, allianceID string) (map[str
 
 	slog.Debug("activate alliance page target", "allianceID", allianceID)
 
-	if err = chromedp.Run(alStatsCtx,
-		target.ActivateTarget(c.Target.TargetID),
-	); err != nil {
+	if _, err = chromedp.Call(alStatsCtx, target.ActivateTarget, target.ActivateTargetParams{TargetID: c.Target.TargetID}); err != nil {
 		return nil, fmt.Errorf("allianceStatsByID %s: activate target: %w", allianceID, err)
 	}
 
@@ -195,25 +191,18 @@ func (b *Bot) allianceStatsByID(ctx context.Context, allianceID string) (map[str
 
 // wholeAllianceStats collects statistics about all alliance members
 func (b *Bot) wholeAllianceStats(ctx context.Context, allianceID string) (map[string]model.AllianceMember, error) {
-	var err error
-	var allianceName string
-
-	if err = chromedp.Run(ctx,
-		chromedp.Text(model.TEXT_ALLIANCE_PG_DETAIL_NAME, &allianceName, chromedp.ByQuery),
-	); err != nil {
+	allianceName, err := chromedp.Run(ctx, chromedp.Text(chromedp.CSS(model.TEXT_ALLIANCE_PG_DETAIL_NAME)))
+	if err != nil {
 		return nil, fmt.Errorf("wholeAllianceStats %s: get alliance name: %w", allianceID, err)
 	}
 
 	slog.Debug("check whole alliance stats", "allianceID", allianceID, "allianceName", allianceName)
 
-	allianceMembersElemList := make([]*cdp.Node, 0)
-
 	slog.Debug("get list of all alliance members", "allianceID", allianceID, "allianceName", allianceName)
 
 	// get list of all alliance members
-	if err = chromedp.Run(ctx,
-		chromedp.Nodes(model.LIST_ALLIANCE_MEMBERS, &allianceMembersElemList, chromedp.ByQueryAll),
-	); err != nil {
+	allianceMembersElemList, err := chromedp.Run(ctx, chromedp.Nodes(chromedp.CSSAll(model.LIST_ALLIANCE_MEMBERS)))
+	if err != nil {
 		return nil, fmt.Errorf("wholeAllianceStats %s: get members list: %w", allianceID, err)
 	}
 
@@ -232,19 +221,23 @@ func (b *Bot) wholeAllianceStats(ctx context.Context, allianceID string) (map[st
 
 		slog.Debug("member id", "id", uid)
 
-		if err = chromedp.Run(ctx,
-			chromedp.Text(model.TEXT_ALLIANCE_MEMBER_NAME, &allianceMember.Name, chromedp.ByQuery, chromedp.FromNode(memberElem)),
-			utils.GetFloatFromChildElement(model.TEXT_ALLIANCE_MEMBER_CONTRIBUTED_TOTAL, &allianceMember.ContributedTotal, memberElem),
-			utils.GetFloatFromChildElement(model.TEXT_ALLIANCE_MEMBER_CONTRIBUTED_PER_DAY, &allianceMember.ContributedPerDay, memberElem),
-			utils.GetIntFromChildElement(model.TEXT_ALLIANCE_MEMBER_FLIGHTS, &allianceMember.FlightsTotal, memberElem),
-			utils.GetFloatFromChildElement(model.TEXT_ALLIANCE_MEMBER_SEASON_MONEY, &allianceMember.ContributedSeason, memberElem),
-		); err != nil {
+		allianceMember.Name, err = chromedp.Run(ctx, chromedp.Text(chromedp.CSS(model.TEXT_ALLIANCE_MEMBER_NAME), chromedp.FromNode(memberElem)))
+		if err == nil {
+			err = chromedp.Do(ctx,
+				utils.GetFloatFromChildElement(model.TEXT_ALLIANCE_MEMBER_CONTRIBUTED_TOTAL, &allianceMember.ContributedTotal, memberElem),
+				utils.GetFloatFromChildElement(model.TEXT_ALLIANCE_MEMBER_CONTRIBUTED_PER_DAY, &allianceMember.ContributedPerDay, memberElem),
+				utils.GetIntFromChildElement(model.TEXT_ALLIANCE_MEMBER_FLIGHTS, &allianceMember.FlightsTotal, memberElem),
+				utils.GetFloatFromChildElement(model.TEXT_ALLIANCE_MEMBER_SEASON_MONEY, &allianceMember.ContributedSeason, memberElem),
+			)
+		}
+
+		if err != nil {
 			slog.Warn("error in Bot.wholeAllianceStats > get member data", "error", err)
 		}
 
 		// collect share price separately
 		// bc. it could be the "N/A" string
-		if err = chromedp.Run(ctx,
+		if err = chromedp.Do(ctx,
 			utils.GetFloatFromChildElement(model.TEXT_ALLIANCE_MEMBER_SHARE_PRICE, &allianceMember.SharePrice, memberElem),
 		); err != nil {
 			slog.Debug("error in Bot.wholeAllianceStats > get member share price", "allianceMember.Name", allianceMember.Name, "error", err)

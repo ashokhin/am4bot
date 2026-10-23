@@ -9,7 +9,6 @@ import (
 
 	"github.com/ashokhin/am4bot/internal/model"
 	"github.com/ashokhin/am4bot/internal/utils"
-	"github.com/chromedp/cdproto/cdp"
 	"github.com/chromedp/chromedp"
 )
 
@@ -45,7 +44,7 @@ func (b *Bot) marketingCompanies(ctx context.Context) error {
 	utils.DoClickElement(ctx, model.BUTTON_MAIN_FINANCE)
 	defer utils.DoClickElement(ctx, model.BUTTON_COMMON_CLOSE_POPUP)
 	// open the "+ New campaign" section
-	if err := chromedp.Run(ctx,
+	if err := chromedp.Do(ctx,
 		utils.ClickElement(model.BUTTON_COMMON_TAB2),
 		utils.ClickElement(model.BUTTON_FINANCE_MARKETING_NEW_COMPANY),
 	); err != nil {
@@ -96,14 +95,11 @@ func (b *Bot) marketingCompanies(ctx context.Context) error {
 
 // checkMarketingCompanyStatus checks if a marketing company is currently active.
 func (b *Bot) checkMarketingCompanyStatus(ctx context.Context, mc *model.MarketingCompany) error {
-	var marketingCompanyElemAttributes map[string]string
-
 	slog.Debug("Check marketing company by the 'class' attribute", "company", mc.Name)
 
 	// search marketingCompany element attributes
-	if err := chromedp.Run(ctx,
-		chromedp.Attributes(mc.CompanyRow, &marketingCompanyElemAttributes, chromedp.ByQuery),
-	); err != nil {
+	marketingCompanyElemAttributes, err := chromedp.Run(ctx, chromedp.Attributes(chromedp.CSS(mc.CompanyRow)))
+	if err != nil {
 		return fmt.Errorf("checkMarketingCompanyStatus %s: %w", mc.Name, err)
 	}
 
@@ -127,7 +123,7 @@ func (b *Bot) checkMarketingCompanyStatus(ctx context.Context, mc *model.Marketi
 func (b *Bot) activateMarketingCompany(ctx context.Context, mc *model.MarketingCompany) error {
 	slog.Debug("activate marketing company", "company", mc.Name)
 
-	if err := chromedp.Run(ctx,
+	if err := chromedp.Do(ctx,
 		utils.ClickElement(model.BUTTON_COMMON_TAB2),
 		utils.ClickElement(model.BUTTON_FINANCE_MARKETING_NEW_COMPANY),
 		utils.ClickElement(mc.CompanyRow),
@@ -140,14 +136,14 @@ func (b *Bot) activateMarketingCompany(ctx context.Context, mc *model.MarketingC
 	switch mc.Name {
 	// in case of "Eco friendly" marketing company we skip "select option" actions
 	case "Eco friendly":
-		if err := chromedp.Run(ctx,
+		if err := chromedp.Do(ctx,
 			utils.GetFloatFromElement(mc.CompanyCost, &marketingCompanyCost),
 		); err != nil {
 			return fmt.Errorf("activateMarketingCompany %s: get company cost: %w", mc.Name, err)
 		}
 	default:
-		if err := chromedp.Run(ctx,
-			chromedp.SetValue(model.SELECT_FINANCE_MARKETING_COMPANY_DURATION, mc.CompanyOptionValue, chromedp.ByQuery),
+		if err := chromedp.Do(ctx,
+			chromedp.SetValue(chromedp.CSS(model.SELECT_FINANCE_MARKETING_COMPANY_DURATION), mc.CompanyOptionValue),
 			utils.GetFloatFromElement(mc.CompanyCost, &marketingCompanyCost),
 		); err != nil {
 			return fmt.Errorf("activateMarketingCompany %s: get company cost: %w", mc.Name, err)
@@ -164,7 +160,7 @@ func (b *Bot) activateMarketingCompany(ctx context.Context, mc *model.MarketingC
 	}
 
 	// buy marketing company
-	if err := chromedp.Run(ctx,
+	if err := chromedp.Do(ctx,
 		utils.ClickElement(mc.CompanyButton),
 	); err != nil {
 		return fmt.Errorf("activateMarketingCompany %s: buy company: %w", mc.Name, err)
@@ -191,21 +187,18 @@ func (b *Bot) collectMarketingCompanyDuration(ctx context.Context, mc *model.Mar
 	var durationStr string
 
 	// find marketing companies array
-	var marketingCompaniesList []*cdp.Node
+	if err := chromedp.Do(ctx, utils.ClickElement(model.BUTTON_COMMON_TAB2)); err != nil {
+		return fmt.Errorf("collectMarketingCompanyDuration: open tab: %w", err)
+	}
 
-	if err := chromedp.Run(ctx,
-		utils.ClickElement(model.BUTTON_COMMON_TAB2),
-		chromedp.Nodes(model.LIST_FINANCE_MARKETING_COMPANIES, &marketingCompaniesList, chromedp.ByQueryAll),
-	); err != nil {
+	marketingCompaniesList, err := chromedp.Run(ctx, chromedp.Nodes(chromedp.CSSAll(model.LIST_FINANCE_MARKETING_COMPANIES)))
+	if err != nil {
 		return fmt.Errorf("collectMarketingCompanyDuration: get companies list: %w", err)
 	}
 	// get marketing company duration string
 	for _, companyElem := range marketingCompaniesList {
-		var companyName string
-
-		if err := chromedp.Run(ctx,
-			chromedp.Text(model.TEXT_MARKETING_COMPANY_NAME, &companyName, chromedp.ByQuery, chromedp.FromNode(companyElem)),
-		); err != nil {
+		companyName, err := chromedp.Run(ctx, chromedp.Text(chromedp.CSS(model.TEXT_MARKETING_COMPANY_NAME), chromedp.FromNode(companyElem)))
+		if err != nil {
 			return fmt.Errorf("collectMarketingCompanyDuration: get company name: %w", err)
 		}
 
@@ -218,9 +211,8 @@ func (b *Bot) collectMarketingCompanyDuration(ctx context.Context, mc *model.Mar
 
 			// add several attempts to get duration string due to possible UI updates
 			for i := 0; i < 5; i++ {
-				if err := chromedp.Run(ctx,
-					chromedp.Text(model.TEXT_MARKETING_COMPANY_DURATION, &durationStr, chromedp.ByQuery, chromedp.FromNode(companyElem)),
-				); err != nil {
+				durationStr, err = chromedp.Run(ctx, chromedp.Text(chromedp.CSS(model.TEXT_MARKETING_COMPANY_DURATION), chromedp.FromNode(companyElem)))
+				if err != nil {
 					return fmt.Errorf("collectMarketingCompanyDuration %s: get duration: %w", mc.Name, err)
 				}
 

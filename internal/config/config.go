@@ -65,11 +65,13 @@ type Config struct {
 	ChromeDebug    bool `default:"false" yaml:"chrome_debug" json:"chrome_debug"`
 	// ChromeStealth switches the browser launch path from the plain
 	// chromedp exec-allocator (visible flags, easy to attach a debugger to,
-	// good for "where did the bot get stuck" local troubleshooting) to
-	// chromedp-undetected (patches navigator.webdriver/CDP fingerprints,
-	// launches headless via a real Xvfb display instead of Chrome's own
-	// --headless flag). Off by default so a plain local/binary run behaves
-	// exactly as before; hosted nodes should set this true.
+	// good for "where did the bot get stuck" local troubleshooting) to one
+	// that, when headless, launches Chrome inside a real Xvfb display
+	// instead of passing Chrome's own --headless flag (see
+	// internal/bot/chrome_session.go's newChromeContext) - a browser that
+	// never announces --headless at all is harder to fingerprint as
+	// automated than one that does. Off by default so a plain local/binary
+	// run behaves exactly as before; hosted nodes should set this true.
 	ChromeStealth bool `default:"false" yaml:"chrome_stealth" json:"chrome_stealth"`
 
 	// internal fields

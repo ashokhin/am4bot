@@ -75,7 +75,7 @@ You can visualize these metrics using [Grafana](https://grafana.com/grafana/).
 
 ## Installation
 
-1. Install Docker from https://www.docker.com/get-started
+1. Install Docker from [docker.com](https://www.docker.com/get-started)
 2. Create `config.yaml` file based on [Configuration](#configuration) section. For example:
 
    ```bash
@@ -176,7 +176,7 @@ option whenever both are set to a non-default value:
 | `timeout_seconds` | int | `180` | Timeout for full round in seconds. |
 | `chrome_headless` | bool | `true` | Run browser in headless mode. |
 | `chrome_debug` | bool | `false` | Enable detailed Chrome/Chromium debugging logs. |
-| `chrome_stealth` | bool | `false` | Launch Chrome via [chromedp-undetected](https://github.com/Davincible/chromedp-undetected) instead of a plain exec-allocator — patches `navigator.webdriver`/CDP fingerprints, and (when `chrome_headless: true`) runs headless inside a real Xvfb display rather than passing Chrome's own `--headless` flag. Requires `Xvfb`/`xauth` on `PATH` (already in the shipped Docker image). Leave `false` for local troubleshooting with a plain, easy-to-attach-to Chrome. |
+| `chrome_stealth` | bool | `false` | When `chrome_headless: true`, runs headless inside a real Xvfb display rather than passing Chrome's own `--headless` flag, since a browser that never announces `--headless` at all is harder to fingerprint as automated. Requires `Xvfb`/`xauth` on `PATH` (already in the shipped Docker image). Leave `false` for local troubleshooting with a plain, easy-to-attach-to Chrome. |
 | `prometheus_address` | string | `":9150"` | Address to expose Prometheus metrics. |
 
 #### Example of `config.yaml` with the non-default options

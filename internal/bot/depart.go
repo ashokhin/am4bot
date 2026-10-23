@@ -7,7 +7,6 @@ import (
 
 	"github.com/ashokhin/am4bot/internal/model"
 	"github.com/ashokhin/am4bot/internal/utils"
-	"github.com/chromedp/cdproto/cdp"
 	"github.com/chromedp/chromedp"
 )
 
@@ -83,12 +82,9 @@ func (b *Bot) depart(ctx context.Context) error {
 // believe an aircraft the "Depart All" button won't move was still ready,
 // clicking that inert button every iteration until the whole run timed out.
 func (b *Bot) getReadyForDepart(ctx context.Context) int {
-	var landedRows []*cdp.Node
-
-	if err := chromedp.Run(ctx,
-		// AtLeast(0): an empty landed list is a valid state, not an error.
-		chromedp.Nodes(model.LIST_FI_LANDED, &landedRows, chromedp.ByQueryAll, chromedp.AtLeast(0)),
-	); err != nil {
+	// AtLeast(0): an empty landed list is a valid state, not an error.
+	landedRows, err := chromedp.Run(ctx, chromedp.Nodes(chromedp.CSSAll(model.LIST_FI_LANDED), chromedp.AtLeast(0)))
+	if err != nil {
 		slog.Debug("the landed aircraft list not found, assuming 0 ready for depart", "error", err)
 
 		return 0

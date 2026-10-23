@@ -74,7 +74,7 @@ func (b *Bot) checkFuelType(ctx context.Context, fuelStruct *model.Fuel) error {
 	b.selectFuelTab(ctx, fuelStruct.FuelType)
 
 	// retrieve fuel information
-	if err := chromedp.Run(ctx,
+	if err := chromedp.Do(ctx,
 		utils.GetFloatFromElement(model.TEXT_FUEL_FUEL_PRICE, &fuelStruct.Price),
 		utils.GetFloatFromElement(model.TEXT_FUEL_FUEL_HOLDING, &fuelStruct.Holding),
 		utils.GetFloatFromElement(model.TEXT_FUEL_FUEL_CAPACITY, &fuelStruct.Capacity),
@@ -142,8 +142,8 @@ func (b *Bot) buyFuelType(ctx context.Context, fuelStruct *model.Fuel) error {
 	slog.Debug("buying fuel", "type", fuelStruct.FuelType, "amount", fuelNeedAmountString, "price", int(amountPrice))
 
 	// perform buy fuel action
-	if err := chromedp.Run(ctx,
-		chromedp.SendKeys(model.TEXT_FIELD_FUEL_AMOUNT, fuelNeedAmountString, chromedp.ByQuery),
+	if err := chromedp.Do(ctx,
+		chromedp.SendKeys(chromedp.CSS(model.TEXT_FIELD_FUEL_AMOUNT), fuelNeedAmountString),
 		utils.ClickElement(model.BUTTON_FUEL_BUY),
 	); err != nil {
 		return fmt.Errorf("buyFuelType %s: %w", fuelStruct.FuelType, err)

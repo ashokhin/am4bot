@@ -3,7 +3,7 @@ package model
 import (
 	"fmt"
 
-	"github.com/chromedp/cdproto/cdp"
+	"github.com/chromedp/chromedp"
 )
 
 type MaintenanceType int
@@ -89,8 +89,8 @@ type Hub struct {
 	PaxArrived    float64
 	HasCatering   bool
 	NeedsRepair   bool
-	HubCdpNode    *cdp.Node
-	LoungeCdpNode *cdp.Node
+	HubCdpNode    *chromedp.Node
+	LoungeCdpNode *chromedp.Node
 }
 
 // String returns a string representation of the Hub struct.

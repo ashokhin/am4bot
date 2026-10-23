@@ -18,11 +18,11 @@ func (b *Bot) staffMorale(ctx context.Context) error {
 	slog.Info("check staff morale")
 	slog.Debug("open pop-up window", "window", "company")
 
-	if err := chromedp.Run(ctx,
-		chromedp.Click(model.BUTTON_MAIN_COMPANY, chromedp.ByQuery),
-		chromedp.WaitReady(model.TEXT_COMPANY_RANK, chromedp.ByQuery),
+	if err := chromedp.Do(ctx,
+		chromedp.Click(chromedp.CSS(model.BUTTON_MAIN_COMPANY)),
+		chromedp.WaitReady(chromedp.CSS(model.TEXT_COMPANY_RANK)),
 		utils.GetFloatFromElement(model.TEXT_COMPANY_RANK, &rank),
-		chromedp.Click(model.BUTTON_COMMON_TAB2, chromedp.ByQuery),
+		chromedp.Click(chromedp.CSS(model.BUTTON_COMMON_TAB2)),
 		utils.GetFloatFromElement(model.TEXT_COMPANY_STAFF_TRAINING_POINTS, &trainingPoints),
 	); err != nil {
 		slog.Debug("error in Bot.staffMorale", "error", err)
@@ -57,7 +57,7 @@ func (b *Bot) staffMorale(ctx context.Context) error {
 func (b *Bot) checkStaffEntry(ctx context.Context, e model.StaffEntry) error {
 	var moralePercent int
 
-	if err := chromedp.Run(ctx,
+	if err := chromedp.Do(ctx,
 		utils.GetIntFromElement(e.TextMorale, &moralePercent),
 	); err != nil {
 		return fmt.Errorf("checkStaffEntry %s: get morale: %w", e.Name, err)
@@ -66,7 +66,7 @@ func (b *Bot) checkStaffEntry(ctx context.Context, e model.StaffEntry) error {
 
 	slog.Debug("check salary", "entry", e.Name)
 
-	if err := chromedp.Run(ctx,
+	if err := chromedp.Do(ctx,
 		utils.GetFloatFromElement(e.TextSalary, &startSalary),
 	); err != nil {
 		return err
@@ -81,7 +81,7 @@ func (b *Bot) checkStaffEntry(ctx context.Context, e model.StaffEntry) error {
 
 	if moralePercent < 100 {
 		// three clicks Up and three clicks Down before the first comparison
-		if err := chromedp.Run(ctx,
+		if err := chromedp.Do(ctx,
 			utils.ClickElement(e.ButtonSalaryUp),
 			utils.ClickElement(e.ButtonSalaryUp),
 			utils.ClickElement(e.ButtonSalaryUp),
@@ -97,7 +97,7 @@ func (b *Bot) checkStaffEntry(ctx context.Context, e model.StaffEntry) error {
 		slog.Debug("align morale", "entry", e.Name, "moralePercent", moralePercent,
 			"newSalary", newSalary)
 
-		if err := chromedp.Run(ctx,
+		if err := chromedp.Do(ctx,
 			utils.ClickElement(e.ButtonSalaryUp),
 			// check morale
 			utils.GetIntFromElement(e.TextMorale, &moralePercent),
@@ -114,7 +114,7 @@ func (b *Bot) checkStaffEntry(ctx context.Context, e model.StaffEntry) error {
 			slog.Debug("align salary. newSalary > startSalary", "entry", e.Name,
 				"newSalary", newSalary, "startSalary", startSalary, "attemptsLeft", maxAttempts)
 
-			if err := chromedp.Run(ctx,
+			if err := chromedp.Do(ctx,
 				utils.ClickElement(e.ButtonSalaryDown),
 				utils.ClickElement(e.ButtonSalaryUp),
 				// check morale

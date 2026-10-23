@@ -15,6 +15,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/chromedp/cdproto/browser"
+	"github.com/chromedp/cdproto/cdp"
 	"github.com/chromedp/chromedp"
 )
 
@@ -100,7 +101,7 @@ func (b *Bot) Run(ctx context.Context) error {
 	slog.Info("start session")
 	slog.Debug("navigate", "url", b.Conf.Url)
 
-	if err := chromedp.Run(taskCtx,
+	if err := chromedp.Do(taskCtx,
 		// open URL to initialize session and cookies before authentication
 		chromedp.Navigate(b.Conf.Url),
 	); err != nil {
@@ -172,7 +173,7 @@ func (b *Bot) Run(ctx context.Context) error {
 	// defer cancelAllocator() signals Chrome asynchronously and may not complete
 	// a graceful shutdown before the process is killed. Browser.close is best-effort:
 	// the connection drops immediately on receipt so an error is expected.
-	if err := chromedp.Run(taskCtx, browser.Close()); err != nil {
+	if _, err := chromedp.Call(taskCtx, browser.Close, cdp.Empty{}); err != nil {
 		slog.Debug("browser.Close", "error", err)
 	}
 

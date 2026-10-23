@@ -8,21 +8,20 @@ import (
 
 	"github.com/ashokhin/am4bot/internal/model"
 	"github.com/ashokhin/am4bot/internal/utils"
-	"github.com/chromedp/cdproto/cdp"
 	"github.com/chromedp/chromedp"
 )
 
 // money checks account balances and updates the bot's budget allocations accordingly.
 func (b *Bot) money(ctx context.Context) error {
-	var accElemList []*cdp.Node
-
 	slog.Info("check account money")
 	slog.Debug("get accounts list")
 
-	if err := chromedp.Run(ctx,
-		utils.ClickElement(model.BUTTON_MAIN_ACCOUNT),
-		chromedp.Nodes(model.LIST_ACCOUNT_ACCOUNTS, &accElemList, chromedp.ByQueryAll),
-	); err != nil {
+	if err := chromedp.Do(ctx, utils.ClickElement(model.BUTTON_MAIN_ACCOUNT)); err != nil {
+		slog.Error("money: open accounts", "error", err)
+	}
+
+	accElemList, err := chromedp.Run(ctx, chromedp.Nodes(chromedp.CSSAll(model.LIST_ACCOUNT_ACCOUNTS)))
+	if err != nil {
 		slog.Error("money: get accounts list", "error", err)
 	}
 
@@ -34,10 +33,12 @@ func (b *Bot) money(ctx context.Context) error {
 
 		slog.Debug("check account", "index", idx)
 
-		if err := chromedp.Run(ctx,
-			chromedp.Text(model.TEXT_ACCOUNT_ACCOUNT_NAME, &accountName, chromedp.ByQuery, chromedp.FromNode(accountElem)),
-			utils.GetFloatFromChildElement(model.TEXT_ACCOUNT_ACCOUNT_BALANCE, &accountBalance, accountElem),
-		); err != nil {
+		accountName, err = chromedp.Run(ctx, chromedp.Text(chromedp.CSS(model.TEXT_ACCOUNT_ACCOUNT_NAME), chromedp.FromNode(accountElem)))
+		if err == nil {
+			err = chromedp.Do(ctx, utils.GetFloatFromChildElement(model.TEXT_ACCOUNT_ACCOUNT_BALANCE, &accountBalance, accountElem))
+		}
+
+		if err != nil {
 			return fmt.Errorf("money: get account info: %w", err)
 		}
 

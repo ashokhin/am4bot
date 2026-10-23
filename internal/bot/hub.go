@@ -10,7 +10,6 @@ import (
 	"github.com/ashokhin/am4bot/internal/model"
 	"github.com/ashokhin/am4bot/internal/utils"
 
-	"github.com/chromedp/cdproto/cdp"
 	"github.com/chromedp/chromedp"
 )
 
@@ -33,7 +32,7 @@ func (b *Bot) hubs(ctx context.Context) error {
 	slog.Debug("open pop-up window", "window", "hubs")
 
 	// open hubs window
-	if err = chromedp.Run(ctx,
+	if err = chromedp.Do(ctx,
 		utils.ClickElement(model.BUTTON_MAIN_HUBS),
 	); err != nil {
 		return fmt.Errorf("hubs: open hubs: %w", err)
@@ -43,12 +42,9 @@ func (b *Bot) hubs(ctx context.Context) error {
 
 	slog.Debug("get list of hubs webElements")
 
-	var hubsElemList []*cdp.Node
-
 	// get list of Hubs
-	if err = chromedp.Run(ctx,
-		chromedp.Nodes(model.LIST_HUBS_HUBS, &hubsElemList, chromedp.ByQueryAll),
-	); err != nil {
+	hubsElemList, err := chromedp.Run(ctx, chromedp.Nodes(chromedp.CSSAll(model.LIST_HUBS_HUBS)))
+	if err != nil {
 		return fmt.Errorf("hubs: get hubs list: %w", err)
 	}
 
@@ -91,25 +87,28 @@ func sortedHubNames(hubsMap map[string]model.Hub) []string {
 }
 
 // hubsCollectMetrics collects Prometheus metrics for all available hubs
-func (b *Bot) hubsCollectMetrics(ctx context.Context, hubsElemList []*cdp.Node) (map[string]model.Hub, error) {
+func (b *Bot) hubsCollectMetrics(ctx context.Context, hubsElemList []*chromedp.Node) (map[string]model.Hub, error) {
 	hubsMap := make(map[string]model.Hub)
 	// get metrics for all hubs in hubsElemList
 	for _, hubElem := range hubsElemList {
 		var hub model.Hub
-		var hubName string
 
 		hub.HubCdpNode = hubElem
 
 		slog.Debug("hubElem", "elem", hub.HubCdpNode)
 
 		// retrieve hub statistics
-		if err := chromedp.Run(ctx,
-			chromedp.Text(model.TEXT_HUBS_HUB_NAME, &hubName, chromedp.ByQuery, chromedp.FromNode(hub.HubCdpNode)),
-			utils.GetFloatFromChildElement(model.TEXT_HUBS_HUB_DEPARTURES, &hub.Departures, hub.HubCdpNode),
-			utils.GetFloatFromChildElement(model.TEXT_HUBS_HUB_ARRIVALS, &hub.Arrivals, hub.HubCdpNode),
-			utils.GetFloatFromChildElement(model.TEXT_HUBS_HUB_PAX_DEPARTED, &hub.PaxDeparted, hub.HubCdpNode),
-			utils.GetFloatFromChildElement(model.TEXT_HUBS_HUB_PAX_ARRIVED, &hub.PaxArrived, hub.HubCdpNode),
-		); err != nil {
+		hubName, err := chromedp.Run(ctx, chromedp.Text(chromedp.CSS(model.TEXT_HUBS_HUB_NAME), chromedp.FromNode(hub.HubCdpNode)))
+		if err == nil {
+			err = chromedp.Do(ctx,
+				utils.GetFloatFromChildElement(model.TEXT_HUBS_HUB_DEPARTURES, &hub.Departures, hub.HubCdpNode),
+				utils.GetFloatFromChildElement(model.TEXT_HUBS_HUB_ARRIVALS, &hub.Arrivals, hub.HubCdpNode),
+				utils.GetFloatFromChildElement(model.TEXT_HUBS_HUB_PAX_DEPARTED, &hub.PaxDeparted, hub.HubCdpNode),
+				utils.GetFloatFromChildElement(model.TEXT_HUBS_HUB_PAX_ARRIVED, &hub.PaxArrived, hub.HubCdpNode),
+			)
+		}
+
+		if err != nil {
 			return nil, fmt.Errorf("hubsCollectMetrics: get hub info: %w", err)
 		}
 
@@ -134,7 +133,7 @@ func (b *Bot) hubsLoungesRepair(ctx context.Context, hubsMap map[string]model.Hu
 	loungesRepairCount := 0
 
 	// open lounges maintenance tab
-	if err = chromedp.Run(ctx,
+	if err = chromedp.Do(ctx,
 		utils.ClickElement(model.BUTTON_HUBS_LOUNGES_MAINTENANCE),
 	); err != nil {
 		return fmt.Errorf("hubsLoungesRepair: open lounges maintenance tab: %w", err)
@@ -185,26 +184,24 @@ func (b *Bot) hubsLoungesRepair(ctx context.Context, hubsMap map[string]model.Hu
 
 // collectLoungeInfo collects information about hub's lounge and overrides the hub object by reference
 func (b *Bot) collectLoungeInfo(ctx context.Context, hubName string, hub *model.Hub) error {
-	var err error
-	var loungesElemList []*cdp.Node
 	// open lounges tab and get list of lounges
-	if err = chromedp.Run(ctx,
-		chromedp.Nodes(model.LIST_HUBS_LOUNGES, &loungesElemList, chromedp.ByQueryAll),
-	); err != nil {
+	loungesElemList, err := chromedp.Run(ctx, chromedp.Nodes(chromedp.CSSAll(model.LIST_HUBS_LOUNGES)))
+	if err != nil {
 		return fmt.Errorf("collectLoungeInfo: get lounges list: %w", err)
 	}
 
 	// enrich lounges info into hubsMap
 	for _, loungeElem := range loungesElemList {
-		var loungeName string
 		var loungeWearPercent float64
 		var needsRepair bool
 
 		// retrieve lounge statistics
-		if err := chromedp.Run(ctx,
-			chromedp.Text(model.TEXT_HUBS_LOUNGES_LOUNGE_NAME, &loungeName, chromedp.ByQuery, chromedp.FromNode(loungeElem)),
-			utils.GetFloatFromChildElement(model.TEXT_HUBS_LOUNGES_LOUNGE_WEAR_PERCENT, &loungeWearPercent, loungeElem),
-		); err != nil {
+		loungeName, err := chromedp.Run(ctx, chromedp.Text(chromedp.CSS(model.TEXT_HUBS_LOUNGES_LOUNGE_NAME), chromedp.FromNode(loungeElem)))
+		if err == nil {
+			err = chromedp.Do(ctx, utils.GetFloatFromChildElement(model.TEXT_HUBS_LOUNGES_LOUNGE_WEAR_PERCENT, &loungeWearPercent, loungeElem))
+		}
+
+		if err != nil {
 			return fmt.Errorf("collectLoungeInfo: get lounge info: %w", err)
 		}
 
@@ -275,7 +272,7 @@ func (b *Bot) repairLounge(ctx context.Context, hub *model.Hub) error {
 
 	if utils.IsSubElementVisible(ctx, model.TEXT_HUBS_LOUNGES_LOUNGE_REPAIR_COST, hub.LoungeCdpNode) {
 		// get repair cost
-		if err := chromedp.Run(ctx,
+		if err := chromedp.Do(ctx,
 			utils.GetFloatFromChildElement(model.TEXT_HUBS_LOUNGES_LOUNGE_REPAIR_COST, &loungeRepairCost, hub.LoungeCdpNode),
 		); err != nil {
 			return fmt.Errorf("repairLounge: get lounge repair cost: %w", err)
@@ -300,8 +297,8 @@ func (b *Bot) repairLounge(ctx context.Context, hub *model.Hub) error {
 	slog.Info("repair lounge", "repairCost", int(loungeRepairCost),
 		"BudgetMoney.Maintenance", int(b.BudgetMoney.Maintenance))
 
-	if err := chromedp.Run(ctx,
-		chromedp.Click(model.BUTTON_HUBS_LOUNGES_LOUNGE_REPAIR, chromedp.ByQuery, chromedp.FromNode(hub.LoungeCdpNode)),
+	if err := chromedp.Do(ctx,
+		chromedp.Click(chromedp.CSS(model.BUTTON_HUBS_LOUNGES_LOUNGE_REPAIR), chromedp.FromNode(hub.LoungeCdpNode)),
 	); err != nil {
 		return fmt.Errorf("repairLounge: click repair: %w", err)
 	}
@@ -311,7 +308,7 @@ func (b *Bot) repairLounge(ctx context.Context, hub *model.Hub) error {
 
 	// after clicking the "repair" button,
 	// lounges grid is redrawn, so we need to re-open lounges maintenance tab
-	if err := chromedp.Run(ctx,
+	if err := chromedp.Do(ctx,
 		utils.ClickElement(model.BUTTON_HUBS_LOUNGES_BACK_TO_HUBS),
 		utils.ClickElement(model.BUTTON_HUBS_LOUNGES_MAINTENANCE),
 	); err != nil {
@@ -325,8 +322,8 @@ func (b *Bot) repairLounge(ctx context.Context, hub *model.Hub) error {
 func (b *Bot) buyCatering(ctx context.Context, hub model.Hub) error {
 	slog.Debug("Buy catering function")
 
-	if err := chromedp.Run(ctx,
-		chromedp.Click(model.ELEMENT_HUB, chromedp.ByQuery, chromedp.FromNode(hub.HubCdpNode)),
+	if err := chromedp.Do(ctx,
+		chromedp.Click(chromedp.CSS(model.ELEMENT_HUB), chromedp.FromNode(hub.HubCdpNode)),
 	); err != nil {
 		return fmt.Errorf("buyCatering: select hub: %w", err)
 	}
@@ -342,12 +339,12 @@ func (b *Bot) buyCatering(ctx context.Context, hub model.Hub) error {
 
 	var cateringCost float64
 
-	if err := chromedp.Run(ctx,
+	if err := chromedp.Do(ctx,
 		utils.ClickElement(model.BUTTON_HUBS_ADD_CATERING),
-		chromedp.WaitReady(model.ELEM_HUBS_CATERING_OPTION_3, chromedp.ByQuery),
+		chromedp.WaitReady(chromedp.CSS(model.ELEM_HUBS_CATERING_OPTION_3)),
 		utils.ClickElement(model.ELEM_HUBS_CATERING_OPTION_3),
-		chromedp.SetValue(model.SELECT_HUBS_CATERING_DURATION, b.Conf.CateringDurationHours, chromedp.ByQuery),
-		chromedp.SetValue(model.SELECT_HUBS_CATERING_AMOUNT, b.Conf.CateringAmountOption, chromedp.ByQuery),
+		chromedp.SetValue(chromedp.CSS(model.SELECT_HUBS_CATERING_DURATION), b.Conf.CateringDurationHours),
+		chromedp.SetValue(chromedp.CSS(model.SELECT_HUBS_CATERING_AMOUNT), b.Conf.CateringAmountOption),
 		utils.GetFloatFromElement(model.TEXT_HUBS_CATERING_COST, &cateringCost),
 	); err != nil {
 		return fmt.Errorf("buyCatering: get catering cost: %w", err)
@@ -361,7 +358,7 @@ func (b *Bot) buyCatering(ctx context.Context, hub model.Hub) error {
 	}
 
 	// buy catering
-	if err := chromedp.Run(ctx,
+	if err := chromedp.Do(ctx,
 		utils.ClickElement(model.BUTTON_HUBS_CATERING_BUY),
 	); err != nil {
 		return fmt.Errorf("buyCatering: buy catering: %w", err)

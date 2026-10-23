@@ -38,20 +38,20 @@ func (b *Bot) auth(ctx context.Context) error {
 	slog.Info("performing authentication")
 	slog.Debug("auth", "url", b.Conf.Url, "user", utils.MaskUsername(b.Conf.User))
 
-	if err := chromedp.Run(ctx,
+	if err := chromedp.Do(ctx,
 		// open login page
 		chromedp.Navigate(b.Conf.Url),
 		// perform login steps
-		chromedp.Click(model.BUTTON_PLAY_NOW, chromedp.ByQuery),
-		chromedp.Click(model.BUTTON_LOGIN, chromedp.ByQuery),
-		chromedp.WaitReady(model.TEXT_FIELD_LOGIN, chromedp.ByQuery),
+		chromedp.Click(chromedp.CSS(model.BUTTON_PLAY_NOW)),
+		chromedp.Click(chromedp.CSS(model.BUTTON_LOGIN)),
+		chromedp.WaitReady(chromedp.CSS(model.TEXT_FIELD_LOGIN)),
 		// fill in credentials and submit
-		chromedp.SendKeys(model.TEXT_FIELD_LOGIN, b.Conf.User, chromedp.ByQuery),
-		chromedp.SendKeys(model.TEXT_FIELD_PASSWORD, b.Conf.GetPassword(), chromedp.ByQuery),
-		chromedp.SetAttributeValue(model.CHECKBOX_REMEMBER, "checked", "checked", chromedp.ByQuery),
-		chromedp.Click(model.BUTTON_AUTH, chromedp.ByQuery),
+		chromedp.SendKeys(chromedp.CSS(model.TEXT_FIELD_LOGIN), b.Conf.User),
+		chromedp.SendKeys(chromedp.CSS(model.TEXT_FIELD_PASSWORD), b.Conf.GetPassword()),
+		chromedp.SetAttributeValue(chromedp.CSS(model.CHECKBOX_REMEMBER), "checked", "checked"),
+		chromedp.Click(chromedp.CSS(model.BUTTON_AUTH)),
 		// wait for main page to load
-		chromedp.WaitNotVisible(model.OVERLAY_LOADING, chromedp.ByQuery),
+		chromedp.WaitNotVisible(chromedp.CSS(model.OVERLAY_LOADING)),
 		utils.RefreshPage(),
 	); err != nil {
 		return fmt.Errorf("auth: %w", err)

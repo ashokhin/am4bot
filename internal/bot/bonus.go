@@ -31,7 +31,7 @@ func (b *Bot) claimRewards(ctx context.Context) error {
 	slog.Debug("open pop-up window", "window", "bonus")
 
 	// open "Bonus" pop-up
-	if err := chromedp.Run(ctx,
+	if err := chromedp.Do(ctx,
 		utils.ClickElement(model.BUTTON_MAIN_BONUS),
 	); err != nil {
 		return fmt.Errorf("claimRewards: open bonus window: %w", err)
@@ -41,9 +41,9 @@ func (b *Bot) claimRewards(ctx context.Context) error {
 
 	slog.Debug("navigate to Duty Free tab and claim rewards")
 
-	if err := chromedp.Run(ctx,
+	if err := chromedp.Do(ctx,
 		utils.ClickElement(model.BUTTON_BONUS_DUTY_FREE_TAB),
-		chromedp.WaitReady(model.BUTTON_BONUS_CLAIM_GIFT, chromedp.ByQuery),
+		chromedp.WaitReady(chromedp.CSS(model.BUTTON_BONUS_CLAIM_GIFT)),
 		utils.ClickElement(model.BUTTON_BONUS_CLAIM_GIFT),
 		utils.ClickElement(model.BUTTON_COMMON_CLOSE_POPUP),
 	); err != nil {
