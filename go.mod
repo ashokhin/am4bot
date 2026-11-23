@@ -5,7 +5,7 @@ go 1.27
 require (
 	github.com/alecthomas/kingpin/v2 v2.4.0
 	github.com/chromedp/cdproto v0.160.3
-	github.com/chromedp/chromedp v0.23.0
+	github.com/chromedp/chromedp v0.24.0
 	github.com/creasty/defaults v1.11.0
 	github.com/go-webauthn/webauthn v0.18.2
 	github.com/golang-jwt/jwt/v5 v5.3.1
