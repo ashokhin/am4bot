@@ -164,9 +164,10 @@ services:
       # production.
     command: ["--web.listen-address=:8080", "--internal.listen-address=:8081"]
     ports:
-      # PUBLIC listener - reverse proxy points here. 0.0.0.0 (the
-      # default when no host is given) so it's reachable at all.
-      - "8080:8080"
+      # PUBLIC listener - reverse proxy points here. Bound to loopback so the
+      # app is reachable only through a reverse proxy running on this host.
+      # Use "8080:8080" (all interfaces) if the proxy lives on another machine.
+      - "127.0.0.1:8080:8080"
       # INTERNAL listener - must stay off the public internet (see this
       # file's "Network shape" note above), but ALSO must stay reachable
       # from ambot node containers, each in their own separate compose
